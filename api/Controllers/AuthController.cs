@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using api.DataAccess;
 using api.Models;
@@ -17,10 +18,7 @@ namespace api.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(
-            CETDataAccess dataAccess,
-            IConfiguration configuration,
-            ILogger<AuthController> logger)
+        public AuthController(CETDataAccess dataAccess, IConfiguration configuration, ILogger<AuthController> logger)
         {
             _dataAccess = dataAccess;
             _configuration = configuration;
@@ -39,15 +37,8 @@ namespace api.Controllers
                 return Unauthorized(new { message = "Invalid username or password." });
 
             var passwordHash = CETDataAccess.ComputePasswordHash(request.Password, user.PasswordSalt);
-            if (!CryptographicOperations.FixedTimeEquals(
-                    Convert.FromHexString(passwordHash),
-                    Convert.FromHexString(user.PasswordHash)))
-            {
+            if (!CryptographicOperations.FixedTimeEquals(Convert.FromHexString(passwordHash), Convert.FromHexString(user.PasswordHash)))
                 return Unauthorized(new { message = "Invalid username or password." });
-            }
-
-            var expiresAt = DateTime.UtcNow.AddMinutes(
-                _configuration.GetValue<int?>("JwtSettings:ExpirationMinutes") ?? 60);
 
             var secret = _configuration["JwtSettings:Secret"];
             if (string.IsNullOrWhiteSpace(secret))
@@ -56,6 +47,9 @@ namespace api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { message = "Authentication is not configured." });
             }
+
+            var expiresAt = DateTime.UtcNow.AddMinutes(
+                _configuration.GetValue<int?>("JwtSettings:ExpirationMinutes") ?? 60);
 
             var claims = new List<Claim>
             {
@@ -67,10 +61,7 @@ namespace api.Controllers
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: expiresAt,
-                signingCredentials: credentials);
+            var token = new JwtSecurityToken(claims: claims, expires: expiresAt, signingCredentials: credentials);
 
             return Ok(new LoginResponse
             {
