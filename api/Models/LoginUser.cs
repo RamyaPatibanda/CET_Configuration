@@ -6,8 +6,7 @@ namespace api.Models
         public string Username { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string RoleName { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
-        public string PasswordSalt { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public bool IsActive { get; set; }
     }
 }
