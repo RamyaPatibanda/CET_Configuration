@@ -1,7 +1,5 @@
 using System.Data;
 using System.Data.SqlClient;
-using System.Security.Cryptography;
-using System.Text;
 using api.Models;
 using api.Utils;
 using Microsoft.Extensions.Caching.Memory;
@@ -28,7 +26,7 @@ namespace api.DataAccess
                 CommandTimeout = 30
             };
 
-            command.Parameters.Add("@Username", SqlDbType.NVarChar, 100).Value = username;
+            command.Parameters.Add("@tUsername", SqlDbType.NVarChar, 100).Value = username;
             await connection.OpenAsync();
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -37,21 +35,13 @@ namespace api.DataAccess
 
             return new LoginUser
             {
-                UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
-                Username = reader.GetString(reader.GetOrdinal("Username")),
-                DisplayName = reader.GetString(reader.GetOrdinal("DisplayName")),
-                RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
-                PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash")),
-                PasswordSalt = reader.GetString(reader.GetOrdinal("PasswordSalt")),
-                IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive"))
+                UserId = reader.GetInt32(reader.GetOrdinal("aUserId")),
+                Username = reader.GetString(reader.GetOrdinal("tUsername")),
+                DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                RoleName = reader.GetString(reader.GetOrdinal("tRole")),
+                Password = reader.GetString(reader.GetOrdinal("tPassword")),
+                IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive"))
             };
-        }
-
-        public static string ComputePasswordHash(string password, string salt)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(password + salt);
-            return Convert.ToHexString(sha256.ComputeHash(bytes));
         }
     }
 }
