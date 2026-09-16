@@ -1,0 +1,6 @@
+﻿namespace api.BusinessLogics
+{
+    public class CETBusinessLogics
+    {
+    }
+}
