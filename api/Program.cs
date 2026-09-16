@@ -10,6 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<CETDataAccess>();
+builder.Services.AddAuthorization();
 
 var jwtSecret = builder.Configuration["JwtSettings:Secret"];
 if (!string.IsNullOrWhiteSpace(jwtSecret))
