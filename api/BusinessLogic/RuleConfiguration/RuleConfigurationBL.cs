@@ -18,98 +18,44 @@ namespace api.BusinessLogic.RuleConfiguration
 
         public async Task<List<RuleDefinition>> GetRulesAsync()
         {
-            try
-            {
-                return await _dataAccess.GetRulesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting rules in business logic.");
-                throw;
-            }
+            try { return await _dataAccess.GetRulesAsync(); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting rules in business logic."); throw; }
         }
 
         public async Task<RuleDefinition?> GetRuleAsync(int ruleId)
         {
-            try
-            {
-                ValidateRuleId(ruleId);
-                return await _dataAccess.GetRuleAsync(ruleId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting rule {RuleId} in business logic.", ruleId);
-                throw;
-            }
+            try { ValidateRuleId(ruleId); return await _dataAccess.GetRuleAsync(ruleId); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting rule {RuleId} in business logic.", ruleId); throw; }
         }
 
         public async Task<int> CreateRuleAsync(CreateRuleRequest request)
         {
-            try
-            {
-                Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions);
-                return await _dataAccess.CreateRuleAsync(request);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while creating rule {RuleName}.", request.RuleName);
-                throw;
-            }
+            try { Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions); return await _dataAccess.CreateRuleAsync(request); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while creating rule {RuleName}.", request.RuleName); throw; }
         }
 
         public async Task<bool> UpdateRuleAsync(UpdateRuleRequest request)
         {
-            try
-            {
-                Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions);
-                return await _dataAccess.UpdateRuleAsync(request);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while updating rule {RuleId}.", request.RuleId);
-                throw;
-            }
+            try { Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions); return await _dataAccess.UpdateRuleAsync(request); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while updating rule {RuleId}.", request.RuleId); throw; }
         }
 
         public async Task<bool> DeleteRuleAsync(int ruleId)
         {
-            try
-            {
-                ValidateRuleId(ruleId);
-                return await _dataAccess.DeleteRuleAsync(ruleId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while deleting rule {RuleId}.", ruleId);
-                throw;
-            }
+            try { ValidateRuleId(ruleId); return await _dataAccess.DeleteRuleAsync(ruleId); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while deleting rule {RuleId}.", ruleId); throw; }
         }
 
         public async Task<List<RuleFieldOption>> GetActiveFieldsAsync()
         {
-            try
-            {
-                return await _dataAccess.GetActiveFieldsAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting active rule fields.");
-                throw;
-            }
+            try { return await _dataAccess.GetActiveFieldsAsync(); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting active rule fields."); throw; }
         }
 
         public async Task<bool> SetRuleActiveAsync(int ruleId, bool isActive)
         {
-            try
-            {
-                ValidateRuleId(ruleId);
-                return await _dataAccess.SetRuleActiveAsync(ruleId, isActive);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while changing active state for rule {RuleId}.", ruleId);
-                throw;
-            }
+            try { ValidateRuleId(ruleId); return await _dataAccess.SetRuleActiveAsync(ruleId, isActive); }
+            catch (Exception ex) { _logger.LogError(ex, "Error while changing active state for rule {RuleId}.", ruleId); throw; }
         }
 
         public async Task ReorderRulesAsync(List<int> ruleIds)
@@ -117,19 +63,11 @@ namespace api.BusinessLogic.RuleConfiguration
             try
             {
                 if (ruleIds is null || ruleIds.Count == 0)
-                {
                     throw new ArgumentException("At least one rule is required.", nameof(ruleIds));
-                }
-
                 if (ruleIds.Any(ruleId => ruleId <= 0))
-                {
                     throw new ArgumentException("Rule IDs must be greater than zero.", nameof(ruleIds));
-                }
-
                 if (ruleIds.Count != ruleIds.Distinct().Count())
-                {
                     throw new ArgumentException("Rule IDs must be unique.", nameof(ruleIds));
-                }
 
                 await _dataAccess.ReorderRulesAsync(ruleIds);
             }
@@ -149,50 +87,56 @@ namespace api.BusinessLogic.RuleConfiguration
             ValidateRuleId(ruleId);
 
             if (string.IsNullOrWhiteSpace(ruleName))
-            {
                 throw new ArgumentException("Rule name is required.", nameof(ruleName));
-            }
-
             if (priority < 1)
-            {
                 throw new ArgumentException("Priority must be greater than zero.", nameof(priority));
-            }
-
             if (conditions is null || conditions.Count == 0)
-            {
                 throw new ArgumentException("At least one condition is required.", nameof(conditions));
+
+            var groupOrders = conditions
+                .Select(condition => condition.GroupOrder)
+                .Distinct()
+                .OrderBy(order => order)
+                .ToList();
+
+            if (!groupOrders.Any() || groupOrders.First() != 1 ||
+                groupOrders.Select((order, index) => order == index + 1).Any(isValid => !isValid))
+            {
+                throw new ArgumentException("Condition groups must have sequential group order.", nameof(conditions));
             }
 
             foreach (var condition in conditions)
             {
                 if (condition.FieldId <= 0)
-                {
                     throw new ArgumentException("Each condition must have a valid field.", nameof(conditions));
-                }
-
                 if (string.IsNullOrWhiteSpace(condition.Operator))
-                {
                     throw new ArgumentException("Each condition must have an operator.", nameof(conditions));
-                }
-
                 if (string.IsNullOrWhiteSpace(condition.Value))
-                {
                     throw new ArgumentException("Each condition must have a value.", nameof(conditions));
-                }
-
                 if (condition.LogicalOperator is not ("AND" or "OR"))
-                {
-                    throw new ArgumentException("Logical operator must be AND or OR.", nameof(conditions));
-                }
+                    throw new ArgumentException("Condition logical operator must be AND or OR.", nameof(conditions));
+                if (condition.GroupLogicalOperator is not ("AND" or "OR"))
+                    throw new ArgumentException("Group logical operator must be AND or OR.", nameof(conditions));
+                if (condition.GroupOrder < 1 || condition.ConditionOrder < 1)
+                    throw new ArgumentException("Condition and group order must be greater than zero.", nameof(conditions));
+            }
+
+            foreach (var group in conditions.GroupBy(condition => condition.GroupOrder))
+            {
+                var conditionOrders = group
+                    .Select(condition => condition.ConditionOrder)
+                    .OrderBy(order => order)
+                    .ToList();
+
+                if (conditionOrders.Select((order, index) => order == index + 1).Any(isValid => !isValid))
+                    throw new ArgumentException("Condition order must be sequential within each group.", nameof(conditions));
             }
         }
 
         private static void ValidateRuleId(int ruleId)
         {
             if (ruleId <= 0)
-            {
                 throw new ArgumentException("Rule id must be greater than zero.", nameof(ruleId));
-            }
         }
     }
 }
