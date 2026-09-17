@@ -18,6 +18,10 @@ const API_ENDPOINTS = {
     ACTIVE: (ruleId) => `/api/rule-configuration/${ruleId}/active`,
     BY_ID: (ruleId) => `/api/rule-configuration/${ruleId}`,
   },
+  ALLOCATION: {
+    STAGES: "/api/allocation/stages",
+    SIMULATE: "/api/allocation/simulate",
+  },
 };
 
 export default API_ENDPOINTS;
