@@ -11,5 +11,6 @@ namespace api.BusinessLogic.FieldConfiguration
         Task<bool> DeleteFieldAsync(int fieldId);
         Task<List<FieldSourceOption>> GetAllowedTablesAsync();
         Task<List<FieldSourceOption>> GetColumnsAsync(string tableName);
+        Task ValidateFieldSourceAsync(string tableName, string fieldName);
     }
 }
