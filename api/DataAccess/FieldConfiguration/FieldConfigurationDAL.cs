@@ -8,12 +8,14 @@ namespace api.DataAccess.FieldConfiguration
     public class FieldConfigurationDAL : IFieldConfigurationDAL
     {
         private readonly string _connectionString;
+        private readonly List<string> _allowedTables;
         private readonly ILogger<FieldConfigurationDAL> _logger;
 
         public FieldConfigurationDAL(IConfiguration configuration, ILogger<FieldConfigurationDAL> logger)
         {
             _logger = logger;
             _connectionString = new ConnectionUtils().GetConnectionString(configuration["ConnectionStrings:CrmDbConnection"] ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
+            _allowedTables = configuration.GetSection("RuleConfiguration:AllowedTables").Get<List<string>>() ?? new List<string>();
         }
 
         public async Task<List<FieldDefinition>> GetFieldsAsync()
@@ -57,10 +59,11 @@ namespace api.DataAccess.FieldConfiguration
         {
             try
             {
+                ValidateAllowedTable(request.TableName);
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_CreateField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = request.FieldId;
-                AddFieldParameters(command, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
+                AddFieldParameters(command, request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
@@ -75,10 +78,11 @@ namespace api.DataAccess.FieldConfiguration
         {
             try
             {
+                ValidateAllowedTable(request.TableName);
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_UpdateField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = request.FieldId;
-                AddFieldParameters(command, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
+                AddFieldParameters(command, request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
@@ -106,13 +110,76 @@ namespace api.DataAccess.FieldConfiguration
             }
         }
 
+        public Task<List<FieldSourceOption>> GetAllowedTablesAsync()
+        {
+            try
+            {
+                var tables = _allowedTables
+                    .Where(table => !string.IsNullOrWhiteSpace(table))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(table => table)
+                    .Select(table => new FieldSourceOption { Name = table })
+                    .ToList();
+                return Task.FromResult(tables);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting configured rule source tables.");
+                throw;
+            }
+        }
+
+        public async Task<List<FieldSourceOption>> GetColumnsAsync(string tableName)
+        {
+            try
+            {
+                ValidateAllowedTable(tableName);
+                var columns = new List<FieldSourceOption>();
+                await using var connection = new SqlConnection(_connectionString);
+                await using var command = new SqlCommand(@"
+                    SELECT COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'dbo'
+                      AND TABLE_NAME = @tTableName
+                    ORDER BY ORDINAL_POSITION;", connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
+                await connection.OpenAsync();
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    columns.Add(new FieldSourceOption { Name = reader.GetString(0) });
+                }
+
+                if (columns.Count == 0)
+                    throw new ArgumentException($"Table '{tableName}' was not found in the dbo schema.", nameof(tableName));
+
+                return columns;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName);
+                throw;
+            }
+        }
+
+        private void ValidateAllowedTable(string tableName)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new ArgumentException("Table name is required.", nameof(tableName));
+
+            if (!_allowedTables.Any(table => string.Equals(table, tableName, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException($"Table '{tableName}' is not configured as an allowed rule source.", nameof(tableName));
+        }
+
         private static SqlCommand CreateCommand(string procedureName, SqlConnection connection)
         {
             return new SqlCommand(procedureName, connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 30 };
         }
 
-        private static void AddFieldParameters(SqlCommand command, string fieldName, string displayName, string fieldType, bool isRequired, bool isActive, int displayOrder)
+        private static void AddFieldParameters(SqlCommand command, string tableName, string fieldName, string displayName, string fieldType, bool isRequired, bool isActive, int displayOrder)
         {
+            command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
             command.Parameters.Add("@tFieldName", SqlDbType.NVarChar, 200).Value = fieldName;
             command.Parameters.Add("@tDisplayName", SqlDbType.NVarChar, 200).Value = displayName;
             command.Parameters.Add("@tFieldType", SqlDbType.NVarChar, 50).Value = fieldType;
@@ -126,6 +193,7 @@ namespace api.DataAccess.FieldConfiguration
             return new FieldDefinition
             {
                 FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                TableName = reader.GetString(reader.GetOrdinal("tTableName")),
                 FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                 DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
                 FieldType = reader.GetString(reader.GetOrdinal("tFieldType")),
