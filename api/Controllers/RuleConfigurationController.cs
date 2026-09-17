@@ -121,6 +121,50 @@ namespace api.Controllers
             }
         }
 
+        [HttpPatch("{ruleId:int}/active")]
+        public async Task<IActionResult> SetRuleActive(
+            int ruleId,
+            [FromBody] bool isActive)
+        {
+            try
+            {
+                var updated = await _businessLogic.SetRuleActiveAsync(ruleId, isActive);
+
+                return updated
+                    ? Ok(new { message = "Rule status updated successfully." })
+                    : NotFound(new { message = "Rule not found." });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while changing active state for rule {RuleId}.", ruleId);
+                return StatusCode(500, new { message = "Unable to update rule status." });
+            }
+        }
+
+        [HttpPut("order")]
+        public async Task<IActionResult> ReorderRules(
+            [FromBody] ReorderRulesRequest request)
+        {
+            try
+            {
+                await _businessLogic.ReorderRulesAsync(request.RuleIds);
+                return Ok(new { message = "Rule order updated successfully." });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while reordering rules.");
+                return StatusCode(500, new { message = "Unable to reorder rules." });
+            }
+        }
+
         [HttpDelete("{ruleId:int}")]
         public async Task<IActionResult> DeleteRule(int ruleId)
         {
