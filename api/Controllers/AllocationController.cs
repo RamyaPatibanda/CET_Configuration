@@ -1,4 +1,6 @@
+using api.BusinessLogic.RuleConfiguration;
 using api.Models.Allocation;
+using api.Models.RuleConfiguration;
 using api.Services.Allocation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +12,14 @@ namespace api.Controllers;
 [Route("api/allocation")]
 public sealed class AllocationController : ControllerBase
 {
+    private readonly IRuleConfigurationBL _ruleConfiguration;
     private readonly ILogger<AllocationController> _logger;
 
-    public AllocationController(ILogger<AllocationController> logger)
+    public AllocationController(
+        IRuleConfigurationBL ruleConfiguration,
+        ILogger<AllocationController> logger)
     {
+        _ruleConfiguration = ruleConfiguration;
         _logger = logger;
     }
 
@@ -45,15 +51,35 @@ public sealed class AllocationController : ControllerBase
         if (request.Seats.Count == 0)
             return BadRequest(new { message = "At least one seat inventory record is required." });
 
+        if (request.SelectedRuleIds.Count == 0)
+            return BadRequest(new { message = "At least one configured rule must be selected." });
+
         try
         {
+            var allRules = await _ruleConfiguration.GetRulesAsync();
+            var selectedRules = allRules
+                .Where(rule => rule.IsActive && request.SelectedRuleIds.Contains(rule.RuleId))
+                .OrderBy(rule => rule.Priority)
+                .ToList();
+
+            if (selectedRules.Count != request.SelectedRuleIds.Distinct().Count())
+                return BadRequest(new { message = "One or more selected rules are missing or inactive." });
+
+            var detailedRules = new List<RuleDefinition>();
+            foreach (var rule in selectedRules)
+            {
+                var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
+                if (detailed is not null)
+                    detailedRules.Add(detailed);
+            }
+
             var run = new AllocationRun
             {
                 CapRound = request.CapRound,
-                RuleSetVersionId = string.IsNullOrWhiteSpace(request.RuleSetVersionId)
-                    ? "draft-runtime"
-                    : request.RuleSetVersionId
+                RuleSetVersionId = string.Join(",", selectedRules.Select(rule => rule.RuleId))
             };
+
+            var configuredStep0Rules = BuildStep0Rules(detailedRules);
 
             var stages = new IAllocationStage[]
             {
@@ -61,7 +87,7 @@ public sealed class AllocationController : ControllerBase
                 new Step0AllocationStage(
                     new RuleEvaluator(),
                     new SeatInventoryService(),
-                    AllocationRuleCatalog.Step0Defaults),
+                    configuredStep0Rules),
                 new Step1AllocationStage(new SeatInventoryService())
             };
 
@@ -88,5 +114,32 @@ public sealed class AllocationController : ControllerBase
             _logger.LogError(ex, "Allocation simulation failed for CAP round {CapRound}.", request.CapRound);
             return StatusCode(500, new { message = "Allocation simulation failed." });
         }
+    }
+
+    private static IReadOnlyList<AllocationRule> BuildStep0Rules(IEnumerable<RuleDefinition> rules)
+    {
+        return rules
+            .Where(rule => rule.Conditions.Count > 0)
+            .Select(rule => new AllocationRule
+            {
+                Code = rule.RuleName,
+                StageCode = "SPECIAL_RESERVATION",
+                LogicalOperator = ResolveLogicalOperator(rule),
+                Conditions = rule.Conditions
+                    .OrderBy(condition => condition.GroupOrder)
+                    .ThenBy(condition => condition.ConditionOrder)
+                    .Select(condition => new RuleCondition(
+                        condition.FieldDisplayName,
+                        condition.Operator,
+                        condition.Value))
+                    .ToList()
+            })
+            .ToList();
+    }
+
+    private static string ResolveLogicalOperator(RuleDefinition rule)
+    {
+        var first = rule.Conditions.OrderBy(c => c.GroupOrder).ThenBy(c => c.ConditionOrder).FirstOrDefault();
+        return first?.GroupLogicalOperator is "OR" ? "OR" : "AND";
     }
 }
