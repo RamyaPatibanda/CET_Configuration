@@ -22,7 +22,7 @@
 
 .common-input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: #557ba5;
 }
 
 .common-input:disabled {
@@ -57,7 +57,16 @@
   cursor: not-allowed;
 }
 
-.common-button-primary { background: #2563eb; color: #fff; }
+.common-button-primary {
+  background: linear-gradient(135deg, #557ba5, #7f91aa);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(85, 123, 165, 0.18);
+}
+
+.common-button-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4d7198, #74879f);
+}
+
 .common-button-secondary { background: #e5e7eb; color: #111827; }
 .common-button-danger { background: #dc2626; color: #fff; }
 
