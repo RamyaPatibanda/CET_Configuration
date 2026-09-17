@@ -198,51 +198,54 @@ function RuleConfiguration() {
               </tr>
             </thead>
             <tbody>
-              {rules.map((rule) => (
-                <tr
-                  key={rule.ruleId}
-                  draggable
-                  className={draggedRuleId === rule.ruleId ? "rule-row-dragging" : ""}
-                  onDragStart={() => setDraggedRuleId(rule.ruleId)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => handleDrop(rule.ruleId)}
-                  onDragEnd={() => setDraggedRuleId(null)}
-                >
-                  <td className="rule-order-cell">
-                    <div className="rule-order-handle" title="Drag to reorder">
-                      <FiMenu size={17} />
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rule-name-cell">
-                      <strong>{rule.ruleName}</strong>
-                    </div>
-                  </td>
-                  <td>{rule.description || "—"}</td>
-                  <td>
-                    <span className="condition-count">
-                      {rule.conditions?.length ?? 0} condition
-                      {(rule.conditions?.length ?? 0) === 1 ? "" : "s"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="rule-status-control">
-                      <Switch checked={Boolean(rule.isActive)} onChange={() => handleToggleActive(rule)} />
-                      <span className={rule.isActive ? "active-label" : "inactive-label"}>
-                        {rule.isActive ? "Active" : "Inactive"}
+              {rules.map((rule) => {
+                const conditionCount = Number(rule.conditionCount ?? rule.ConditionCount ?? 0);
+
+                return (
+                  <tr
+                    key={rule.ruleId}
+                    draggable
+                    className={draggedRuleId === rule.ruleId ? "rule-row-dragging" : ""}
+                    onDragStart={() => setDraggedRuleId(rule.ruleId)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => handleDrop(rule.ruleId)}
+                    onDragEnd={() => setDraggedRuleId(null)}
+                  >
+                    <td className="rule-order-cell">
+                      <div className="rule-order-handle" title="Drag to reorder">
+                        <FiMenu size={17} />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="rule-name-cell">
+                        <strong>{rule.ruleName}</strong>
+                      </div>
+                    </td>
+                    <td>{rule.description || "—"}</td>
+                    <td>
+                      <span className="condition-count">
+                        {conditionCount} condition{conditionCount === 1 ? "" : "s"}
                       </span>
-                    </div>
-                  </td>
-                  <td className="rule-actions">
-                    <button type="button" title="Edit rule" aria-label="Edit rule" onClick={() => openEdit(rule)}>
-                      <FiEdit2 />
-                    </button>
-                    <button type="button" title="Delete rule" aria-label="Delete rule" onClick={() => setDeleteRule(rule)}>
-                      <FiTrash2 />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <div className="rule-status-control">
+                        <Switch checked={Boolean(rule.isActive)} onChange={() => handleToggleActive(rule)} />
+                        <span className={rule.isActive ? "active-label" : "inactive-label"}>
+                          {rule.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="rule-actions">
+                      <button type="button" title="Edit rule" aria-label="Edit rule" onClick={() => openEdit(rule)}>
+                        <FiEdit2 />
+                      </button>
+                      <button type="button" title="Delete rule" aria-label="Delete rule" onClick={() => setDeleteRule(rule)}>
+                        <FiTrash2 />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
