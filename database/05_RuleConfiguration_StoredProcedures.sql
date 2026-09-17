@@ -1,122 +1,24 @@
-/*
-    CET Configuration - Rule Configuration Stored Procedures
-
-    Execute this script manually against the CET_configuration database.
-    Existing rule procedures are dropped and recreated.
-*/
-
-IF OBJECT_ID(N'dbo.sproc_GetRules', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRules;
+IF OBJECT_ID(N'dbo.sproc_GetRules',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRules;
 GO
-CREATE PROCEDURE dbo.sproc_GetRules
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aRuleId, tRuleName, tDescription, nPriority, bIsActive, dtCreatedDate, dtModifiedDate
-    FROM dbo.tblRuleConfiguration
-    ORDER BY nPriority, aRuleId;
-END;
+CREATE PROCEDURE dbo.sproc_GetRules AS BEGIN SET NOCOUNT ON; SELECT aRuleId,tRuleName,tDescription,nPriority,bIsActive,dtCreatedDate,dtModifiedDate FROM dbo.tblRule ORDER BY nPriority,aRuleId; END;
 GO
-
-IF OBJECT_ID(N'dbo.sproc_GetRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRule;
+IF OBJECT_ID(N'dbo.sproc_GetRule',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRule;
 GO
-CREATE PROCEDURE dbo.sproc_GetRule
-    @aRuleId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aRuleId, tRuleName, tDescription, nPriority, bIsActive, dtCreatedDate, dtModifiedDate
-    FROM dbo.tblRuleConfiguration
-    WHERE aRuleId = @aRuleId;
-
-    SELECT aRuleConditionId, aRuleId, aFieldId, tOperator, tValue, nConditionOrder
-    FROM dbo.tblRuleCondition
-    WHERE aRuleId = @aRuleId
-    ORDER BY nConditionOrder, aRuleConditionId;
-END;
+CREATE PROCEDURE dbo.sproc_GetRule @aRuleId INT AS BEGIN SET NOCOUNT ON; SELECT aRuleId,tRuleName,tDescription,nPriority,bIsActive,dtCreatedDate,dtModifiedDate FROM dbo.tblRule WHERE aRuleId=@aRuleId; SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldType,rc.tLogicalOperator,rc.tOperator,rc.tValue,rc.nConditionOrder FROM dbo.tblRuleCondition rc INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=rc.aFieldId WHERE rc.aRuleId=@aRuleId ORDER BY rc.nConditionOrder; END;
 GO
-
-IF OBJECT_ID(N'dbo.sproc_CreateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateRule;
+IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
 GO
-CREATE PROCEDURE dbo.sproc_CreateRule
-    @tRuleName NVARCHAR(200),
-    @tDescription NVARCHAR(1000) = NULL,
-    @nPriority INT,
-    @bIsActive BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    INSERT INTO dbo.tblRuleConfiguration(tRuleName, tDescription, nPriority, bIsActive, dtCreatedDate)
-    VALUES(@tRuleName, @tDescription, @nPriority, @bIsActive, GETDATE());
-    SELECT CONVERT(INT, SCOPE_IDENTITY()) AS aRuleId;
-END;
+CREATE PROCEDURE dbo.sproc_GetActiveRuleFields AS BEGIN SET NOCOUNT ON; SELECT aFieldId,tDisplayName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
 GO
-
-IF OBJECT_ID(N'dbo.sproc_UpdateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateRule;
+IF OBJECT_ID(N'dbo.sproc_CreateRule',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateRule;
 GO
-CREATE PROCEDURE dbo.sproc_UpdateRule
-    @aRuleId INT,
-    @tRuleName NVARCHAR(200),
-    @tDescription NVARCHAR(1000) = NULL,
-    @nPriority INT,
-    @bIsActive BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE dbo.tblRuleConfiguration
-    SET tRuleName = @tRuleName,
-        tDescription = @tDescription,
-        nPriority = @nPriority,
-        bIsActive = @bIsActive,
-        dtModifiedDate = GETDATE()
-    WHERE aRuleId = @aRuleId;
-    SELECT @@ROWCOUNT AS AffectedRows;
-END;
+CREATE PROCEDURE dbo.sproc_CreateRule @aRuleId INT,@tRuleName NVARCHAR(200),@tDescription NVARCHAR(1000),@nPriority INT,@bIsActive BIT,@tConditionsJson NVARCHAR(MAX) AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION; BEGIN TRY INSERT dbo.tblRule(aRuleId,tRuleName,tDescription,nPriority,bIsActive) VALUES(@aRuleId,@tRuleName,@tDescription,@nPriority,@bIsActive); INSERT dbo.tblRuleCondition(aRuleId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder) SELECT @aRuleId,TRY_CONVERT(INT,JSON_VALUE(value,'$.FieldId')),COALESCE(JSON_VALUE(value,'$.LogicalOperator'),'AND'),JSON_VALUE(value,'$.Operator'),JSON_VALUE(value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson); COMMIT; SELECT @aRuleId; END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH END;
 GO
-
-IF OBJECT_ID(N'dbo.sproc_DeleteRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_DeleteRule;
+IF OBJECT_ID(N'dbo.sproc_UpdateRule',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateRule;
 GO
-CREATE PROCEDURE dbo.sproc_DeleteRule
-    @aRuleId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DELETE FROM dbo.tblRuleConfiguration WHERE aRuleId = @aRuleId;
-    SELECT @@ROWCOUNT AS AffectedRows;
-END;
+CREATE PROCEDURE dbo.sproc_UpdateRule @aRuleId INT,@tRuleName NVARCHAR(200),@tDescription NVARCHAR(1000),@nPriority INT,@bIsActive BIT,@tConditionsJson NVARCHAR(MAX) AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION; BEGIN TRY UPDATE dbo.tblRule SET tRuleName=@tRuleName,tDescription=@tDescription,nPriority=@nPriority,bIsActive=@bIsActive,dtModifiedDate=GETDATE() WHERE aRuleId=@aRuleId; IF @@ROWCOUNT=0 BEGIN ROLLBACK; SELECT 0; RETURN; END; DELETE dbo.tblRuleCondition WHERE aRuleId=@aRuleId; INSERT dbo.tblRuleCondition(aRuleId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder) SELECT @aRuleId,TRY_CONVERT(INT,JSON_VALUE(value,'$.FieldId')),COALESCE(JSON_VALUE(value,'$.LogicalOperator'),'AND'),JSON_VALUE(value,'$.Operator'),JSON_VALUE(value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson); COMMIT; SELECT 1; END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH END;
 GO
-
-IF OBJECT_ID(N'dbo.sproc_ReplaceRuleConditions', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_ReplaceRuleConditions;
+IF OBJECT_ID(N'dbo.sproc_DeleteRule',N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_DeleteRule;
 GO
-CREATE PROCEDURE dbo.sproc_ReplaceRuleConditions
-    @aRuleId INT,
-    @tConditions NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
-
-    INSERT INTO dbo.tblRuleCondition(aRuleId, aFieldId, tOperator, tValue, nConditionOrder)
-    SELECT
-        @aRuleId,
-        TRY_CONVERT(INT, JSON_VALUE(value, '$.fieldId')),
-        JSON_VALUE(value, '$.operator'),
-        JSON_VALUE(value, '$.value'),
-        TRY_CONVERT(INT, JSON_VALUE(value, '$.conditionOrder'))
-    FROM OPENJSON(@tConditions)
-    WHERE TRY_CONVERT(INT, JSON_VALUE(value, '$.fieldId')) IS NOT NULL;
-END;
-GO
-
-IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
-GO
-CREATE PROCEDURE dbo.sproc_GetActiveRuleFields
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType, bIsRequired, bIsActive, nDisplayOrder
-    FROM dbo.tblFieldConfiguration
-    WHERE bIsActive = 1
-    ORDER BY nDisplayOrder, aFieldId;
-END;
+CREATE PROCEDURE dbo.sproc_DeleteRule @aRuleId INT AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION; BEGIN TRY DELETE dbo.tblRuleCondition WHERE aRuleId=@aRuleId; DELETE dbo.tblRule WHERE aRuleId=@aRuleId; DECLARE @deleted INT=@@ROWCOUNT; COMMIT; SELECT @deleted; END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH END;
 GO
