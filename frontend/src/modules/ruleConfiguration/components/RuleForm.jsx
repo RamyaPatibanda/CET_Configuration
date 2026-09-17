@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FiMenu, FiPlus, FiTrash2 } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { FiCheckSquare, FiMenu, FiPlus, FiTrash2, FiUsers } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
@@ -43,6 +43,8 @@ const LOGICAL_OPTIONS = [
   { value: "OR", label: "OR" },
 ];
 
+const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
+
 function optionsForType(type) {
   return OPERATORS[type] || OPERATORS.Text;
 }
@@ -51,8 +53,10 @@ function getResponseItems(response) {
   return Array.isArray(response) ? response : response?.data || [];
 }
 
-function createCondition() {
+function createCondition(groupId = "group-1") {
   return {
+    id: `condition-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    groupId,
     fieldId: "",
     logicalOperator: "AND",
     operator: "Equals",
@@ -60,62 +64,46 @@ function createCondition() {
   };
 }
 
-function createGroup() {
-  return {
-    groupLogicalOperator: "AND",
-    conditions: [createCondition()],
-  };
-}
-
-function toGroups(conditions) {
+function toRows(conditions) {
   if (!conditions?.length) return [];
 
-  const groups = new Map();
-
-  [...conditions]
+  return [...conditions]
     .sort(
       (a, b) =>
         (a.groupOrder ?? 1) - (b.groupOrder ?? 1) ||
         (a.conditionOrder ?? 1) - (b.conditionOrder ?? 1)
     )
-    .forEach((condition) => {
-      const groupOrder = condition.groupOrder ?? 1;
-
-      if (!groups.has(groupOrder)) {
-        groups.set(groupOrder, {
-          groupLogicalOperator: condition.groupLogicalOperator || "AND",
-          conditions: [],
-        });
-      }
-
-      groups.get(groupOrder).conditions.push({
-        fieldId: condition.fieldId,
-        logicalOperator: condition.logicalOperator || "AND",
-        operator: condition.operator || "Equals",
-        value: condition.value || "",
-      });
-    });
-
-  return [...groups.values()];
+    .map((condition, index, all) => ({
+      id: `condition-${condition.fieldId}-${condition.conditionOrder}-${index}`,
+      groupId: `group-${condition.groupOrder ?? 1}`,
+      fieldId: condition.fieldId,
+      logicalOperator: condition.logicalOperator || "AND",
+      operator: condition.operator || "Equals",
+      value: condition.value || "",
+      groupLogicalOperator: condition.groupLogicalOperator || "AND",
+      groupOrder: condition.groupOrder ?? 1,
+      previousGroupId:
+        index > 0 && all[index - 1].groupOrder !== (condition.groupOrder ?? 1)
+          ? all[index - 1].groupOrder
+          : null,
+    }));
 }
 
 function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_RULE);
-  const [groups, setGroups] = useState([]);
+  const [rows, setRows] = useState([]);
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
   const [error, setError] = useState("");
-  const [draggedCondition, setDraggedCondition] = useState(null);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [draggedRow, setDraggedRow] = useState(null);
 
   useEffect(() => {
     if (!open) return;
 
-    setForm(
-      rule
-        ? { ...EMPTY_RULE, ...rule }
-        : { ...EMPTY_RULE, ruleId: nextRuleId }
-    );
-    setGroups(rule ? toGroups(rule.conditions) : []);
+    setForm(rule ? { ...EMPTY_RULE, ...rule } : { ...EMPTY_RULE, ruleId: nextRuleId });
+    setRows(rule ? toRows(rule.conditions) : []);
+    setSelectedRows([]);
     setError("");
 
     const loadFields = async () => {
@@ -137,135 +125,129 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const addCondition = (groupIndex) => {
-    setGroups((current) =>
-      current.map((group, index) =>
-        index === groupIndex
-          ? { ...group, conditions: [...group.conditions, createCondition()] }
-          : group
-      )
+  const addRow = () => {
+    const existingGroupIds = rows.map((row) => row.groupId);
+    const groupId = existingGroupIds.length
+      ? existingGroupIds[existingGroupIds.length - 1]
+      : "group-1";
+
+    setRows((current) => [...current, createCondition(groupId)]);
+  };
+
+  const removeRow = (rowId) => {
+    setRows((current) => current.filter((row) => row.id !== rowId));
+    setSelectedRows((current) => current.filter((id) => id !== rowId));
+  };
+
+  const updateRow = (rowId, name, value) => {
+    setRows((current) =>
+      current.map((row) => (row.id === rowId ? { ...row, [name]: value } : row))
     );
   };
 
-  const addGroup = () => {
-    setGroups((current) => [...current, createGroup()]);
-  };
-
-  const removeCondition = (groupIndex, conditionIndex) => {
-    setGroups((current) =>
-      current
-        .map((group, index) =>
-          index === groupIndex
-            ? {
-                ...group,
-                conditions: group.conditions.filter(
-                  (_, itemIndex) => itemIndex !== conditionIndex
-                ),
-              }
-            : group
-        )
-        .filter((group) => group.conditions.length > 0)
-    );
-  };
-
-  const removeGroup = (groupIndex) => {
-    setGroups((current) => current.filter((_, index) => index !== groupIndex));
-  };
-
-  const updateGroup = (groupIndex, name, value) => {
-    setGroups((current) =>
-      current.map((group, index) =>
-        index === groupIndex ? { ...group, [name]: value } : group
-      )
-    );
-  };
-
-  const updateCondition = (groupIndex, conditionIndex, name, value) => {
-    setGroups((current) =>
-      current.map((group, index) =>
-        index === groupIndex
-          ? {
-              ...group,
-              conditions: group.conditions.map((condition, itemIndex) =>
-                itemIndex === conditionIndex
-                  ? { ...condition, [name]: value }
-                  : condition
-              ),
-            }
-          : group
-      )
-    );
-  };
-
-  const changeField = (groupIndex, conditionIndex, value) => {
+  const changeField = (rowId, value) => {
     const field = fields.find((item) => String(item.fieldId) === String(value));
-    const firstOperator =
-      optionsForType(field?.fieldType).at(0)?.value || "Equals";
+    const firstOperator = optionsForType(field?.fieldType)[0]?.value || "Equals";
 
-    setGroups((current) =>
-      current.map((group, currentGroupIndex) =>
-        currentGroupIndex === groupIndex
-          ? {
-              ...group,
-              conditions: group.conditions.map((condition, currentConditionIndex) =>
-                currentConditionIndex === conditionIndex
-                  ? {
-                      ...condition,
-                      fieldId: value,
-                      operator: firstOperator,
-                      value: "",
-                    }
-                  : condition
-              ),
-            }
-          : group
+    setRows((current) =>
+      current.map((row) =>
+        row.id === rowId
+          ? { ...row, fieldId: value, operator: firstOperator, value: "" }
+          : row
       )
     );
   };
 
-  const moveCondition = (targetGroupIndex, targetConditionIndex) => {
-    if (!draggedCondition) return;
+  const toggleSelected = (rowId) => {
+    setSelectedRows((current) =>
+      current.includes(rowId)
+        ? current.filter((id) => id !== rowId)
+        : [...current, rowId]
+    );
+  };
 
-    const {
-      groupIndex: sourceGroupIndex,
-      conditionIndex: sourceConditionIndex,
-    } = draggedCondition;
+  const selectAll = () => {
+    setSelectedRows((current) =>
+      current.length === rows.length ? [] : rows.map((row) => row.id)
+    );
+  };
 
-    setGroups((current) => {
-      const next = current.map((group) => ({
-        ...group,
-        conditions: [...group.conditions],
-      }));
+  const getGroupId = (row) => row.groupId || "group-1";
 
-      const sourceGroup = next[sourceGroupIndex];
-      const targetGroup = next[targetGroupIndex];
+  const groupSelected = () => {
+    if (selectedRows.length < 2) return;
 
-      if (!sourceGroup || !targetGroup) {
-        return next;
-      }
+    const groupId = `group-${Date.now()}`;
+    const firstSelectedIndex = Math.min(
+      ...selectedRows.map((id) => rows.findIndex((row) => row.id === id))
+    );
 
-      const [moved] = sourceGroup.conditions.splice(sourceConditionIndex, 1);
-
-      if (!moved) {
-        return next;
-      }
-
-      if (sourceGroupIndex === targetGroupIndex) {
-        let targetIndex = targetConditionIndex;
-
-        if (sourceConditionIndex < targetIndex) {
-          targetIndex -= 1;
-        }
-
-        targetGroup.conditions.splice(targetIndex, 0, moved);
-        return next;
-      }
-
-      targetGroup.conditions.splice(targetConditionIndex, 0, moved);
-      return next.filter((group) => group.conditions.length > 0);
+    setRows((current) => {
+      const selected = new Set(selectedRows);
+      const selectedItems = current.filter((row) => selected.has(row.id));
+      const remaining = current.filter((row) => !selected.has(row.id));
+      const groupedItems = selectedItems.map((row) => ({ ...row, groupId }));
+      remaining.splice(Math.min(firstSelectedIndex, remaining.length), 0, ...groupedItems);
+      return remaining;
     });
 
-    setDraggedCondition(null);
+    setSelectedRows([]);
+  };
+
+  const ungroupSelected = () => {
+    if (!selectedRows.length) return;
+
+    setRows((current) =>
+      current.map((row) =>
+        selectedRows.includes(row.id)
+          ? { ...row, groupId: `group-${row.id}` }
+          : row
+      )
+    );
+    setSelectedRows([]);
+  };
+
+  const moveRow = (targetId) => {
+    if (!draggedRow || draggedRow === targetId) return;
+
+    setRows((current) => {
+      const next = [...current];
+      const sourceIndex = next.findIndex((row) => row.id === draggedRow);
+      const targetIndex = next.findIndex((row) => row.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+
+    setDraggedRow(null);
+  };
+
+  const groupedRows = useMemo(() => {
+    const groups = new Map();
+    rows.forEach((row) => {
+      const groupId = getGroupId(row);
+      if (!groups.has(groupId)) groups.set(groupId, []);
+      groups.get(groupId).push(row);
+    });
+    return groups;
+  }, [rows]);
+
+  const getBracePosition = (row, index) => {
+    const group = groupedRows.get(getGroupId(row)) || [];
+    const groupIndex = group.findIndex((item) => item.id === row.id);
+
+    if (group.length === 1) return "single";
+    if (groupIndex === 0) return "start";
+    if (groupIndex === group.length - 1) return "end";
+    return "middle";
+  };
+
+  const getGroupColor = (row) => {
+    const groupIds = [...groupedRows.keys()];
+    const groupIndex = groupIds.indexOf(getGroupId(row));
+    return GROUP_COLORS[groupIndex % GROUP_COLORS.length];
   };
 
   const handleSubmit = async (event) => {
@@ -276,47 +258,39 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       return;
     }
 
-    if (!groups.length || !groups.some((group) => group.conditions.length)) {
+    if (!rows.length) {
       setError("Add at least one condition.");
       return;
     }
 
+    const groupIds = [...groupedRows.keys()];
     const conditions = [];
-    let conditionOrder = 1;
 
-    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
-      const group = groups[groupIndex];
-
-      for (
-        let conditionIndex = 0;
-        conditionIndex < group.conditions.length;
-        conditionIndex += 1
-      ) {
-        const condition = group.conditions[conditionIndex];
-
-        if (
-          !condition.fieldId ||
-          !condition.operator ||
-          !String(condition.value).trim()
-        ) {
-          setError("Complete every condition before saving.");
-          return;
-        }
-
-        conditions.push({
-          ...condition,
-          fieldId: Number(condition.fieldId),
-          conditionOrder,
-          groupOrder: groupIndex + 1,
-          groupLogicalOperator: group.groupLogicalOperator,
-        });
-
-        conditionOrder += 1;
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      if (!row.fieldId || !row.operator || !String(row.value).trim()) {
+        setError("Complete every condition before saving.");
+        return;
       }
+
+      const groupOrder = groupIds.indexOf(getGroupId(row)) + 1;
+      const groupRows = groupedRows.get(getGroupId(row));
+      const rowIndex = groupRows.findIndex((item) => item.id === row.id);
+      const groupLogicalOperator = rowIndex === 0 ? "AND" : row.groupLogicalOperator || "AND";
+
+      conditions.push({
+        fieldId: Number(row.fieldId),
+        logicalOperator:
+          rowIndex === groupRows.length - 1 ? "AND" : row.logicalOperator || "AND",
+        operator: row.operator,
+        value: row.value,
+        conditionOrder: index + 1,
+        groupOrder,
+        groupLogicalOperator,
+      });
     }
 
     setError("");
-
     await onSave({
       ...form,
       priority: Number(form.priority || 1),
@@ -335,11 +309,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="rule-form"
-            disabled={saving || loadingFields}
-          >
+          <Button type="submit" form="rule-form" disabled={saving || loadingFields}>
             {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
           </Button>
         </>
@@ -370,240 +340,178 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           <div>
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <p>
-              Build grouped criteria with a clean, ordered rule expression.
-              Drag rows to rearrange them and use AND/OR to connect criteria.
-            </p>
+            <p>Select rows and group them together. The colored braces show which rows belong to the same group.</p>
           </div>
-          <Button type="button" variant="secondary" onClick={addGroup}>
-            <FiPlus size={15} />
-            Add Group
-          </Button>
+          <div className="condition-toolbar-actions">
+            <Button type="button" variant="secondary" onClick={groupSelected} disabled={selectedRows.length < 2}>
+              <FiUsers size={14} />
+              Group {selectedRows.length > 1 ? `(${selectedRows.length})` : ""}
+            </Button>
+            <Button type="button" variant="secondary" onClick={ungroupSelected} disabled={!selectedRows.length}>
+              Ungroup
+            </Button>
+            <Button type="button" variant="secondary" onClick={addRow}>
+              <FiPlus size={14} />
+              Add Condition
+            </Button>
+          </div>
         </div>
 
-        <div className="conditions-list">
-          {groups.map((group, groupIndex) => (
-            <div className="condition-group" key={`group-${groupIndex}`}>
-              <div className="condition-group-header">
-                <div className="condition-group-title">
-                  <span className="group-eyebrow">Criteria group</span>
-                  <strong>
-                    {groupIndex === 0
-                      ? "Primary criteria"
-                      : "Additional criteria"}
-                  </strong>
-                </div>
+        <div className="condition-selection-note">
+          {selectedRows.length
+            ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected`
+            : "Select two or more rows to group them. Select grouped rows and click Ungroup to separate them."}
+        </div>
 
-                <div className="condition-group-actions">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => addCondition(groupIndex)}
-                  >
-                    <FiPlus size={14} />
-                    Add Condition
-                  </Button>
-                  {groups.length > 1 && (
-                    <button
-                      type="button"
-                      className="condition-remove"
-                      title="Delete group"
-                      aria-label="Delete group"
-                      onClick={() => removeGroup(groupIndex)}
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="condition-table">
-                <div className="condition-table-header">
-                  <span className="condition-table-drag" />
-                  <span>Field</span>
-                  <span>Operator</span>
-                  <span>Value</span>
-                  <span>Logic</span>
-                  <span />
-                </div>
-
-                <div className="group-conditions">
-                  {group.conditions.map((condition, conditionIndex) => {
-                    const field = fields.find(
-                      (item) => String(item.fieldId) === String(condition.fieldId)
-                    );
-                    const operators = optionsForType(field?.fieldType);
-
-                    return (
-                      <div
-                        key={`condition-${groupIndex}-${conditionIndex}`}
-                        className="condition-row"
-                        draggable
-                        onDragStart={() =>
-                          setDraggedCondition({ groupIndex, conditionIndex })
-                        }
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={() => moveCondition(groupIndex, conditionIndex)}
-                        onDragEnd={() => setDraggedCondition(null)}
-                      >
-                        <div
-                          className="condition-drag-handle"
-                          title="Drag to rearrange condition"
-                        >
-                          <FiMenu size={16} />
-                        </div>
-
-                        <Select
-                          label=""
-                          value={condition.fieldId}
-                          options={fields.map((item) => ({
-                            value: item.fieldId,
-                            label: item.displayName,
-                          }))}
-                          placeholder={
-                            loadingFields ? "Loading fields..." : "Select field"
-                          }
-                          disabled={loadingFields || saving}
-                          onChange={(event) =>
-                            changeField(
-                              groupIndex,
-                              conditionIndex,
-                              event.target.value
-                            )
-                          }
-                        />
-
-                        <Select
-                          label=""
-                          value={condition.operator}
-                          options={operators}
-                          placeholder="Select operator"
-                          disabled={!field || saving}
-                          onChange={(event) =>
-                            updateCondition(
-                              groupIndex,
-                              conditionIndex,
-                              "operator",
-                              event.target.value
-                            )
-                          }
-                        />
-
-                        {field?.fieldType === "Boolean" ? (
-                          <Select
-                            label=""
-                            value={condition.value}
-                            options={[
-                              { value: "Y", label: "Yes" },
-                              { value: "N", label: "No" },
-                            ]}
-                            placeholder="Select value"
-                            disabled={saving}
-                            onChange={(event) =>
-                              updateCondition(
-                                groupIndex,
-                                conditionIndex,
-                                "value",
-                                event.target.value
-                              )
-                            }
-                          />
-                        ) : (
-                          <TextBox
-                            label=""
-                            value={condition.value}
-                            type={
-                              field?.fieldType === "Number"
-                                ? "number"
-                                : field?.fieldType === "Date"
-                                  ? "date"
-                                  : "text"
-                            }
-                            disabled={!field || saving}
-                            placeholder={
-                              field ? "Enter value" : "Select field first"
-                            }
-                            onChange={(event) =>
-                              updateCondition(
-                                groupIndex,
-                                conditionIndex,
-                                "value",
-                                event.target.value
-                              )
-                            }
-                          />
-                        )}
-
-                        <div className="condition-logic-cell">
-                          {conditionIndex === group.conditions.length - 1 ? (
-                            <span className="condition-logic-end">—</span>
-                          ) : (
-                            <Select
-                              label=""
-                              value={condition.logicalOperator}
-                              options={LOGICAL_OPTIONS}
-                              disabled={saving}
-                              onChange={(event) =>
-                                updateCondition(
-                                  groupIndex,
-                                  conditionIndex,
-                                  "logicalOperator",
-                                  event.target.value
-                                )
-                              }
-                            />
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          className="condition-remove"
-                          title="Delete condition"
-                          aria-label="Delete condition"
-                          onClick={() =>
-                            removeCondition(groupIndex, conditionIndex)
-                          }
-                        >
-                          <FiTrash2 size={15} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {groupIndex < groups.length - 1 && (
-                <div className="group-connector">
-                  <span>Next group</span>
-                  <Select
-                    label=""
-                    value={groups[groupIndex + 1].groupLogicalOperator}
-                    options={LOGICAL_OPTIONS}
-                    disabled={saving}
-                    onChange={(event) =>
-                      updateGroup(
-                        groupIndex + 1,
-                        "groupLogicalOperator",
-                        event.target.value
-                      )
-                    }
+        <div className="condition-single-table-wrapper">
+          <table className="condition-single-table">
+            <thead>
+              <tr>
+                <th className="condition-check-column">
+                  <input
+                    type="checkbox"
+                    checked={rows.length > 0 && selectedRows.length === rows.length}
+                    onChange={selectAll}
+                    aria-label="Select all conditions"
                   />
-                </div>
-              )}
-            </div>
-          ))}
+                </th>
+                <th className="condition-brace-column">Group</th>
+                <th className="condition-drag-column" />
+                <th>Field</th>
+                <th>Operator</th>
+                <th>Value</th>
+                <th>Logic</th>
+                <th className="condition-action-column" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => {
+                const field = fields.find(
+                  (item) => String(item.fieldId) === String(row.fieldId)
+                );
+                const operators = optionsForType(field?.fieldType);
+                const bracePosition = getBracePosition(row, index);
+                const groupColor = getGroupColor(row);
+                const isSelected = selectedRows.includes(row.id);
 
-          {!groups.length && (
+                return (
+                  <tr
+                    key={row.id}
+                    draggable
+                    className={isSelected ? "condition-row-selected" : ""}
+                    onDragStart={() => setDraggedRow(row.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => moveRow(row.id)}
+                    onDragEnd={() => setDraggedRow(null)}
+                  >
+                    <td className="condition-check-cell">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelected(row.id)}
+                        aria-label="Select condition"
+                      />
+                    </td>
+                    <td className={`condition-brace-cell brace-${groupColor}`}>
+                      <span className={`condition-brace brace-${bracePosition}`} aria-hidden="true">
+                        {bracePosition === "start" && "⎧"}
+                        {bracePosition === "middle" && "⎪"}
+                        {bracePosition === "end" && "⎩"}
+                        {bracePosition === "single" && "⎨"}
+                      </span>
+                    </td>
+                    <td className="condition-drag-cell">
+                      <span className="condition-drag-handle" title="Drag to rearrange">
+                        <FiMenu size={14} />
+                      </span>
+                    </td>
+                    <td>
+                      <Select
+                        label=""
+                        value={row.fieldId}
+                        options={fields.map((item) => ({
+                          value: item.fieldId,
+                          label: item.displayName,
+                        }))}
+                        placeholder={loadingFields ? "Loading..." : "Field"}
+                        disabled={loadingFields || saving}
+                        onChange={(event) => changeField(row.id, event.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <Select
+                        label=""
+                        value={row.operator}
+                        options={operators}
+                        placeholder="Operator"
+                        disabled={!field || saving}
+                        onChange={(event) => updateRow(row.id, "operator", event.target.value)}
+                      />
+                    </td>
+                    <td>
+                      {field?.fieldType === "Boolean" ? (
+                        <Select
+                          label=""
+                          value={row.value}
+                          options={[
+                            { value: "Y", label: "Yes" },
+                            { value: "N", label: "No" },
+                          ]}
+                          placeholder="Value"
+                          disabled={saving}
+                          onChange={(event) => updateRow(row.id, "value", event.target.value)}
+                        />
+                      ) : (
+                        <TextBox
+                          label=""
+                          value={row.value}
+                          type={
+                            field?.fieldType === "Number"
+                              ? "number"
+                              : field?.fieldType === "Date"
+                                ? "date"
+                                : "text"
+                          }
+                          disabled={!field || saving}
+                          placeholder={field ? "Value" : "Select field"}
+                          onChange={(event) => updateRow(row.id, "value", event.target.value)}
+                        />
+                      )}
+                    </td>
+                    <td>
+                      <Select
+                        label=""
+                        value={row.logicalOperator}
+                        options={LOGICAL_OPTIONS}
+                        disabled={saving}
+                        onChange={(event) => updateRow(row.id, "logicalOperator", event.target.value)}
+                      />
+                    </td>
+                    <td className="condition-action-cell">
+                      <button
+                        type="button"
+                        className="condition-remove"
+                        title="Delete condition"
+                        aria-label="Delete condition"
+                        onClick={() => removeRow(row.id)}
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {!rows.length && (
             <div className="conditions-empty">
-              <div className="conditions-empty-icon">+</div>
+              <FiCheckSquare size={22} />
               <strong>No conditions yet</strong>
-              <span>
-                Add a criteria group and build the rule using the fields
-                configured in Field Configuration.
-              </span>
-              <Button type="button" variant="secondary" onClick={addGroup}>
-                <FiPlus size={15} />
-                Add Group
+              <span>Add a condition, then select rows when you want to group them.</span>
+              <Button type="button" variant="secondary" onClick={addRow}>
+                <FiPlus size={14} />
+                Add Condition
               </Button>
             </div>
           )}
