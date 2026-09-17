@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FiPlus } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
+import Dialog from "../../../components/common/Dialog/Dialog";
 import fieldConfigurationService from "../services/fieldConfigurationService";
 import FieldForm from "../components/FieldForm";
 import FieldList from "../components/FieldList";
@@ -13,6 +14,7 @@ function FieldConfiguration() {
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
+  const [deleteField, setDeleteField] = useState(null);
 
   const loadFields = async () => {
     try {
@@ -41,7 +43,7 @@ function FieldConfiguration() {
         await fieldConfigurationService.updateField(selectedField.fieldId, field);
       } else {
         const nextDisplayOrder = fields.length ? Math.max(...fields.map((item) => item.displayOrder ?? 0)) + 1 : 1;
-        await fieldConfigurationService.createField({ ...field, displayOrder: nextDisplayOrder });
+        await fieldConfigurationService.createField({ ...field, displayOrder: nextDisplayOrder, isActive: true });
       }
       setFormOpen(false);
       setSelectedField(null);
@@ -53,11 +55,26 @@ function FieldConfiguration() {
     }
   };
 
-  const handleDelete = async (field) => {
-    if (!window.confirm(`Delete field "${field.displayName}"?`)) return;
+  const updateFieldStatus = async (field, property, value) => {
+    const previousFields = fields;
+    const updatedField = { ...field, [property]: value };
+    setFields((current) => current.map((item) => item.fieldId === field.fieldId ? updatedField : item));
+
     try {
       setError("");
-      await fieldConfigurationService.deleteField(field.fieldId);
+      await fieldConfigurationService.updateField(field.fieldId, updatedField);
+    } catch (updateError) {
+      setFields(previousFields);
+      setError(updateError.message || "Unable to update field status.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteField) return;
+    try {
+      setError("");
+      await fieldConfigurationService.deleteField(deleteField.fieldId);
+      setDeleteField(null);
       await loadFields();
     } catch (deleteError) {
       setError(deleteError.message || "Unable to delete field.");
@@ -72,9 +89,7 @@ function FieldConfiguration() {
 
     try {
       await Promise.all(
-        orderedFields.map((field) =>
-          fieldConfigurationService.updateField(field.fieldId, field)
-        )
+        orderedFields.map((field) => fieldConfigurationService.updateField(field.fieldId, field))
       );
     } catch (reorderError) {
       setFields(previousFields);
@@ -94,8 +109,41 @@ function FieldConfiguration() {
         </Button>
       </div>
       {error && <div className="field-page-error">{error}</div>}
-      <FieldList fields={fields} loading={loading} onEdit={openEdit} onDelete={handleDelete} onReorder={handleReorder} />
-      <FieldForm open={formOpen} field={selectedField} nextFieldId={nextFieldId} saving={saving} onClose={() => setFormOpen(false)} onSave={handleSave} />
+      <FieldList
+        fields={fields}
+        loading={loading}
+        onEdit={openEdit}
+        onDelete={setDeleteField}
+        onReorder={handleReorder}
+        onToggleRequired={(field, value) => updateFieldStatus(field, "isRequired", value)}
+        onToggleActive={(field, value) => updateFieldStatus(field, "isActive", value)}
+      />
+      <FieldForm
+        open={formOpen}
+        field={selectedField}
+        nextFieldId={nextFieldId}
+        saving={saving}
+        onClose={() => setFormOpen(false)}
+        onSave={handleSave}
+      />
+      <Dialog
+        open={Boolean(deleteField)}
+        title="Delete Field"
+        onClose={() => setDeleteField(null)}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setDeleteField(null)}>Cancel</Button>
+            <Button variant="danger" onClick={handleDelete}>Delete Permanently</Button>
+          </>
+        )}
+      >
+        <div className="field-delete-confirmation">
+          <p>
+            The field <strong>{deleteField?.displayName}</strong> is going to be deleted permanently.
+          </p>
+          <p>This action cannot be undone. Do you want to continue?</p>
+        </div>
+      </Dialog>
     </div>
   );
 }
