@@ -3,10 +3,15 @@
     Target database: CET_configuration
 
     Execute this script manually against the CET_configuration database.
-    Procedures use the CET naming convention: sproc_<Action><Entity>.
+    Existing procedures are dropped and recreated so the script always
+    deploys the exact current procedure definition.
 */
 
-CREATE OR ALTER PROCEDURE dbo.sproc_GetLoginUser
+IF OBJECT_ID(N'dbo.sproc_GetLoginUser', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_GetLoginUser;
+GO
+
+CREATE PROCEDURE dbo.sproc_GetLoginUser
     @tUsername NVARCHAR(100)
 AS
 BEGIN
@@ -24,7 +29,11 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sproc_GetFields
+IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_GetFields;
+GO
+
+CREATE PROCEDURE dbo.sproc_GetFields
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -44,7 +53,11 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sproc_GetField
+IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_GetField;
+GO
+
+CREATE PROCEDURE dbo.sproc_GetField
     @aFieldId INT
 AS
 BEGIN
@@ -65,7 +78,11 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sproc_CreateField
+IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_CreateField;
+GO
+
+CREATE PROCEDURE dbo.sproc_CreateField
     @aFieldId INT,
     @tFieldName NVARCHAR(200),
     @tDisplayName NVARCHAR(200),
@@ -106,7 +123,11 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sproc_UpdateField
+IF OBJECT_ID(N'dbo.sproc_UpdateField', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_UpdateField;
+GO
+
+CREATE PROCEDURE dbo.sproc_UpdateField
     @aFieldId INT,
     @tFieldName NVARCHAR(200),
     @tDisplayName NVARCHAR(200),
@@ -133,7 +154,11 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.sproc_DeleteField
+IF OBJECT_ID(N'dbo.sproc_DeleteField', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.sproc_DeleteField;
+GO
+
+CREATE PROCEDURE dbo.sproc_DeleteField
     @aFieldId INT
 AS
 BEGIN
