@@ -8,6 +8,7 @@ public sealed class AllocationContext
     public IList<AllocationCandidate> Candidates { get; init; } = [];
     public IList<SeatInventory> Seats { get; init; } = [];
     public IList<AllocationDecision> Decisions { get; } = [];
+    public IList<AllocationStageResult> StageResults { get; } = [];
 }
 
 public interface IAllocationStage
@@ -36,12 +37,14 @@ public sealed class SeatInventoryService : ISeatInventory
                 _ => 0
             };
             if (available <= 0) return false;
+
             switch (allocatedType)
             {
                 case "PH": seat.Ph--; break;
                 case "Def": seat.Defence--; break;
                 case "Orp": seat.Orphan--; break;
             }
+
             return true;
         }
 
@@ -52,7 +55,7 @@ public sealed class SeatInventoryService : ISeatInventory
             return true;
         }
 
-        if (seat.General <= 0) return false;
+        if (allocatedType != "Gen" || seat.General <= 0) return false;
         seat.General--;
         return true;
     }
@@ -71,6 +74,6 @@ public sealed class SeatInventoryService : ISeatInventory
         }
 
         if (allocatedType == "Fem") seat.Female++;
-        else seat.General++;
+        else if (allocatedType == "Gen") seat.General++;
     }
 }
