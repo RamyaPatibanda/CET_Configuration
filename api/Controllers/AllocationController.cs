@@ -15,27 +15,22 @@ public sealed class AllocationController : ControllerBase
     private readonly IRuleConfigurationBL _ruleConfiguration;
     private readonly ILogger<AllocationController> _logger;
 
-    public AllocationController(
-        IRuleConfigurationBL ruleConfiguration,
-        ILogger<AllocationController> logger)
+    public AllocationController(IRuleConfigurationBL ruleConfiguration, ILogger<AllocationController> logger)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
     }
 
     [HttpGet("stages")]
-    public ActionResult<IReadOnlyList<AllocationStage>> GetStages()
+    public ActionResult<IReadOnlyList<AllocationStage>> GetStages() => Ok(new List<AllocationStage>
     {
-        return Ok(new List<AllocationStage>
-        {
-            new() { StageCode = "CANDIDATE_QUALIFICATION", Sequence = 10 },
-            new() { StageCode = "SPECIAL_RESERVATION", Sequence = 20 },
-            new() { StageCode = "SEAT_ALLOCATION", Sequence = 30 },
-            new() { StageCode = "CONVERSION", Sequence = 40, Enabled = false },
-            new() { StageCode = "BETTERMENT", Sequence = 50, Enabled = false },
-            new() { StageCode = "RECONCILIATION", Sequence = 60, Enabled = false }
-        });
-    }
+        new() { StageCode = "CANDIDATE_QUALIFICATION", Sequence = 10 },
+        new() { StageCode = "SPECIAL_RESERVATION", Sequence = 20 },
+        new() { StageCode = "SEAT_ALLOCATION", Sequence = 30 },
+        new() { StageCode = "CONVERSION", Sequence = 40, Enabled = false },
+        new() { StageCode = "BETTERMENT", Sequence = 50, Enabled = false },
+        new() { StageCode = "RECONCILIATION", Sequence = 60, Enabled = false }
+    });
 
     [HttpPost("simulate")]
     public async Task<ActionResult<AllocationRunResponse>> Simulate(
@@ -44,13 +39,10 @@ public sealed class AllocationController : ControllerBase
     {
         if (request.CapRound <= 0)
             return BadRequest(new { message = "CAP round must be greater than zero." });
-
         if (request.Candidates.Count == 0)
             return BadRequest(new { message = "At least one candidate is required." });
-
         if (request.Seats.Count == 0)
             return BadRequest(new { message = "At least one seat inventory record is required." });
-
         if (request.SelectedRuleIds.Count == 0)
             return BadRequest(new { message = "At least one configured rule must be selected." });
 
@@ -69,8 +61,7 @@ public sealed class AllocationController : ControllerBase
             foreach (var rule in selectedRules)
             {
                 var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
-                if (detailed is not null)
-                    detailedRules.Add(detailed);
+                if (detailed is not null) detailedRules.Add(detailed);
             }
 
             var run = new AllocationRun
@@ -80,23 +71,15 @@ public sealed class AllocationController : ControllerBase
             };
 
             var configuredStep0Rules = BuildStep0Rules(detailedRules);
-
             var stages = new IAllocationStage[]
             {
                 new CandidateQualificationStage(),
-                new Step0AllocationStage(
-                    new RuleEvaluator(),
-                    new SeatInventoryService(),
-                    configuredStep0Rules),
+                new Step0AllocationStage(new RuleEvaluator(), configuredStep0Rules),
                 new Step1AllocationStage(new SeatInventoryService())
             };
 
             var engine = new AllocationEngine(stages);
-            var context = await engine.RunAsync(
-                run,
-                request.Candidates,
-                request.Seats,
-                cancellationToken);
+            var context = await engine.RunAsync(run, request.Candidates, request.Seats, cancellationToken);
 
             return Ok(new AllocationRunResponse
             {
@@ -116,9 +99,8 @@ public sealed class AllocationController : ControllerBase
         }
     }
 
-    private static IReadOnlyList<AllocationRule> BuildStep0Rules(IEnumerable<RuleDefinition> rules)
-    {
-        return rules
+    private static IReadOnlyList<AllocationRule> BuildStep0Rules(IEnumerable<RuleDefinition> rules) =>
+        rules
             .Where(rule => rule.Conditions.Count > 0)
             .Select(rule => new AllocationRule
             {
@@ -135,11 +117,13 @@ public sealed class AllocationController : ControllerBase
                     .ToList()
             })
             .ToList();
-    }
 
     private static string ResolveLogicalOperator(RuleDefinition rule)
     {
-        var first = rule.Conditions.OrderBy(c => c.GroupOrder).ThenBy(c => c.ConditionOrder).FirstOrDefault();
+        var first = rule.Conditions
+            .OrderBy(c => c.GroupOrder)
+            .ThenBy(c => c.ConditionOrder)
+            .FirstOrDefault();
         return first?.GroupLogicalOperator is "OR" ? "OR" : "AND";
     }
 }
