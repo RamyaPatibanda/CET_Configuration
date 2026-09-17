@@ -54,7 +54,7 @@ function getResponseItems(response) {
   return Array.isArray(response) ? response : response?.data || [];
 }
 
-function createCondition(groupId = "group-1") {
+function createCondition(groupId = null) {
   return {
     id: `condition-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     groupId,
@@ -122,8 +122,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   };
 
   const addRow = () => {
-    const groupId = rows.length ? rows[rows.length - 1].groupId : "group-1";
-    setRows((current) => [...current, createCondition(groupId)]);
+    setRows((current) => [...current, createCondition()]);
     setError("");
   };
 
@@ -185,8 +184,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         return current;
       }
 
-      const existingGroupIds = new Set(selected.map((row) => row.groupId));
-      if (existingGroupIds.size === 1) {
+      const existingGroupIds = new Set(selected.map((row) => row.groupId).filter(Boolean));
+      if (existingGroupIds.size === 1 && selected.every((row) => row.groupId)) {
         setError("The selected conditions are already in the same group.");
         return current;
       }
@@ -210,7 +209,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setRows((current) => {
       const selectedSet = new Set(selectedRows);
       const groupedSelection = current.filter(
-        (row) => selectedSet.has(row.id) && current.filter((item) => item.groupId === row.groupId).length > 1
+        (row) =>
+          selectedSet.has(row.id) &&
+          current.filter((item) => item.groupId && item.groupId === row.groupId).length > 1
       );
 
       if (!groupedSelection.length) {
@@ -220,7 +221,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
       return current.map((row) =>
         selectedSet.has(row.id) && groupedSelection.some((item) => item.id === row.id)
-          ? { ...row, groupId: `group-${row.id}` }
+          ? { ...row, groupId: null }
           : row
       );
     });
@@ -250,7 +251,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const groupedRows = useMemo(() => {
     const groups = new Map();
     rows.forEach((row) => {
-      const groupId = row.groupId || "group-1";
+      const groupId = row.groupId || `ungrouped-${row.id}`;
       if (!groups.has(groupId)) groups.set(groupId, []);
       groups.get(groupId).push(row);
     });
@@ -258,6 +259,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   }, [rows]);
 
   const getBracePosition = (row) => {
+    if (!row.groupId) return "single";
+
     const group = groupedRows.get(row.groupId) || [];
     const groupIndex = group.findIndex((item) => item.id === row.id);
 
@@ -268,6 +271,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   };
 
   const getGroupColor = (row) => {
+    if (!row.groupId) return "blue";
+
     const groupIds = [...groupedRows.keys()];
     const groupIndex = groupIds.indexOf(row.groupId);
     return GROUP_COLORS[groupIndex % GROUP_COLORS.length];
@@ -286,8 +291,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       return;
     }
 
-    const groupIds = [...groupedRows.keys()];
     const conditions = [];
+    let groupOrder = 0;
+    let previousGroupId = null;
 
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
@@ -297,14 +303,21 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         return;
       }
 
-      const groupOrder = groupIds.indexOf(row.groupId) + 1;
-      const groupRows = groupedRows.get(row.groupId);
+      if (row.groupId !== previousGroupId) {
+        groupOrder += 1;
+        previousGroupId = row.groupId;
+      }
+
+      const groupRows = groupedRows.get(row.groupId || `ungrouped-${row.id}`) || [row];
       const rowIndex = groupRows.findIndex((item) => item.id === row.id);
+      const isGrouped = Boolean(row.groupId) && groupRows.length > 1;
 
       conditions.push({
         fieldId: Number(row.fieldId),
         logicalOperator:
-          rowIndex === groupRows.length - 1 ? "AND" : row.logicalOperator || "AND",
+          isGrouped && rowIndex === groupRows.length - 1
+            ? "AND"
+            : row.logicalOperator || "AND",
         operator: row.operator,
         value: row.value,
         conditionOrder: index + 1,
@@ -409,9 +422,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const field = fields.find(
-                  (item) => String(item.fieldId) === String(row.fieldId)
-                );
+                const field = fields.find((item) => String(item.fieldId) === String(row.fieldId));
                 const operators = optionsForType(field?.fieldType);
                 const bracePosition = getBracePosition(row);
                 const groupColor = getGroupColor(row);
@@ -452,10 +463,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                       <Select
                         label=""
                         value={row.fieldId}
-                        options={fields.map((item) => ({
-                          value: item.fieldId,
-                          label: item.displayName,
-                        }))}
+                        options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))}
                         placeholder={loadingFields ? "Loading..." : "Field"}
                         disabled={loadingFields || saving}
                         onChange={(event) => changeField(row.id, event.target.value)}
@@ -476,10 +484,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                         <Select
                           label=""
                           value={row.value}
-                          options={[
-                            { value: "Y", label: "Yes" },
-                            { value: "N", label: "No" },
-                          ]}
+                          options={[{ value: "Y", label: "Yes" }, { value: "N", label: "No" }]}
                           placeholder="Value"
                           disabled={saving}
                           onChange={(event) => updateRow(row.id, "value", event.target.value)}
@@ -488,13 +493,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                         <TextBox
                           label=""
                           value={row.value}
-                          type={
-                            field?.fieldType === "Number"
-                              ? "number"
-                              : field?.fieldType === "Date"
-                                ? "date"
-                                : "text"
-                          }
+                          type={field?.fieldType === "Number" ? "number" : field?.fieldType === "Date" ? "date" : "text"}
                           disabled={!field || saving}
                           placeholder={field ? "Value" : "Select field"}
                           onChange={(event) => updateRow(row.id, "value", event.target.value)}
