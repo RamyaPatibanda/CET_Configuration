@@ -13,9 +13,7 @@ namespace api.DataAccess.FieldConfiguration
         public FieldConfigurationDAL(IConfiguration configuration, ILogger<FieldConfigurationDAL> logger)
         {
             _logger = logger;
-            _connectionString = new ConnectionUtils().GetConnectionString(
-                configuration["ConnectionStrings:CrmDbConnection"]
-                ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
+            _connectionString = new ConnectionUtils().GetConnectionString(configuration["ConnectionStrings:CrmDbConnection"] ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
         }
 
         public async Task<List<FieldDefinition>> GetFieldsAsync()
@@ -24,17 +22,10 @@ namespace api.DataAccess.FieldConfiguration
             {
                 var fields = new List<FieldDefinition>();
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = new SqlCommand("sproc_GetFields", connection)
-                {
-                    CommandType = CommandType.StoredProcedure,
-                    CommandTimeout = 30
-                };
-
+                await using var command = CreateCommand("sproc_GetFields", connection);
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                    fields.Add(MapField(reader));
-
+                while (await reader.ReadAsync()) fields.Add(MapField(reader));
                 return fields;
             }
             catch (Exception ex)
@@ -49,13 +40,8 @@ namespace api.DataAccess.FieldConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = new SqlCommand("sproc_GetField", connection)
-                {
-                    CommandType = CommandType.StoredProcedure,
-                    CommandTimeout = 30
-                };
+                await using var command = CreateCommand("sproc_GetField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = fieldId;
-
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
                 return await reader.ReadAsync() ? MapField(reader) : null;
@@ -73,11 +59,10 @@ namespace api.DataAccess.FieldConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_CreateField", connection);
-                AddFieldParameters(command, request);
-
+                command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = request.FieldId;
+                AddFieldParameters(command, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
                 await connection.OpenAsync();
-                var result = await command.ExecuteScalarAsync();
-                return Convert.ToInt32(result);
+                return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             catch (Exception ex)
             {
@@ -93,8 +78,7 @@ namespace api.DataAccess.FieldConfiguration
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_UpdateField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = request.FieldId;
-                AddFieldParameters(command, request);
-
+                AddFieldParameters(command, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
@@ -110,13 +94,8 @@ namespace api.DataAccess.FieldConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = new SqlCommand("sproc_DeleteField", connection)
-                {
-                    CommandType = CommandType.StoredProcedure,
-                    CommandTimeout = 30
-                };
+                await using var command = CreateCommand("sproc_DeleteField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = fieldId;
-
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
@@ -129,21 +108,17 @@ namespace api.DataAccess.FieldConfiguration
 
         private static SqlCommand CreateCommand(string procedureName, SqlConnection connection)
         {
-            return new SqlCommand(procedureName, connection)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 30
-            };
+            return new SqlCommand(procedureName, connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 30 };
         }
 
-        private static void AddFieldParameters(SqlCommand command, CreateFieldRequest request)
+        private static void AddFieldParameters(SqlCommand command, string fieldName, string displayName, string fieldType, bool isRequired, bool isActive, int displayOrder)
         {
-            command.Parameters.Add("@tFieldName", SqlDbType.NVarChar, 200).Value = request.FieldName;
-            command.Parameters.Add("@tDisplayName", SqlDbType.NVarChar, 200).Value = request.DisplayName;
-            command.Parameters.Add("@tFieldType", SqlDbType.NVarChar, 50).Value = request.FieldType;
-            command.Parameters.Add("@bIsRequired", SqlDbType.Bit).Value = request.IsRequired;
-            command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = request.IsActive;
-            command.Parameters.Add("@nDisplayOrder", SqlDbType.Int).Value = request.DisplayOrder;
+            command.Parameters.Add("@tFieldName", SqlDbType.NVarChar, 200).Value = fieldName;
+            command.Parameters.Add("@tDisplayName", SqlDbType.NVarChar, 200).Value = displayName;
+            command.Parameters.Add("@tFieldType", SqlDbType.NVarChar, 50).Value = fieldType;
+            command.Parameters.Add("@bIsRequired", SqlDbType.Bit).Value = isRequired;
+            command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = isActive;
+            command.Parameters.Add("@nDisplayOrder", SqlDbType.Int).Value = displayOrder;
         }
 
         private static FieldDefinition MapField(SqlDataReader reader)
