@@ -11,7 +11,7 @@ const EMPTY_FIELD = {
   tableName: "",
   fieldName: "",
   displayName: "",
-  fieldType: "Text",
+  fieldType: "",
   isRequired: false,
   isActive: true,
   displayOrder: 0,
@@ -21,7 +21,7 @@ function toOptions(items) {
   return (Array.isArray(items) ? items : items?.data || []).map((item) => ({
     value: item.name ?? item.value ?? item,
     label: item.name ?? item.label ?? item,
-    fieldType: item.fieldType ?? "Text",
+    fieldType: item.fieldType ?? "",
   }));
 }
 
@@ -79,7 +79,8 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
   const update = (name, value) => {
     setForm((current) => ({ ...current, [name]: value }));
     if (name === "tableName") {
-      setForm((current) => ({ ...current, tableName: value, fieldName: "", fieldType: "Text" }));
+      setForm((current) => ({ ...current, tableName: value, fieldName: "", fieldType: "" }));
+      setColumns([]);
       setError("");
     }
   };
@@ -89,15 +90,15 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
     setForm((current) => ({
       ...current,
       fieldName: event.target.value,
-      fieldType: selectedColumn?.fieldType || "Text",
+      fieldType: selectedColumn?.fieldType || "",
     }));
     setError("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.tableName || !form.fieldName || !form.displayName.trim()) {
-      setError("Table, column and display name are required.");
+    if (!form.tableName || !form.fieldName || !form.fieldType || !form.displayName.trim()) {
+      setError("Table, column, field type and display name are required.");
       return;
     }
     setError("");
@@ -140,7 +141,10 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
           placeholder={loadingColumns ? "Loading columns..." : "Select column"}
           onChange={handleColumnChange}
         />
-        <TextBox name="fieldType" label="Field Type" value={form.fieldType} disabled />
+        <div className="field-type-display">
+          <span className="field-type-label">Field Type</span>
+          <div className="field-type-value">{form.fieldType || "Select a column"}</div>
+        </div>
         <TextBox name="displayName" label="Display Name" value={form.displayName} required onChange={(e) => update("displayName", e.target.value)} />
         <div className="field-form-switches">
           <Switch name="isRequired" label="Required" checked={form.isRequired} onChange={(e) => update("isRequired", e.target.checked)} />
