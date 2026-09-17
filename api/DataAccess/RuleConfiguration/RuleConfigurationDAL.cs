@@ -28,12 +28,9 @@ namespace api.DataAccess.RuleConfiguration
                 var rules = new List<RuleDefinition>();
 
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_GetRules",
-                    connection);
+                await using var command = CreateCommand("sproc_GetRules", connection);
 
                 await connection.OpenAsync();
-
                 await using var reader = await command.ExecuteReaderAsync();
 
                 while (await reader.ReadAsync())
@@ -57,14 +54,11 @@ namespace api.DataAccess.RuleConfiguration
                 RuleDefinition? rule = null;
 
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_GetRule",
-                    connection);
+                await using var command = CreateCommand("sproc_GetRule", connection);
 
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
 
                 await connection.OpenAsync();
-
                 await using var reader = await command.ExecuteReaderAsync();
 
                 if (await reader.ReadAsync())
@@ -89,10 +83,7 @@ namespace api.DataAccess.RuleConfiguration
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error while getting rule {RuleId}.",
-                    ruleId);
+                _logger.LogError(ex, "Error while getting rule {RuleId}.", ruleId);
                 throw;
             }
         }
@@ -102,9 +93,7 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_CreateRule",
-                    connection);
+                await using var command = CreateCommand("sproc_CreateRule", connection);
 
                 AddRuleParameters(
                     command,
@@ -114,22 +103,16 @@ namespace api.DataAccess.RuleConfiguration
                     request.Priority,
                     request.IsActive);
 
-                command.Parameters.Add(
-                    "@tConditionsJson",
-                    SqlDbType.NVarChar,
-                    -1).Value = SerializeConditions(request.Conditions);
+                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1)
+                    .Value = SerializeConditions(request.Conditions);
 
                 await connection.OpenAsync();
 
-                return Convert.ToInt32(
-                    await command.ExecuteScalarAsync());
+                return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error while creating rule {RuleName}.",
-                    request.RuleName);
+                _logger.LogError(ex, "Error while creating rule {RuleName}.", request.RuleName);
                 throw;
             }
         }
@@ -139,9 +122,7 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_UpdateRule",
-                    connection);
+                await using var command = CreateCommand("sproc_UpdateRule", connection);
 
                 AddRuleParameters(
                     command,
@@ -151,22 +132,16 @@ namespace api.DataAccess.RuleConfiguration
                     request.Priority,
                     request.IsActive);
 
-                command.Parameters.Add(
-                    "@tConditionsJson",
-                    SqlDbType.NVarChar,
-                    -1).Value = SerializeConditions(request.Conditions);
+                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1)
+                    .Value = SerializeConditions(request.Conditions);
 
                 await connection.OpenAsync();
 
-                return Convert.ToInt32(
-                    await command.ExecuteScalarAsync()) > 0;
+                return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error while updating rule {RuleId}.",
-                    request.RuleId);
+                _logger.LogError(ex, "Error while updating rule {RuleId}.", request.RuleId);
                 throw;
             }
         }
@@ -176,23 +151,17 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_DeleteRule",
-                    connection);
+                await using var command = CreateCommand("sproc_DeleteRule", connection);
 
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
 
                 await connection.OpenAsync();
 
-                return Convert.ToInt32(
-                    await command.ExecuteScalarAsync()) > 0;
+                return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error while deleting rule {RuleId}.",
-                    ruleId);
+                _logger.LogError(ex, "Error while deleting rule {RuleId}.", ruleId);
                 throw;
             }
         }
@@ -204,24 +173,18 @@ namespace api.DataAccess.RuleConfiguration
                 var fields = new List<RuleFieldOption>();
 
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand(
-                    "sproc_GetActiveRuleFields",
-                    connection);
+                await using var command = CreateCommand("sproc_GetActiveRuleFields", connection);
 
                 await connection.OpenAsync();
-
                 await using var reader = await command.ExecuteReaderAsync();
 
                 while (await reader.ReadAsync())
                 {
                     fields.Add(new RuleFieldOption
                     {
-                        FieldId = reader.GetInt32(
-                            reader.GetOrdinal("aFieldId")),
-                        DisplayName = reader.GetString(
-                            reader.GetOrdinal("tDisplayName")),
-                        FieldType = reader.GetString(
-                            reader.GetOrdinal("tFieldType"))
+                        FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                        DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                        FieldType = reader.GetString(reader.GetOrdinal("tFieldType"))
                     });
                 }
 
@@ -229,16 +192,53 @@ namespace api.DataAccess.RuleConfiguration
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Error while getting active rule fields.");
+                _logger.LogError(ex, "Error while getting active rule fields.");
                 throw;
             }
         }
 
-        private static SqlCommand CreateCommand(
-            string procedureName,
-            SqlConnection connection)
+        public async Task<bool> SetRuleActiveAsync(int ruleId, bool isActive)
+        {
+            try
+            {
+                await using var connection = new SqlConnection(_connectionString);
+                await using var command = CreateCommand("sproc_SetRuleActive", connection);
+
+                command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
+                command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = isActive;
+
+                await connection.OpenAsync();
+
+                return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while changing active state for rule {RuleId}.", ruleId);
+                throw;
+            }
+        }
+
+        public async Task ReorderRulesAsync(List<int> ruleIds)
+        {
+            try
+            {
+                await using var connection = new SqlConnection(_connectionString);
+                await using var command = CreateCommand("sproc_ReorderRules", connection);
+
+                command.Parameters.Add("@tRuleIdsJson", SqlDbType.NVarChar, -1)
+                    .Value = System.Text.Json.JsonSerializer.Serialize(ruleIds);
+
+                await connection.OpenAsync();
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while reordering rules.");
+                throw;
+            }
+        }
+
+        private static SqlCommand CreateCommand(string procedureName, SqlConnection connection)
         {
             return new SqlCommand(procedureName, connection)
             {
@@ -255,31 +255,14 @@ namespace api.DataAccess.RuleConfiguration
             int priority,
             bool active)
         {
-            command.Parameters.Add(
-                "@aRuleId",
-                SqlDbType.Int).Value = ruleId;
-
-            command.Parameters.Add(
-                "@tRuleName",
-                SqlDbType.NVarChar,
-                200).Value = name;
-
-            command.Parameters.Add(
-                "@tDescription",
-                SqlDbType.NVarChar,
-                1000).Value = description ?? string.Empty;
-
-            command.Parameters.Add(
-                "@nPriority",
-                SqlDbType.Int).Value = priority;
-
-            command.Parameters.Add(
-                "@bIsActive",
-                SqlDbType.Bit).Value = active;
+            command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
+            command.Parameters.Add("@tRuleName", SqlDbType.NVarChar, 200).Value = name;
+            command.Parameters.Add("@tDescription", SqlDbType.NVarChar, 1000).Value = description ?? string.Empty;
+            command.Parameters.Add("@nPriority", SqlDbType.Int).Value = priority;
+            command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = active;
         }
 
-        private static string SerializeConditions(
-            List<RuleConditionRequest> conditions)
+        private static string SerializeConditions(List<RuleConditionRequest> conditions)
         {
             return System.Text.Json.JsonSerializer.Serialize(
                 conditions.OrderBy(c => c.ConditionOrder));
@@ -289,19 +272,13 @@ namespace api.DataAccess.RuleConfiguration
         {
             return new RuleDefinition
             {
-                RuleId = reader.GetInt32(
-                    reader.GetOrdinal("aRuleId")),
-                RuleName = reader.GetString(
-                    reader.GetOrdinal("tRuleName")),
-                Description = reader.IsDBNull(
-                    reader.GetOrdinal("tDescription"))
+                RuleId = reader.GetInt32(reader.GetOrdinal("aRuleId")),
+                RuleName = reader.GetString(reader.GetOrdinal("tRuleName")),
+                Description = reader.IsDBNull(reader.GetOrdinal("tDescription"))
                     ? string.Empty
-                    : reader.GetString(
-                        reader.GetOrdinal("tDescription")),
-                Priority = reader.GetInt32(
-                    reader.GetOrdinal("nPriority")),
-                IsActive = reader.GetBoolean(
-                    reader.GetOrdinal("bIsActive")),
+                    : reader.GetString(reader.GetOrdinal("tDescription")),
+                Priority = reader.GetInt32(reader.GetOrdinal("nPriority")),
+                IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate")
             };
@@ -311,36 +288,22 @@ namespace api.DataAccess.RuleConfiguration
         {
             return new RuleCondition
             {
-                RuleConditionId = reader.GetInt32(
-                    reader.GetOrdinal("aRuleConditionId")),
-                RuleId = reader.GetInt32(
-                    reader.GetOrdinal("aRuleId")),
-                FieldId = reader.GetInt32(
-                    reader.GetOrdinal("aFieldId")),
-                FieldDisplayName = reader.GetString(
-                    reader.GetOrdinal("tDisplayName")),
-                FieldType = reader.GetString(
-                    reader.GetOrdinal("tFieldType")),
-                LogicalOperator = reader.GetString(
-                    reader.GetOrdinal("tLogicalOperator")),
-                Operator = reader.GetString(
-                    reader.GetOrdinal("tOperator")),
-                Value = reader.GetString(
-                    reader.GetOrdinal("tValue")),
-                ConditionOrder = reader.GetInt32(
-                    reader.GetOrdinal("nConditionOrder"))
+                RuleConditionId = reader.GetInt32(reader.GetOrdinal("aRuleConditionId")),
+                RuleId = reader.GetInt32(reader.GetOrdinal("aRuleId")),
+                FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                FieldDisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                FieldType = reader.GetString(reader.GetOrdinal("tFieldType")),
+                LogicalOperator = reader.GetString(reader.GetOrdinal("tLogicalOperator")),
+                Operator = reader.GetString(reader.GetOrdinal("tOperator")),
+                Value = reader.GetString(reader.GetOrdinal("tValue")),
+                ConditionOrder = reader.GetInt32(reader.GetOrdinal("nConditionOrder"))
             };
         }
 
-        private static DateTime? GetDate(
-            SqlDataReader reader,
-            string name)
+        private static DateTime? GetDate(SqlDataReader reader, string name)
         {
             var ordinal = reader.GetOrdinal(name);
-
-            return reader.IsDBNull(ordinal)
-                ? null
-                : reader.GetDateTime(ordinal);
+            return reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal);
         }
     }
 }
