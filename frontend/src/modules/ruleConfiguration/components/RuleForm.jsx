@@ -38,6 +38,11 @@ const OPERATORS = {
   Boolean: [{ value: "Equals", label: "Equals" }],
 };
 
+const LOGICAL_OPTIONS = [
+  { value: "AND", label: "AND" },
+  { value: "OR", label: "OR" },
+];
+
 function optionsForType(type) {
   return OPERATORS[type] || OPERATORS.Text;
 }
@@ -66,16 +71,23 @@ function toGroups(conditions) {
   if (!conditions?.length) return [];
 
   const groups = new Map();
+
   [...conditions]
-    .sort((a, b) => (a.groupOrder ?? 1) - (b.groupOrder ?? 1) || (a.conditionOrder ?? 1) - (b.conditionOrder ?? 1))
+    .sort(
+      (a, b) =>
+        (a.groupOrder ?? 1) - (b.groupOrder ?? 1) ||
+        (a.conditionOrder ?? 1) - (b.conditionOrder ?? 1)
+    )
     .forEach((condition) => {
       const groupOrder = condition.groupOrder ?? 1;
+
       if (!groups.has(groupOrder)) {
         groups.set(groupOrder, {
           groupLogicalOperator: condition.groupLogicalOperator || "AND",
           conditions: [],
         });
       }
+
       groups.get(groupOrder).conditions.push({
         fieldId: condition.fieldId,
         logicalOperator: condition.logicalOperator || "AND",
@@ -146,7 +158,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           index === groupIndex
             ? {
                 ...group,
-                conditions: group.conditions.filter((_, itemIndex) => itemIndex !== conditionIndex),
+                conditions: group.conditions.filter(
+                  (_, itemIndex) => itemIndex !== conditionIndex
+                ),
               }
             : group
         )
@@ -185,25 +199,62 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
   const changeField = (groupIndex, conditionIndex, value) => {
     const field = fields.find((item) => String(item.fieldId) === String(value));
-    const firstOperator = optionsForType(field?.fieldType).at(0)?.value || "Equals";
+    const firstOperator =
+      optionsForType(field?.fieldType).at(0)?.value || "Equals";
 
-    updateCondition(groupIndex, conditionIndex, "fieldId", value);
-    updateCondition(groupIndex, conditionIndex, "operator", firstOperator);
-    updateCondition(groupIndex, conditionIndex, "value", "");
+    setGroups((current) =>
+      current.map((group, currentGroupIndex) =>
+        currentGroupIndex === groupIndex
+          ? {
+              ...group,
+              conditions: group.conditions.map((condition, currentConditionIndex) =>
+                currentConditionIndex === conditionIndex
+                  ? {
+                      ...condition,
+                      fieldId: value,
+                      operator: firstOperator,
+                      value: "",
+                    }
+                  : condition
+              ),
+            }
+          : group
+      )
+    );
   };
 
   const moveCondition = (targetGroupIndex, targetConditionIndex) => {
     if (!draggedCondition) return;
 
-    const { groupIndex: sourceGroupIndex, conditionIndex: sourceConditionIndex } = draggedCondition;
-    if (sourceGroupIndex !== targetGroupIndex) return;
+    const { groupIndex: sourceGroupIndex, conditionIndex: sourceConditionIndex } =
+      draggedCondition;
 
     setGroups((current) => {
-      const next = current.map((group) => ({ ...group, conditions: [...group.conditions] }));
-      const [moved] = next[sourceGroupIndex].conditions.splice(sourceConditionIndex, 1);
+      const next = current.map((group) => ({
+        ...group,
+        conditions: [...group.conditions],
+      }));
+
+      const [moved] = next[sourceGroupIndex].conditions.splice(
+        sourceConditionIndex,
+        1
+      );
+
+      if (sourceGroupIndex === targetGroupIndex) {
+        let targetIndex = targetConditionIndex;
+
+        if (sourceConditionIndex < targetIndex) {
+          targetIndex -= 1;
+        }
+
+        next[targetGroupIndex].conditions.splice(targetIndex, 0, moved);
+        return next;
+      }
+
       next[targetGroupIndex].conditions.splice(targetConditionIndex, 0, moved);
-      return next;
+      return next.filter((group) => group.conditions.length > 0);
     });
+
     setDraggedCondition(null);
   };
 
@@ -226,9 +277,18 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
       const group = groups[groupIndex];
 
-      for (let conditionIndex = 0; conditionIndex < group.conditions.length; conditionIndex += 1) {
+      for (
+        let conditionIndex = 0;
+        conditionIndex < group.conditions.length;
+        conditionIndex += 1
+      ) {
         const condition = group.conditions[conditionIndex];
-        if (!condition.fieldId || !condition.operator || !String(condition.value).trim()) {
+
+        if (
+          !condition.fieldId ||
+          !condition.operator ||
+          !String(condition.value).trim()
+        ) {
           setError("Complete every condition before saving.");
           return;
         }
@@ -240,11 +300,13 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           groupOrder: groupIndex + 1,
           groupLogicalOperator: group.groupLogicalOperator,
         });
+
         conditionOrder += 1;
       }
     }
 
     setError("");
+
     await onSave({
       ...form,
       priority: Number(form.priority || 1),
@@ -256,11 +318,18 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     <Dialog
       open={open}
       title={rule ? "Edit Rule" : "Create Rule"}
+      className="rule-dialog"
       onClose={saving ? undefined : onClose}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button type="submit" form="rule-form" disabled={saving || loadingFields}>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="rule-form"
+            disabled={saving || loadingFields}
+          >
             {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
           </Button>
         </>
@@ -291,40 +360,32 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           <div>
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <p>Build grouped conditions. Conditions inside a group use AND/OR, and groups can also be connected with AND/OR.</p>
+            <p>
+              Build grouped criteria with a clean, ordered rule expression.
+              Drag rows to rearrange them and use AND/OR to connect criteria.
+            </p>
           </div>
-          <div className="conditions-header-actions">
-            <Button type="button" variant="secondary" onClick={addGroup}>
-              <FiPlus size={16} />
-              Add Group
-            </Button>
-          </div>
+          <Button type="button" variant="secondary" onClick={addGroup}>
+            <FiPlus size={15} />
+            Add Group
+          </Button>
         </div>
 
         <div className="conditions-list">
           {groups.map((group, groupIndex) => (
             <div className="condition-group" key={`group-${groupIndex}`}>
-              {groupIndex > 0 && (
-                <div className="group-connector">
-                  <Select
-                    label=""
-                    value={group.groupLogicalOperator}
-                    options={[
-                      { value: "AND", label: "AND" },
-                      { value: "OR", label: "OR" },
-                    ]}
-                    onChange={(event) => updateGroup(groupIndex, "groupLogicalOperator", event.target.value)}
-                  />
-                </div>
-              )}
-
               <div className="condition-group-header">
-                <div>
-                  <strong>Condition group</strong>
-                  <span>Combine related criteria together.</span>
+                <div className="condition-group-title">
+                  <span className="group-eyebrow">Criteria group</span>
+                  <strong>{groupIndex === 0 ? "Primary criteria" : "Additional criteria"}</strong>
                 </div>
+
                 <div className="condition-group-actions">
-                  <Button type="button" variant="secondary" onClick={() => addCondition(groupIndex)}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => addCondition(groupIndex)}
+                  >
                     <FiPlus size={14} />
                     Add Condition
                   </Button>
@@ -342,76 +403,139 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 </div>
               </div>
 
-              <div className="group-conditions">
-                {group.conditions.map((condition, conditionIndex) => {
-                  const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
-                  const operators = optionsForType(field?.fieldType);
+              <div className="condition-table">
+                <div className="condition-table-header">
+                  <span className="condition-table-drag" />
+                  <span>Field</span>
+                  <span>Operator</span>
+                  <span>Value</span>
+                  <span>Logic</span>
+                  <span />
+                </div>
 
-                  return (
-                    <div key={`condition-${groupIndex}-${conditionIndex}`}>
-                      {conditionIndex > 0 && (
-                        <div className="condition-connector">
-                          <Select
-                            label=""
-                            value={condition.logicalOperator}
-                            options={[
-                              { value: "AND", label: "AND" },
-                              { value: "OR", label: "OR" },
-                            ]}
-                            onChange={(event) => updateCondition(groupIndex, conditionIndex, "logicalOperator", event.target.value)}
-                          />
-                        </div>
-                      )}
+                <div className="group-conditions">
+                  {group.conditions.map((condition, conditionIndex) => {
+                    const field = fields.find(
+                      (item) => String(item.fieldId) === String(condition.fieldId)
+                    );
+                    const operators = optionsForType(field?.fieldType);
 
+                    return (
                       <div
+                        key={`condition-${groupIndex}-${conditionIndex}`}
                         className="condition-row"
                         draggable
-                        onDragStart={() => setDraggedCondition({ groupIndex, conditionIndex })}
+                        onDragStart={() =>
+                          setDraggedCondition({ groupIndex, conditionIndex })
+                        }
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={() => moveCondition(groupIndex, conditionIndex)}
                         onDragEnd={() => setDraggedCondition(null)}
                       >
-                        <div className="condition-drag-handle" title="Drag to rearrange condition">
-                          <FiGripVertical size={17} />
+                        <div
+                          className="condition-drag-handle"
+                          title="Drag to rearrange condition"
+                        >
+                          <FiGripVertical size={16} />
                         </div>
 
                         <Select
-                          label="Field"
+                          label=""
                           value={condition.fieldId}
-                          options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))}
-                          placeholder={loadingFields ? "Loading fields..." : "Select field"}
+                          options={fields.map((item) => ({
+                            value: item.fieldId,
+                            label: item.displayName,
+                          }))}
+                          placeholder={
+                            loadingFields ? "Loading fields..." : "Select field"
+                          }
                           disabled={loadingFields || saving}
-                          onChange={(event) => changeField(groupIndex, conditionIndex, event.target.value)}
+                          onChange={(event) =>
+                            changeField(
+                              groupIndex,
+                              conditionIndex,
+                              event.target.value
+                            )
+                          }
                         />
 
                         <Select
-                          label="Operator"
+                          label=""
                           value={condition.operator}
                           options={operators}
+                          placeholder="Select operator"
                           disabled={!field || saving}
-                          onChange={(event) => updateCondition(groupIndex, conditionIndex, "operator", event.target.value)}
+                          onChange={(event) =>
+                            updateCondition(
+                              groupIndex,
+                              conditionIndex,
+                              "operator",
+                              event.target.value
+                            )
+                          }
                         />
 
                         {field?.fieldType === "Boolean" ? (
                           <Select
-                            label="Value"
+                            label=""
                             value={condition.value}
                             options={[
                               { value: "Y", label: "Yes" },
                               { value: "N", label: "No" },
                             ]}
                             placeholder="Select value"
-                            onChange={(event) => updateCondition(groupIndex, conditionIndex, "value", event.target.value)}
+                            onChange={(event) =>
+                              updateCondition(
+                                groupIndex,
+                                conditionIndex,
+                                "value",
+                                event.target.value
+                              )
+                            }
                           />
                         ) : (
                           <TextBox
-                            label="Value"
+                            label=""
                             value={condition.value}
-                            type={field?.fieldType === "Number" ? "number" : field?.fieldType === "Date" ? "date" : "text"}
+                            type={
+                              field?.fieldType === "Number"
+                                ? "number"
+                                : field?.fieldType === "Date"
+                                  ? "date"
+                                  : "text"
+                            }
                             disabled={!field || saving}
-                            onChange={(event) => updateCondition(groupIndex, conditionIndex, "value", event.target.value)}
+                            placeholder={field ? "Enter value" : "Select field first"}
+                            onChange={(event) =>
+                              updateCondition(
+                                groupIndex,
+                                conditionIndex,
+                                "value",
+                                event.target.value
+                              )
+                            }
                           />
                         )}
+
+                        <div className="condition-logic-cell">
+                          {conditionIndex === group.conditions.length - 1 ? (
+                            <span className="condition-logic-end">—</span>
+                          ) : (
+                            <Select
+                              label=""
+                              value={condition.logicalOperator}
+                              options={LOGICAL_OPTIONS}
+                              onChange={(event) =>
+                                updateCondition(
+                                  groupIndex,
+                                  conditionIndex,
+                                  "logicalOperator",
+                                  event.target.value
+                                )
+                              }
+                            />
+                          )}
+                        </div>
 
                         <button
                           type="button"
@@ -420,13 +544,31 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                           aria-label="Delete condition"
                           onClick={() => removeCondition(groupIndex, conditionIndex)}
                         >
-                          <FiTrash2 size={16} />
+                          <FiTrash2 size={15} />
                         </button>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
+
+              {groupIndex < groups.length - 1 && (
+                <div className="group-connector">
+                  <span>Next group</span>
+                  <Select
+                    label=""
+                    value={groups[groupIndex + 1].groupLogicalOperator}
+                    options={LOGICAL_OPTIONS}
+                    onChange={(event) =>
+                      updateGroup(
+                        groupIndex + 1,
+                        "groupLogicalOperator",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+              )}
             </div>
           ))}
 
@@ -434,7 +576,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             <div className="conditions-empty">
               <div className="conditions-empty-icon">+</div>
               <strong>No conditions yet</strong>
-              <span>Start by adding a group, then add the fields that make up the rule.</span>
+              <span>
+                Add a criteria group and build the rule using the fields configured in Field Configuration.
+              </span>
               <Button type="button" variant="secondary" onClick={addGroup}>
                 <FiPlus size={15} />
                 Add Group
