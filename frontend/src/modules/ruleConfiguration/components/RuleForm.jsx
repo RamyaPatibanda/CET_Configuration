@@ -5,6 +5,7 @@ import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
+import "./RuleConditionGrouping.css";
 
 const EMPTY_RULE = {
   ruleId: 0,
@@ -73,7 +74,7 @@ function toRows(conditions) {
         (a.groupOrder ?? 1) - (b.groupOrder ?? 1) ||
         (a.conditionOrder ?? 1) - (b.conditionOrder ?? 1)
     )
-    .map((condition, index, all) => ({
+    .map((condition, index) => ({
       id: `condition-${condition.fieldId}-${condition.conditionOrder}-${index}`,
       groupId: `group-${condition.groupOrder ?? 1}`,
       fieldId: condition.fieldId,
@@ -81,11 +82,6 @@ function toRows(conditions) {
       operator: condition.operator || "Equals",
       value: condition.value || "",
       groupLogicalOperator: condition.groupLogicalOperator || "AND",
-      groupOrder: condition.groupOrder ?? 1,
-      previousGroupId:
-        index > 0 && all[index - 1].groupOrder !== (condition.groupOrder ?? 1)
-          ? all[index - 1].groupOrder
-          : null,
     }));
 }
 
@@ -126,11 +122,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   };
 
   const addRow = () => {
-    const existingGroupIds = rows.map((row) => row.groupId);
-    const groupId = existingGroupIds.length
-      ? existingGroupIds[existingGroupIds.length - 1]
-      : "group-1";
-
+    const groupId = rows.length ? rows[rows.length - 1].groupId : "group-1";
     setRows((current) => [...current, createCondition(groupId)]);
   };
 
@@ -172,25 +164,15 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     );
   };
 
-  const getGroupId = (row) => row.groupId || "group-1";
-
   const groupSelected = () => {
     if (selectedRows.length < 2) return;
 
     const groupId = `group-${Date.now()}`;
-    const firstSelectedIndex = Math.min(
-      ...selectedRows.map((id) => rows.findIndex((row) => row.id === id))
+    setRows((current) =>
+      current.map((row) =>
+        selectedRows.includes(row.id) ? { ...row, groupId } : row
+      )
     );
-
-    setRows((current) => {
-      const selected = new Set(selectedRows);
-      const selectedItems = current.filter((row) => selected.has(row.id));
-      const remaining = current.filter((row) => !selected.has(row.id));
-      const groupedItems = selectedItems.map((row) => ({ ...row, groupId }));
-      remaining.splice(Math.min(firstSelectedIndex, remaining.length), 0, ...groupedItems);
-      return remaining;
-    });
-
     setSelectedRows([]);
   };
 
@@ -214,6 +196,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       const next = [...current];
       const sourceIndex = next.findIndex((row) => row.id === draggedRow);
       const targetIndex = next.findIndex((row) => row.id === targetId);
+
       if (sourceIndex < 0 || targetIndex < 0) return current;
 
       const [moved] = next.splice(sourceIndex, 1);
@@ -227,15 +210,15 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const groupedRows = useMemo(() => {
     const groups = new Map();
     rows.forEach((row) => {
-      const groupId = getGroupId(row);
+      const groupId = row.groupId || "group-1";
       if (!groups.has(groupId)) groups.set(groupId, []);
       groups.get(groupId).push(row);
     });
     return groups;
   }, [rows]);
 
-  const getBracePosition = (row, index) => {
-    const group = groupedRows.get(getGroupId(row)) || [];
+  const getBracePosition = (row) => {
+    const group = groupedRows.get(row.groupId) || [];
     const groupIndex = group.findIndex((item) => item.id === row.id);
 
     if (group.length === 1) return "single";
@@ -246,7 +229,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
   const getGroupColor = (row) => {
     const groupIds = [...groupedRows.keys()];
-    const groupIndex = groupIds.indexOf(getGroupId(row));
+    const groupIndex = groupIds.indexOf(row.groupId);
     return GROUP_COLORS[groupIndex % GROUP_COLORS.length];
   };
 
@@ -268,15 +251,15 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
+
       if (!row.fieldId || !row.operator || !String(row.value).trim()) {
         setError("Complete every condition before saving.");
         return;
       }
 
-      const groupOrder = groupIds.indexOf(getGroupId(row)) + 1;
-      const groupRows = groupedRows.get(getGroupId(row));
+      const groupOrder = groupIds.indexOf(row.groupId) + 1;
+      const groupRows = groupedRows.get(row.groupId);
       const rowIndex = groupRows.findIndex((item) => item.id === row.id);
-      const groupLogicalOperator = rowIndex === 0 ? "AND" : row.groupLogicalOperator || "AND";
 
       conditions.push({
         fieldId: Number(row.fieldId),
@@ -286,7 +269,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         value: row.value,
         conditionOrder: index + 1,
         groupOrder,
-        groupLogicalOperator,
+        groupLogicalOperator: rowIndex === 0 ? row.groupLogicalOperator || "AND" : row.groupLogicalOperator || "AND",
       });
     }
 
@@ -385,12 +368,12 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => {
+              {rows.map((row) => {
                 const field = fields.find(
                   (item) => String(item.fieldId) === String(row.fieldId)
                 );
                 const operators = optionsForType(field?.fieldType);
-                const bracePosition = getBracePosition(row, index);
+                const bracePosition = getBracePosition(row);
                 const groupColor = getGroupColor(row);
                 const isSelected = selectedRows.includes(row.id);
 
