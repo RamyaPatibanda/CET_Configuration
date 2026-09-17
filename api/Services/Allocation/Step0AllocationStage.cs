@@ -14,7 +14,6 @@ public sealed class Step0AllocationStage : IAllocationStage
 
     public Step0AllocationStage(
         RuleEvaluator ruleEvaluator,
-        ISeatInventory inventory,
         IReadOnlyList<AllocationRule> configuredRules)
     {
         _ruleEvaluator = ruleEvaluator;
@@ -23,9 +22,7 @@ public sealed class Step0AllocationStage : IAllocationStage
 
     public string StageCode => "SPECIAL_RESERVATION";
 
-    public Task ExecuteAsync(
-        AllocationContext context,
-        CancellationToken cancellationToken = default)
+    public Task ExecuteAsync(AllocationContext context, CancellationToken cancellationToken = default)
     {
         foreach (var candidate in context.Candidates.OrderBy(c => c.MeritNo))
         {
