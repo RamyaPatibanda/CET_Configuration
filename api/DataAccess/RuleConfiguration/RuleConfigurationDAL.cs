@@ -26,10 +26,8 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 var rules = new List<RuleDefinition>();
-
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_GetRules", connection);
-
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
 
@@ -52,12 +50,9 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 RuleDefinition? rule = null;
-
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_GetRule", connection);
-
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
-
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
 
@@ -94,20 +89,9 @@ namespace api.DataAccess.RuleConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_CreateRule", connection);
-
-                AddRuleParameters(
-                    command,
-                    request.RuleId,
-                    request.RuleName,
-                    request.Description,
-                    request.Priority,
-                    request.IsActive);
-
-                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1)
-                    .Value = SerializeConditions(request.Conditions);
-
+                AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
+                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
-
                 return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
             catch (Exception ex)
@@ -123,20 +107,9 @@ namespace api.DataAccess.RuleConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_UpdateRule", connection);
-
-                AddRuleParameters(
-                    command,
-                    request.RuleId,
-                    request.RuleName,
-                    request.Description,
-                    request.Priority,
-                    request.IsActive);
-
-                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1)
-                    .Value = SerializeConditions(request.Conditions);
-
+                AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
+                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
-
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
             catch (Exception ex)
@@ -152,11 +125,8 @@ namespace api.DataAccess.RuleConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_DeleteRule", connection);
-
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
-
                 await connection.OpenAsync();
-
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
             catch (Exception ex)
@@ -171,10 +141,8 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 var fields = new List<RuleFieldOption>();
-
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_GetActiveRuleFields", connection);
-
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
 
@@ -203,12 +171,9 @@ namespace api.DataAccess.RuleConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_SetRuleActive", connection);
-
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
                 command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = isActive;
-
                 await connection.OpenAsync();
-
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
             catch (Exception ex)
@@ -224,10 +189,8 @@ namespace api.DataAccess.RuleConfiguration
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_ReorderRules", connection);
-
-                command.Parameters.Add("@tRuleIdsJson", SqlDbType.NVarChar, -1)
-                    .Value = System.Text.Json.JsonSerializer.Serialize(ruleIds);
-
+                command.Parameters.Add("@tRuleIdsJson", SqlDbType.NVarChar, -1).Value =
+                    System.Text.Json.JsonSerializer.Serialize(ruleIds);
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
             }
@@ -265,7 +228,7 @@ namespace api.DataAccess.RuleConfiguration
         private static string SerializeConditions(List<RuleConditionRequest> conditions)
         {
             return System.Text.Json.JsonSerializer.Serialize(
-                conditions.OrderBy(c => c.ConditionOrder));
+                conditions.OrderBy(c => c.GroupOrder).ThenBy(c => c.ConditionOrder));
         }
 
         private static RuleDefinition MapRule(SqlDataReader reader)
@@ -296,7 +259,9 @@ namespace api.DataAccess.RuleConfiguration
                 LogicalOperator = reader.GetString(reader.GetOrdinal("tLogicalOperator")),
                 Operator = reader.GetString(reader.GetOrdinal("tOperator")),
                 Value = reader.GetString(reader.GetOrdinal("tValue")),
-                ConditionOrder = reader.GetInt32(reader.GetOrdinal("nConditionOrder"))
+                ConditionOrder = reader.GetInt32(reader.GetOrdinal("nConditionOrder")),
+                GroupOrder = reader.GetInt32(reader.GetOrdinal("nGroupOrder")),
+                GroupLogicalOperator = reader.GetString(reader.GetOrdinal("tGroupLogicalOperator"))
             };
         }
 
