@@ -32,7 +32,19 @@ public sealed class AllocationEngine
             foreach (var stage in _stages)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                var beforeCandidates = context.Candidates.Count;
+                var beforeDecisions = context.Decisions.Count;
                 await stage.ExecuteAsync(context, cancellationToken);
+
+                context.StageResults.Add(new AllocationStageResult
+                {
+                    StageCode = stage.StageCode,
+                    Sequence = StageSequence(stage.StageCode),
+                    CandidateCountBefore = beforeCandidates,
+                    CandidateCountAfter = context.Candidates.Count,
+                    DecisionsCreated = context.Decisions.Count - beforeDecisions
+                });
             }
 
             run.Status = AllocationRunStatus.Completed;
