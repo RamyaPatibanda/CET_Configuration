@@ -1,4 +1,5 @@
 using System.Text;
+using api.BusinessLogic;
 using api.DataAccess;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -10,6 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<CETDataAccess>();
+builder.Services.AddScoped<IAuthBL, AuthBL>();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
