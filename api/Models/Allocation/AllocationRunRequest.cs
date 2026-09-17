@@ -3,7 +3,7 @@ namespace api.Models.Allocation;
 public sealed class AllocationRunRequest
 {
     public int CapRound { get; set; }
-    public string RuleSetVersionId { get; set; } = "draft-runtime";
+    public List<int> SelectedRuleIds { get; set; } = [];
     public List<AllocationCandidate> Candidates { get; set; } = [];
     public List<SeatInventory> Seats { get; set; } = [];
 }
