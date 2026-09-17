@@ -242,6 +242,7 @@ namespace api.DataAccess.RuleConfiguration
                     : reader.GetString(reader.GetOrdinal("tDescription")),
                 Priority = reader.GetInt32(reader.GetOrdinal("nPriority")),
                 IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
+                ConditionCount = reader.GetInt32(reader.GetOrdinal("nConditionCount")),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate")
             };
