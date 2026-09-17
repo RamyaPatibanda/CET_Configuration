@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEdit2, FiGripVertical, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiMenu, FiPlus, FiTrash2 } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Switch from "../../../components/common/Switch/Switch";
@@ -210,7 +210,7 @@ function RuleConfiguration() {
                 >
                   <td className="rule-order-cell">
                     <div className="rule-order-handle" title="Drag to reorder">
-                      <FiGripVertical size={17} />
+                      <FiMenu size={17} />
                     </div>
                   </td>
                   <td>
