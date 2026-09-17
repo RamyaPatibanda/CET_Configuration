@@ -1,6 +1,8 @@
 using System.Text;
 using api.BusinessLogic;
+using api.BusinessLogic.FieldConfiguration;
 using api.DataAccess;
+using api.DataAccess.FieldConfiguration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,6 +14,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<CETDataAccess>();
 builder.Services.AddScoped<IAuthBL, AuthBL>();
+builder.Services.AddScoped<IFieldConfigurationDAL, FieldConfigurationDAL>();
+builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
