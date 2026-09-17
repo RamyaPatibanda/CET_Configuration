@@ -3,7 +3,7 @@
     Target database: CET_configuration
 
     Execute this script manually against the CET_configuration database.
-    The script does not modify or drop existing objects.
+    Existing tables are not modified.
 */
 
 IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NULL
