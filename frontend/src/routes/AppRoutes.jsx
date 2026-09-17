@@ -48,7 +48,6 @@ function ProtectedRoutes({ authenticated }) {
 function AppRoutes({ authenticated }) {
   return (
     <Routes>
-      <Route path="/login" element={authenticated ? <Navigate to="/overview" replace /> : <Outlet />} />
       <Route element={<ProtectedRoutes authenticated={authenticated} />}>
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={<Overview />} />
