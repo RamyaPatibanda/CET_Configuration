@@ -38,7 +38,7 @@ BEGIN
         dtCreatedDate   DATETIME NOT NULL CONSTRAINT DF_tblFieldConfiguration_dtCreatedDate DEFAULT (GETDATE()),
         dtModifiedDate  DATETIME NULL,
         CONSTRAINT PK_tblFieldConfiguration PRIMARY KEY (aFieldId),
-        CONSTRAINT UQ_tblFieldConfiguration_tFieldName UNIQUE (tFieldName)
+        CONSTRAINT UQ_tblFieldConfiguration_tTableName_tFieldName UNIQUE (tTableName, tFieldName)
     );
 END;
 GO
