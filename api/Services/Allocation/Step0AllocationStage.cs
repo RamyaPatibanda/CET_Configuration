@@ -3,38 +3,60 @@ using api.Models.Allocation;
 namespace api.Services.Allocation;
 
 /// <summary>
-/// Step 0 orchestration only. Business conditions are supplied by Rule Configuration.
+/// Step 0 only evaluates the configured special-reservation rules.
+/// Business conditions are supplied by Rule Configuration; this stage does not contain
+/// candidate-specific conditions copied from the legacy stored procedures.
 /// </summary>
-public sealed class Step0AllocationStage
+public sealed class Step0AllocationStage : IAllocationStage
 {
     private readonly RuleEvaluator _ruleEvaluator;
+    private readonly IReadOnlyList<AllocationRule> _configuredRules;
 
-    public Step0AllocationStage(RuleEvaluator ruleEvaluator) => _ruleEvaluator = ruleEvaluator;
-
-    public IReadOnlyList<AllocationDecision> Execute(
-        IReadOnlyList<AllocationCandidate> candidates,
+    public Step0AllocationStage(
+        RuleEvaluator ruleEvaluator,
+        ISeatInventory inventory,
         IReadOnlyList<AllocationRule> configuredRules)
     {
-        ArgumentNullException.ThrowIfNull(candidates);
-        ArgumentNullException.ThrowIfNull(configuredRules);
+        _ruleEvaluator = ruleEvaluator;
+        _configuredRules = configuredRules ?? throw new ArgumentNullException(nameof(configuredRules));
+    }
 
-        // No Step 0 business conditions belong here. They come from Rule Configuration.
-        var decisions = new List<AllocationDecision>();
-        foreach (var candidate in candidates)
+    public string StageCode => "SPECIAL_RESERVATION";
+
+    public Task ExecuteAsync(
+        AllocationContext context,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var candidate in context.Candidates.OrderBy(c => c.MeritNo))
         {
-            foreach (var rule in configuredRules)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (context.Decisions.Any(d =>
+                    d.CandidateId == candidate.CandidateId &&
+                    d.Status == "Allocated"))
             {
-                if (!_ruleEvaluator.Evaluate(rule, candidate)) continue;
-                decisions.Add(new AllocationDecision
+                continue;
+            }
+
+            foreach (var rule in _configuredRules)
+            {
+                if (!_ruleEvaluator.Matches(rule, candidate))
+                    continue;
+
+                context.Decisions.Add(new AllocationDecision
                 {
+                    AllocationRunId = context.Run.AllocationRunId,
                     CandidateId = candidate.CandidateId,
+                    CategoryId = candidate.EffectiveCategoryId,
+                    StepId = 0,
                     RuleCode = rule.Code,
-                    StageCode = rule.StageCode,
-                    Decision = "Qualified"
+                    Status = "Qualified"
                 });
+
                 break;
             }
         }
-        return decisions;
+
+        return Task.CompletedTask;
     }
 }
