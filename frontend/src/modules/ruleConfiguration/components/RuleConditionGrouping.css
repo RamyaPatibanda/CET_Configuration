@@ -77,21 +77,48 @@
 
 .condition-brace-column,
 .condition-brace-cell {
-  width: 32px;
+  width: 24px;
   padding-left: 3px !important;
   padding-right: 3px !important;
   text-align: center !important;
 }
 
 .condition-brace {
-  display: inline-flex;
-  width: 22px;
-  align-items: center;
-  justify-content: center;
-  font-family: Georgia, serif;
-  font-size: 27px;
-  font-weight: 400;
-  line-height: 0.75;
+  display: inline-block;
+  width: 11px;
+  height: 18px;
+  box-sizing: border-box;
+  font-size: 0;
+  line-height: 0;
+  vertical-align: middle;
+  position: relative;
+}
+
+.condition-brace.brace-start,
+.condition-brace.brace-end {
+  border-left: 1.5px solid currentColor;
+  border-top: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+}
+
+.condition-brace.brace-start {
+  border-radius: 8px 0 0 8px;
+}
+
+.condition-brace.brace-end {
+  border-radius: 8px 0 0 8px;
+}
+
+.condition-brace.brace-middle {
+  width: 11px;
+  border-left: 1.5px solid currentColor;
+}
+
+.condition-brace.brace-single {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
 }
 
 .brace-blue .condition-brace { color: #5b86ad; }
