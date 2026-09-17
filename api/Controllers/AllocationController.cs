@@ -37,14 +37,10 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.CapRound <= 0)
-            return BadRequest(new { message = "CAP round must be greater than zero." });
-        if (request.Candidates.Count == 0)
-            return BadRequest(new { message = "At least one candidate is required." });
-        if (request.Seats.Count == 0)
-            return BadRequest(new { message = "At least one seat inventory record is required." });
-        if (request.SelectedRuleIds.Count == 0)
-            return BadRequest(new { message = "At least one configured rule must be selected." });
+        if (request.CapRound <= 0) return BadRequest(new { message = "CAP round must be greater than zero." });
+        if (request.Candidates.Count == 0) return BadRequest(new { message = "At least one candidate is required." });
+        if (request.Seats.Count == 0) return BadRequest(new { message = "At least one seat inventory record is required." });
+        if (request.SelectedRuleIds.Count == 0) return BadRequest(new { message = "At least one configured rule must be selected." });
 
         try
         {
@@ -106,24 +102,21 @@ public sealed class AllocationController : ControllerBase
             {
                 Code = rule.RuleName,
                 StageCode = "SPECIAL_RESERVATION",
-                LogicalOperator = ResolveLogicalOperator(rule),
+                LogicalOperator = ResolveConditionLogicalOperator(rule),
                 Conditions = rule.Conditions
                     .OrderBy(condition => condition.GroupOrder)
                     .ThenBy(condition => condition.ConditionOrder)
-                    .Select(condition => new RuleCondition(
-                        condition.FieldDisplayName,
-                        condition.Operator,
-                        condition.Value))
+                    .Select(condition => new RuleCondition(condition.FieldDisplayName, condition.Operator, condition.Value))
                     .ToList()
             })
             .ToList();
 
-    private static string ResolveLogicalOperator(RuleDefinition rule)
+    private static string ResolveConditionLogicalOperator(RuleDefinition rule)
     {
         var first = rule.Conditions
             .OrderBy(c => c.GroupOrder)
             .ThenBy(c => c.ConditionOrder)
             .FirstOrDefault();
-        return first?.GroupLogicalOperator is "OR" ? "OR" : "AND";
+        return first?.ConditionLogicalOperator is "OR" ? "OR" : "AND";
     }
 }
