@@ -9,5 +9,7 @@ namespace api.DataAccess.FieldConfiguration
         Task<int> CreateFieldAsync(CreateFieldRequest request);
         Task<bool> UpdateFieldAsync(UpdateFieldRequest request);
         Task<bool> DeleteFieldAsync(int fieldId);
+        Task<List<FieldSourceOption>> GetAllowedTablesAsync();
+        Task<List<FieldSourceOption>> GetColumnsAsync(string tableName);
     }
 }
