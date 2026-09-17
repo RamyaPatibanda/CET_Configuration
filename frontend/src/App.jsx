@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { FiArrowRight, FiEye, FiEyeOff, FiPower } from "react-icons/fi";
 import authService from "./services/authService";
 import Sidebar from "./components/layout/Sidebar";
@@ -47,13 +47,15 @@ function Login({ onLogin }) {
 }
 
 function AuthenticatedWorkspace({ onLogout }) {
-  const location = useLocation();
+  const navigate = useNavigate();
+  const location = window.location;
   const user = authService.getUser();
   const pageTitle = location.pathname === "/rules" ? "Rule Configuration" : location.pathname === "/fields" ? "Field Configuration" : "Overview";
 
   const handleLogout = () => {
     authService.logout();
     onLogout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -82,16 +84,13 @@ function App() {
 
   return (
     <BrowserRouter>
-      {authenticated ? (
-        <Routes>
+      <Routes>
+        {authenticated ? (
           <Route path="*" element={<AuthenticatedWorkspace onLogout={() => setAuthenticated(false)} />} />
-        </Routes>
-      ) : (
-        <Routes>
+        ) : (
           <Route path="*" element={<Login onLogin={() => setAuthenticated(true)} />} />
-        </Routes>
-      )}
-      {!authenticated && window.location.pathname !== "/login" && null}
+        )}
+      </Routes>
     </BrowserRouter>
   );
 }
