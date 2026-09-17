@@ -1,4 +1,5 @@
 import { useState } from "react";
+import authService from "./services/authService";
 import "./App.css";
 
 function App() {
@@ -6,8 +7,9 @@ function App() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
 
     if (!username.trim()) {
@@ -21,9 +23,18 @@ function App() {
     }
 
     setError("");
+    setIsLoading(true);
 
-    // Login API will be connected here later.
-    console.log("Login requested:", username);
+    try {
+      await authService.login(username.trim(), password);
+      // The authenticated application can be rendered here after login.
+      // Keeping the token/user in authService allows the remaining screens
+      // to use the common HTTP client automatically.
+    } catch (loginError) {
+      setError(loginError.message || "Invalid username or password.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,7 +50,6 @@ function App() {
         <form className="login-form" onSubmit={handleLogin}>
           <div className="form-group">
             <label htmlFor="username">Username</label>
-
             <input
               id="username"
               type="text"
@@ -47,12 +57,12 @@ function App() {
               placeholder="Enter your username"
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
+              disabled={isLoading}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-
             <div className="password-wrapper">
               <input
                 id="password"
@@ -61,12 +71,14 @@ function App() {
                 placeholder="Enter your password"
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
+                disabled={isLoading}
               />
 
               <button
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -75,18 +87,15 @@ function App() {
 
           {error && <div className="login-error">{error}</div>}
 
-          <button type="submit" className="login-button">
-            Sign In
+          <button type="submit" className="login-button" disabled={isLoading}>
+            {isLoading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        <div className="login-footer">
-          CET Configuration System
-        </div>
+        <div className="login-footer">CET Configuration System</div>
       </div>
     </div>
   );
 }
 
 export default App;
-
