@@ -5,7 +5,6 @@ import Select from "../../../components/common/Select/Select";
 import Switch from "../../../components/common/Switch/Switch";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import fieldConfigurationService from "../services/fieldConfigurationService";
-import { FIELD_TYPES } from "../constants/fieldConstants";
 
 const EMPTY_FIELD = {
   fieldId: 0,
@@ -22,6 +21,7 @@ function toOptions(items) {
   return (Array.isArray(items) ? items : items?.data || []).map((item) => ({
     value: item.name ?? item.value ?? item,
     label: item.name ?? item.label ?? item,
+    fieldType: item.fieldType ?? "Text",
   }));
 }
 
@@ -77,18 +77,27 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
   }, [open, form.tableName]);
 
   const update = (name, value) => {
+    setForm((current) => ({ ...current, [name]: value }));
+    if (name === "tableName") {
+      setForm((current) => ({ ...current, tableName: value, fieldName: "", fieldType: "Text" }));
+      setError("");
+    }
+  };
+
+  const handleColumnChange = (event) => {
+    const selectedColumn = columns.find((column) => column.value === event.target.value);
     setForm((current) => ({
       ...current,
-      [name]: value,
-      ...(name === "tableName" ? { fieldName: "" } : {}),
+      fieldName: event.target.value,
+      fieldType: selectedColumn?.fieldType || "Text",
     }));
-    if (name === "tableName") setError("");
+    setError("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.tableName || !form.fieldName || !form.displayName.trim() || !form.fieldType) {
-      setError("Table, column, display name and field type are required.");
+    if (!form.tableName || !form.fieldName || !form.displayName.trim()) {
+      setError("Table, column and display name are required.");
       return;
     }
     setError("");
@@ -129,10 +138,10 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
           disabled={!form.tableName || loadingColumns || saving}
           options={columns}
           placeholder={loadingColumns ? "Loading columns..." : "Select column"}
-          onChange={(e) => update("fieldName", e.target.value)}
+          onChange={handleColumnChange}
         />
+        <TextBox name="fieldType" label="Field Type" value={form.fieldType} disabled />
         <TextBox name="displayName" label="Display Name" value={form.displayName} required onChange={(e) => update("displayName", e.target.value)} />
-        <Select name="fieldType" label="Field Type" value={form.fieldType} required options={FIELD_TYPES} onChange={(e) => update("fieldType", e.target.value)} />
         <div className="field-form-switches">
           <Switch name="isRequired" label="Required" checked={form.isRequired} onChange={(e) => update("isRequired", e.target.checked)} />
           <Switch name="isActive" label="Active" checked={form.isActive} onChange={(e) => update("isActive", e.target.checked)} />
