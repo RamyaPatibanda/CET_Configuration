@@ -29,8 +29,12 @@ function FieldForm({ open, field, saving, onClose, onSave }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.fieldName.trim() || !form.displayName.trim() || !form.fieldType) {
-      setError("Field name, display name and field type are required.");
+    if (form.fieldId <= 0 || !form.fieldName.trim() || !form.displayName.trim() || !form.fieldType) {
+      setError("Field ID, field name, display name and field type are required.");
+      return;
+    }
+    if (form.displayOrder < 0) {
+      setError("Display order cannot be negative.");
       return;
     }
     setError("");
@@ -53,6 +57,7 @@ function FieldForm({ open, field, saving, onClose, onSave }) {
     >
       <form id="field-form" onSubmit={handleSubmit} className="field-form">
         {error && <div className="field-form-error">{error}</div>}
+        <TextBox name="fieldId" label="Field ID" type="number" value={form.fieldId} required disabled={Boolean(field)} onChange={(e) => update("fieldId", Number(e.target.value))} />
         <TextBox name="fieldName" label="Field Name" value={form.fieldName} required onChange={(e) => update("fieldName", e.target.value)} />
         <TextBox name="displayName" label="Display Name" value={form.displayName} required onChange={(e) => update("displayName", e.target.value)} />
         <Select name="fieldType" label="Field Type" value={form.fieldType} required options={FIELD_TYPES} onChange={(e) => update("fieldType", e.target.value)} />
