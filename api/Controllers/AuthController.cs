@@ -76,7 +76,7 @@ namespace api.Controllers
                 new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
                 new(JwtRegisteredClaimNames.UniqueName, user.Username),
                 new(ClaimTypes.Name, user.DisplayName),
-                new(ClaimTypes.Role, user.RoleName)
+                new(ClaimTypes.Role, user.IsAdmin?"admin":"user")
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
@@ -92,7 +92,7 @@ namespace api.Controllers
                 UserId = user.UserId,
                 Username = user.Username,
                 DisplayName = user.DisplayName,
-                RoleName = user.RoleName,
+                IsAdmin = user.IsAdmin,
                 ExpiresAt = expiresAt
             });
         }

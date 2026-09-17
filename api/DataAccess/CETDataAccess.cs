@@ -20,7 +20,7 @@ namespace api.DataAccess
         public async Task<LoginUser?> GetLoginUserAsync(string username)
         {
             await using var connection = new SqlConnection(DBConnectionStr);
-            await using var command = new SqlCommand("CET_LoginUser", connection)
+            await using var command = new SqlCommand("sproc_GetLoginUser", connection)
             {
                 CommandType = CommandType.StoredProcedure,
                 CommandTimeout = 30
@@ -38,7 +38,7 @@ namespace api.DataAccess
                 UserId = reader.GetInt32(reader.GetOrdinal("aUserId")),
                 Username = reader.GetString(reader.GetOrdinal("tUsername")),
                 DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
-                RoleName = reader.GetString(reader.GetOrdinal("tRole")),
+                IsAdmin = reader.GetBoolean(reader.GetOrdinal("bIsAdmin")),
                 Password = reader.GetString(reader.GetOrdinal("tPassword")),
                 IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive"))
             };

@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5018").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://localhost:7270").replace(/\/$/, "");
 
 async function request(endpoint, options = {}) {
   const { headers = {}, body, ...rest } = options;
