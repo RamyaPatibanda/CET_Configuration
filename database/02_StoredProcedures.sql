@@ -7,455 +7,176 @@
     deploys the exact current procedure definitions.
 */
 
-IF OBJECT_ID(N'dbo.sproc_GetLoginUser', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetLoginUser;
+IF OBJECT_ID(N'dbo.sproc_GetLoginUser', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetLoginUser;
 GO
-CREATE PROCEDURE dbo.sproc_GetLoginUser
-    @tUsername NVARCHAR(100)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aUserId, tUsername, tDisplayName, bIsAdmin, tPassword, bIsActive
-    FROM dbo.tblUsers
-    WHERE tUsername = @tUsername;
-END;
+CREATE PROCEDURE dbo.sproc_GetLoginUser @tUsername NVARCHAR(100)
+AS BEGIN SET NOCOUNT ON; SELECT aUserId, tUsername, tDisplayName, bIsAdmin, tPassword, bIsActive FROM dbo.tblUsers WHERE tUsername = @tUsername; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetFields;
+IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetFields
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType,
-           bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate
-    FROM dbo.tblFieldConfiguration
-    ORDER BY nDisplayOrder, aFieldId;
-END;
+AS BEGIN SET NOCOUNT ON; SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType, bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate FROM dbo.tblFieldConfiguration ORDER BY nDisplayOrder, aFieldId; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetField;
+IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetField;
 GO
-CREATE PROCEDURE dbo.sproc_GetField
-    @aFieldId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType,
-           bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate
-    FROM dbo.tblFieldConfiguration
-    WHERE aFieldId = @aFieldId;
-END;
+CREATE PROCEDURE dbo.sproc_GetField @aFieldId INT
+AS BEGIN SET NOCOUNT ON; SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType, bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate FROM dbo.tblFieldConfiguration WHERE aFieldId = @aFieldId; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_CreateField;
+IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateField;
 GO
 CREATE PROCEDURE dbo.sproc_CreateField
-    @aFieldId INT,
-    @tTableName NVARCHAR(128),
-    @tFieldName NVARCHAR(200),
-    @tDisplayName NVARCHAR(200),
-    @tFieldType NVARCHAR(50),
-    @bIsRequired BIT,
-    @bIsActive BIT,
-    @nDisplayOrder INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    INSERT INTO dbo.tblFieldConfiguration
-    (aFieldId, tTableName, tFieldName, tDisplayName, tFieldType,
-     bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate)
-    VALUES
-    (@aFieldId, @tTableName, @tFieldName, @tDisplayName, @tFieldType,
-     @bIsRequired, @bIsActive, @nDisplayOrder, GETDATE(), NULL);
-    SELECT @aFieldId AS aFieldId;
-END;
+    @aFieldId INT, @tTableName NVARCHAR(128), @tFieldName NVARCHAR(200), @tDisplayName NVARCHAR(200), @tFieldType NVARCHAR(50), @bIsRequired BIT, @bIsActive BIT, @nDisplayOrder INT
+AS BEGIN SET NOCOUNT ON; INSERT INTO dbo.tblFieldConfiguration (aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate) VALUES (@aFieldId,@tTableName,@tFieldName,@tDisplayName,@tFieldType,@bIsRequired,@bIsActive,@nDisplayOrder,GETDATE(),NULL); SELECT @aFieldId AS aFieldId; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_UpdateField', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_UpdateField;
+IF OBJECT_ID(N'dbo.sproc_UpdateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateField;
 GO
 CREATE PROCEDURE dbo.sproc_UpdateField
-    @aFieldId INT,
-    @tTableName NVARCHAR(128),
-    @tFieldName NVARCHAR(200),
-    @tDisplayName NVARCHAR(200),
-    @tFieldType NVARCHAR(50),
-    @bIsRequired BIT,
-    @bIsActive BIT,
-    @nDisplayOrder INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    UPDATE dbo.tblFieldConfiguration
-    SET tTableName = @tTableName,
-        tFieldName = @tFieldName,
-        tDisplayName = @tDisplayName,
-        tFieldType = @tFieldType,
-        bIsRequired = @bIsRequired,
-        bIsActive = @bIsActive,
-        nDisplayOrder = @nDisplayOrder,
-        dtModifiedDate = GETDATE()
-    WHERE aFieldId = @aFieldId;
-    SELECT @@ROWCOUNT AS AffectedRows;
-END;
+    @aFieldId INT, @tTableName NVARCHAR(128), @tFieldName NVARCHAR(200), @tDisplayName NVARCHAR(200), @tFieldType NVARCHAR(50), @bIsRequired BIT, @bIsActive BIT, @nDisplayOrder INT
+AS BEGIN SET NOCOUNT ON; UPDATE dbo.tblFieldConfiguration SET tTableName=@tTableName,tFieldName=@tFieldName,tDisplayName=@tDisplayName,tFieldType=@tFieldType,bIsRequired=@bIsRequired,bIsActive=@bIsActive,nDisplayOrder=@nDisplayOrder,dtModifiedDate=GETDATE() WHERE aFieldId=@aFieldId; SELECT @@ROWCOUNT AS AffectedRows; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_DeleteField', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_DeleteField;
+IF OBJECT_ID(N'dbo.sproc_DeleteField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_DeleteField;
 GO
-CREATE PROCEDURE dbo.sproc_DeleteField
-    @aFieldId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DELETE FROM dbo.tblFieldConfiguration WHERE aFieldId = @aFieldId;
-    SELECT @@ROWCOUNT AS AffectedRows;
-END;
+CREATE PROCEDURE dbo.sproc_DeleteField @aFieldId INT
+AS BEGIN SET NOCOUNT ON; DELETE FROM dbo.tblFieldConfiguration WHERE aFieldId=@aFieldId; SELECT @@ROWCOUNT AS AffectedRows; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_GetRules', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetRules;
+IF OBJECT_ID(N'dbo.sproc_GetRules', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRules;
 GO
 CREATE PROCEDURE dbo.sproc_GetRules
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT aRuleId, tRuleName, tDescription, nPriority, bIsActive,
-           dtCreatedDate, dtModifiedDate
-    FROM dbo.tblRule
-    ORDER BY nPriority, aRuleId;
+    SELECT r.aRuleId, r.tRuleName, r.tDescription, r.nPriority, r.bIsActive,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId=r.aRuleId) AS nConditionCount,
+           r.dtCreatedDate, r.dtModifiedDate
+    FROM dbo.tblRule r ORDER BY r.nPriority, r.aRuleId;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_GetRule', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetRule;
+IF OBJECT_ID(N'dbo.sproc_GetRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetRule;
 GO
-CREATE PROCEDURE dbo.sproc_GetRule
-    @aRuleId INT
+CREATE PROCEDURE dbo.sproc_GetRule @aRuleId INT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SELECT r.aRuleId,r.tRuleName,r.tDescription,r.nPriority,r.bIsActive,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId=r.aRuleId) AS nConditionCount,
+           r.dtCreatedDate,r.dtModifiedDate
+    FROM dbo.tblRule r WHERE r.aRuleId=@aRuleId;
 
-    SELECT aRuleId, tRuleName, tDescription, nPriority, bIsActive,
-           dtCreatedDate, dtModifiedDate
-    FROM dbo.tblRule
-    WHERE aRuleId = @aRuleId;
-
-    SELECT rc.aRuleConditionId, rc.aRuleId, rc.aFieldId,
-           fc.tDisplayName, fc.tFieldType, rc.tLogicalOperator,
-           rc.tOperator, rc.tValue, rc.nConditionOrder
+    SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldType,
+           rc.tLogicalOperator,rc.tOperator,rc.tValue,rc.nConditionOrder,
+           COALESCE(rg.nGroupOrder,1) AS nGroupOrder,
+           COALESCE(rg.tLogicalOperator,'AND') AS tGroupLogicalOperator
     FROM dbo.tblRuleCondition rc
-    INNER JOIN dbo.tblFieldConfiguration fc
-        ON fc.aFieldId = rc.aFieldId
-    WHERE rc.aRuleId = @aRuleId
-    ORDER BY rc.nConditionOrder, rc.aRuleConditionId;
+    INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=rc.aFieldId
+    LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId=rc.aRuleConditionGroupId
+    WHERE rc.aRuleId=@aRuleId
+    ORDER BY COALESCE(rg.nGroupOrder,1),rc.nConditionOrder,rc.aRuleConditionId;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
+IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetActiveRuleFields
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT aFieldId, tDisplayName, tFieldType
-    FROM dbo.tblFieldConfiguration
-    WHERE bIsActive = 1
-    ORDER BY nDisplayOrder, aFieldId;
-END;
+AS BEGIN SET NOCOUNT ON; SELECT aFieldId,tDisplayName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_CreateRule', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_CreateRule;
+IF OBJECT_ID(N'dbo.sproc_CreateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateRule;
 GO
 CREATE PROCEDURE dbo.sproc_CreateRule
-    @aRuleId INT,
-    @tRuleName NVARCHAR(200),
-    @tDescription NVARCHAR(1000),
-    @nPriority INT,
-    @bIsActive BIT,
-    @tConditionsJson NVARCHAR(MAX)
+    @aRuleId INT, @tRuleName NVARCHAR(200), @tDescription NVARCHAR(1000), @nPriority INT, @bIsActive BIT, @tConditionsJson NVARCHAR(MAX)
 AS
 BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    BEGIN TRANSACTION;
+    SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION;
     BEGIN TRY
-        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE aRuleId = @aRuleId)
-            THROW 50001, 'A rule with the specified Rule ID already exists.', 1;
+        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE aRuleId=@aRuleId) THROW 50001,'A rule with the specified Rule ID already exists.',1;
+        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE tRuleName=@tRuleName) THROW 50002,'A rule with the specified Rule Name already exists.',1;
+        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority=@nPriority) THROW 50003,'A rule with the specified Priority already exists.',1;
+        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson)) THROW 50004,'At least one rule condition is required.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')) FieldId,JSON_VALUE(j.value,'$.LogicalOperator') LogicalOperator,JSON_VALUE(j.value,'$.Operator') Operator,JSON_VALUE(j.value,'$.Value') Value,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,JSON_VALUE(j.value,'$.GroupLogicalOperator') GroupLogicalOperator) d LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=d.FieldId WHERE fc.aFieldId IS NULL OR fc.bIsActive=0 OR d.LogicalOperator NOT IN ('AND','OR') OR d.GroupLogicalOperator NOT IN ('AND','OR') OR NULLIF(LTRIM(RTRIM(d.Operator)),'') IS NULL OR NULLIF(LTRIM(RTRIM(d.Value)),'') IS NULL OR d.ConditionOrder IS NULL OR d.ConditionOrder<=0 OR d.GroupOrder IS NULL OR d.GroupOrder<=0) THROW 50005,'One or more rule conditions are invalid or reference an inactive field.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder) d GROUP BY d.GroupOrder,d.ConditionOrder HAVING COUNT(*)>1) THROW 50006,'Condition order must be unique within each group.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder) d GROUP BY d.GroupOrder HAVING MIN(d.GroupOrder)<>1 OR MAX(d.GroupOrder)<>COUNT(*)) THROW 50007,'Condition group order must be sequential.',1;
 
-        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE tRuleName = @tRuleName)
-            THROW 50002, 'A rule with the specified Rule Name already exists.', 1;
-
-        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority = @nPriority)
-            THROW 50003, 'A rule with the specified Priority already exists.', 1;
-
-        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson))
-            THROW 50004, 'At least one rule condition is required.', 1;
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM OPENJSON(@tConditionsJson) AS conditionJson
-            OUTER APPLY
-            (
-                SELECT TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.FieldId')) AS FieldId,
-                       JSON_VALUE(conditionJson.value, '$.LogicalOperator') AS LogicalOperator,
-                       JSON_VALUE(conditionJson.value, '$.Operator') AS Operator,
-                       JSON_VALUE(conditionJson.value, '$.Value') AS Value,
-                       TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder')) AS ConditionOrder
-            ) conditionData
-            LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId = conditionData.FieldId
-            WHERE conditionData.FieldId IS NULL
-               OR fc.aFieldId IS NULL
-               OR fc.bIsActive = 0
-               OR conditionData.LogicalOperator NOT IN ('AND', 'OR')
-               OR NULLIF(LTRIM(RTRIM(conditionData.Operator)), '') IS NULL
-               OR NULLIF(LTRIM(RTRIM(conditionData.Value)), '') IS NULL
-               OR conditionData.ConditionOrder IS NULL
-               OR conditionData.ConditionOrder <= 0
-        )
-            THROW 50005, 'One or more rule conditions are invalid or reference an inactive field.', 1;
-
-        IF EXISTS
-        (
-            SELECT conditionData.ConditionOrder
-            FROM OPENJSON(@tConditionsJson) AS conditionJson
-            OUTER APPLY
-            (
-                SELECT TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder')) AS ConditionOrder
-            ) conditionData
-            GROUP BY conditionData.ConditionOrder
-            HAVING COUNT(*) > 1
-        )
-            THROW 50006, 'Rule condition order must be unique.', 1;
-
-        INSERT INTO dbo.tblRule
-        (aRuleId, tRuleName, tDescription, nPriority, bIsActive)
-        VALUES (@aRuleId, @tRuleName, @tDescription, @nPriority, @bIsActive);
-
-        INSERT INTO dbo.tblRuleCondition
-        (aRuleId, aFieldId, tLogicalOperator, tOperator, tValue, nConditionOrder)
-        SELECT @aRuleId,
-               TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.FieldId')),
-               COALESCE(JSON_VALUE(conditionJson.value, '$.LogicalOperator'), 'AND'),
-               JSON_VALUE(conditionJson.value, '$.Operator'),
-               JSON_VALUE(conditionJson.value, '$.Value'),
-               TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder'))
-        FROM OPENJSON(@tConditionsJson) AS conditionJson;
-
-        COMMIT TRANSACTION;
-        SELECT @aRuleId AS aRuleId;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
+        INSERT INTO dbo.tblRule(aRuleId,tRuleName,tDescription,nPriority,bIsActive) VALUES(@aRuleId,@tRuleName,@tDescription,@nPriority,@bIsActive);
+        INSERT INTO dbo.tblRuleConditionGroup(aRuleId,nGroupOrder,tLogicalOperator)
+        SELECT @aRuleId,d.GroupOrder,MAX(d.GroupLogicalOperator) FROM (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,COALESCE(JSON_VALUE(j.value,'$.GroupLogicalOperator'),'AND') GroupLogicalOperator FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
+        INSERT INTO dbo.tblRuleCondition(aRuleId,aRuleConditionGroupId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
+        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.LogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
+        COMMIT; SELECT @aRuleId AS aRuleId;
+    END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_UpdateRule', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_UpdateRule;
+IF OBJECT_ID(N'dbo.sproc_UpdateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateRule;
 GO
 CREATE PROCEDURE dbo.sproc_UpdateRule
-    @aRuleId INT,
-    @tRuleName NVARCHAR(200),
-    @tDescription NVARCHAR(1000),
-    @nPriority INT,
-    @bIsActive BIT,
-    @tConditionsJson NVARCHAR(MAX)
+    @aRuleId INT, @tRuleName NVARCHAR(200), @tDescription NVARCHAR(1000), @nPriority INT, @bIsActive BIT, @tConditionsJson NVARCHAR(MAX)
 AS
 BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    BEGIN TRANSACTION;
+    SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION;
     BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM dbo.tblRule WHERE aRuleId = @aRuleId)
-            THROW 50007, 'The specified rule does not exist.', 1;
+        IF NOT EXISTS (SELECT 1 FROM dbo.tblRule WHERE aRuleId=@aRuleId) THROW 50008,'The specified rule does not exist.',1;
+        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE tRuleName=@tRuleName AND aRuleId<>@aRuleId) THROW 50009,'A different rule already uses the specified Rule Name.',1;
+        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority=@nPriority AND aRuleId<>@aRuleId) THROW 50010,'A different rule already uses the specified Priority.',1;
+        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson)) THROW 50011,'At least one rule condition is required.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')) FieldId,JSON_VALUE(j.value,'$.LogicalOperator') LogicalOperator,JSON_VALUE(j.value,'$.Operator') Operator,JSON_VALUE(j.value,'$.Value') Value,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,JSON_VALUE(j.value,'$.GroupLogicalOperator') GroupLogicalOperator) d LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=d.FieldId WHERE fc.aFieldId IS NULL OR fc.bIsActive=0 OR d.LogicalOperator NOT IN ('AND','OR') OR d.GroupLogicalOperator NOT IN ('AND','OR') OR NULLIF(LTRIM(RTRIM(d.Operator)),'') IS NULL OR NULLIF(LTRIM(RTRIM(d.Value)),'') IS NULL OR d.ConditionOrder IS NULL OR d.ConditionOrder<=0 OR d.GroupOrder IS NULL OR d.GroupOrder<=0) THROW 50012,'One or more rule conditions are invalid or reference an inactive field.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder) d GROUP BY d.GroupOrder,d.ConditionOrder HAVING COUNT(*)>1) THROW 50013,'Condition order must be unique within each group.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder) d GROUP BY d.GroupOrder HAVING MIN(d.GroupOrder)<>1 OR MAX(d.GroupOrder)<>COUNT(*)) THROW 50014,'Condition group order must be sequential.',1;
 
-        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE tRuleName = @tRuleName AND aRuleId <> @aRuleId)
-            THROW 50008, 'A different rule already uses the specified Rule Name.', 1;
-
-        IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority = @nPriority AND aRuleId <> @aRuleId)
-            THROW 50009, 'A different rule already uses the specified Priority.', 1;
-
-        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson))
-            THROW 50010, 'At least one rule condition is required.', 1;
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM OPENJSON(@tConditionsJson) AS conditionJson
-            OUTER APPLY
-            (
-                SELECT TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.FieldId')) AS FieldId,
-                       JSON_VALUE(conditionJson.value, '$.LogicalOperator') AS LogicalOperator,
-                       JSON_VALUE(conditionJson.value, '$.Operator') AS Operator,
-                       JSON_VALUE(conditionJson.value, '$.Value') AS Value,
-                       TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder')) AS ConditionOrder
-            ) conditionData
-            LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId = conditionData.FieldId
-            WHERE conditionData.FieldId IS NULL
-               OR fc.aFieldId IS NULL
-               OR fc.bIsActive = 0
-               OR conditionData.LogicalOperator NOT IN ('AND', 'OR')
-               OR NULLIF(LTRIM(RTRIM(conditionData.Operator)), '') IS NULL
-               OR NULLIF(LTRIM(RTRIM(conditionData.Value)), '') IS NULL
-               OR conditionData.ConditionOrder IS NULL
-               OR conditionData.ConditionOrder <= 0
-        )
-            THROW 50011, 'One or more rule conditions are invalid or reference an inactive field.', 1;
-
-        IF EXISTS
-        (
-            SELECT conditionData.ConditionOrder
-            FROM OPENJSON(@tConditionsJson) AS conditionJson
-            OUTER APPLY
-            (
-                SELECT TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder')) AS ConditionOrder
-            ) conditionData
-            GROUP BY conditionData.ConditionOrder
-            HAVING COUNT(*) > 1
-        )
-            THROW 50012, 'Rule condition order must be unique.', 1;
-
-        UPDATE dbo.tblRule
-        SET tRuleName = @tRuleName,
-            tDescription = @tDescription,
-            nPriority = @nPriority,
-            bIsActive = @bIsActive,
-            dtModifiedDate = GETDATE()
-        WHERE aRuleId = @aRuleId;
-
-        DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
-
-        INSERT INTO dbo.tblRuleCondition
-        (aRuleId, aFieldId, tLogicalOperator, tOperator, tValue, nConditionOrder)
-        SELECT @aRuleId,
-               TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.FieldId')),
-               COALESCE(JSON_VALUE(conditionJson.value, '$.LogicalOperator'), 'AND'),
-               JSON_VALUE(conditionJson.value, '$.Operator'),
-               JSON_VALUE(conditionJson.value, '$.Value'),
-               TRY_CONVERT(INT, JSON_VALUE(conditionJson.value, '$.ConditionOrder'))
-        FROM OPENJSON(@tConditionsJson) AS conditionJson;
-
-        COMMIT TRANSACTION;
-        SELECT 1 AS Result;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
+        UPDATE dbo.tblRule SET tRuleName=@tRuleName,tDescription=@tDescription,nPriority=@nPriority,bIsActive=@bIsActive,dtModifiedDate=GETDATE() WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleCondition WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId=@aRuleId;
+        INSERT INTO dbo.tblRuleConditionGroup(aRuleId,nGroupOrder,tLogicalOperator)
+        SELECT @aRuleId,d.GroupOrder,MAX(d.GroupLogicalOperator) FROM (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,COALESCE(JSON_VALUE(j.value,'$.GroupLogicalOperator'),'AND') GroupLogicalOperator FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
+        INSERT INTO dbo.tblRuleCondition(aRuleId,aRuleConditionGroupId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
+        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.LogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
+        COMMIT; SELECT 1 AS Result;
+    END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_SetRuleActive', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_SetRuleActive;
+IF OBJECT_ID(N'dbo.sproc_SetRuleActive', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_SetRuleActive;
 GO
-CREATE PROCEDURE dbo.sproc_SetRuleActive
-    @aRuleId INT,
-    @bIsActive BIT
+CREATE PROCEDURE dbo.sproc_SetRuleActive @aRuleId INT,@bIsActive BIT
+AS BEGIN SET NOCOUNT ON; UPDATE dbo.tblRule SET bIsActive=@bIsActive,dtModifiedDate=GETDATE() WHERE aRuleId=@aRuleId; SELECT @@ROWCOUNT AS AffectedRows; END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_ReorderRules', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_ReorderRules;
+GO
+CREATE PROCEDURE dbo.sproc_ReorderRules @tRuleIdsJson NVARCHAR(MAX)
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.tblRule
-    SET bIsActive = @bIsActive,
-        dtModifiedDate = GETDATE()
-    WHERE aRuleId = @aRuleId;
-
-    SELECT @@ROWCOUNT AS AffectedRows;
+    SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION;
+    BEGIN TRY
+        DECLARE @RuleOrder TABLE(aRuleId INT NOT NULL PRIMARY KEY,nPriority INT NOT NULL);
+        INSERT INTO @RuleOrder SELECT TRY_CONVERT(INT,[value]),CONVERT(INT,[key])+1 FROM OPENJSON(@tRuleIdsJson) WHERE TRY_CONVERT(INT,[value]) IS NOT NULL;
+        IF EXISTS(SELECT 1 FROM @RuleOrder ro LEFT JOIN dbo.tblRule r ON r.aRuleId=ro.aRuleId WHERE r.aRuleId IS NULL) THROW 50015,'One or more rules in the requested order do not exist.',1;
+        IF (SELECT COUNT(*) FROM @RuleOrder)<>(SELECT COUNT(*) FROM dbo.tblRule) THROW 50016,'The requested rule order must contain every rule.',1;
+        UPDATE dbo.tblRule SET nPriority=nPriority+1000000;
+        UPDATE r SET r.nPriority=ro.nPriority,r.dtModifiedDate=GETDATE() FROM dbo.tblRule r INNER JOIN @RuleOrder ro ON ro.aRuleId=r.aRuleId;
+        COMMIT;
+    END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.sproc_ReorderRules', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_ReorderRules;
+IF OBJECT_ID(N'dbo.sproc_DeleteRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_DeleteRule;
 GO
-CREATE PROCEDURE dbo.sproc_ReorderRules
-    @tRuleIdsJson NVARCHAR(MAX)
+CREATE PROCEDURE dbo.sproc_DeleteRule @aRuleId INT
 AS
 BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    BEGIN TRANSACTION;
+    SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION;
     BEGIN TRY
-        DECLARE @RuleOrder TABLE
-        (
-            aRuleId INT NOT NULL PRIMARY KEY,
-            nPriority INT NOT NULL
-        );
-
-        INSERT INTO @RuleOrder (aRuleId, nPriority)
-        SELECT TRY_CONVERT(INT, [value]), CONVERT(INT, [key]) + 1
-        FROM OPENJSON(@tRuleIdsJson)
-        WHERE TRY_CONVERT(INT, [value]) IS NOT NULL;
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM @RuleOrder ro
-            LEFT JOIN dbo.tblRule r ON r.aRuleId = ro.aRuleId
-            WHERE r.aRuleId IS NULL
-        )
-            THROW 50013, 'One or more rules in the requested order do not exist.', 1;
-
-        IF (SELECT COUNT(*) FROM @RuleOrder) <> (SELECT COUNT(*) FROM dbo.tblRule)
-            THROW 50014, 'The requested rule order must contain every rule.', 1;
-
-        UPDATE dbo.tblRule
-        SET nPriority = nPriority + 1000000;
-
-        UPDATE r
-        SET r.nPriority = ro.nPriority,
-            r.dtModifiedDate = GETDATE()
-        FROM dbo.tblRule r
-        INNER JOIN @RuleOrder ro ON ro.aRuleId = r.aRuleId;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
-
-IF OBJECT_ID(N'dbo.sproc_DeleteRule', N'P') IS NOT NULL
-    DROP PROCEDURE dbo.sproc_DeleteRule;
-GO
-CREATE PROCEDURE dbo.sproc_DeleteRule
-    @aRuleId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    BEGIN TRANSACTION;
-    BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM dbo.tblRule WHERE aRuleId = @aRuleId)
-        BEGIN
-            ROLLBACK TRANSACTION;
-            SELECT 0 AS Result;
-            RETURN;
-        END;
-
-        DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
-        DELETE FROM dbo.tblRule WHERE aRuleId = @aRuleId;
-
-        COMMIT TRANSACTION;
-        SELECT 1 AS Result;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
+        IF NOT EXISTS(SELECT 1 FROM dbo.tblRule WHERE aRuleId=@aRuleId) BEGIN ROLLBACK; SELECT 0 AS Result; RETURN; END;
+        DELETE FROM dbo.tblRuleCondition WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRule WHERE aRuleId=@aRuleId;
+        COMMIT; SELECT 1 AS Result;
+    END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
 GO
