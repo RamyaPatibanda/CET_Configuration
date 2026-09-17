@@ -1,5 +1,5 @@
 using System.Text;
-using api.BusinessLogic;
+using api.BusinessLogic.Auth;
 using api.BusinessLogic.FieldConfiguration;
 using api.BusinessLogic.RuleConfiguration;
 using api.DataAccess;

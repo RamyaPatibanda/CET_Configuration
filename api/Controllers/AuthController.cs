@@ -1,4 +1,4 @@
-using api.BusinessLogic;
+using api.BusinessLogic.Auth;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
