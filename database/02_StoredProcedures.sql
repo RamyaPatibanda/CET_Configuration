@@ -17,13 +17,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT
-        aUserId,
-        tUsername,
-        tDisplayName,
-        bIsAdmin,
-        tPassword,
-        bIsActive
+    SELECT aUserId, tUsername, tDisplayName, bIsAdmin, tPassword, bIsActive
     FROM dbo.tblUsers
     WHERE tUsername = @tUsername;
 END;
@@ -40,6 +34,7 @@ BEGIN
 
     SELECT
         aFieldId,
+        tTableName,
         tFieldName,
         tDisplayName,
         tFieldType,
@@ -65,6 +60,7 @@ BEGIN
 
     SELECT
         aFieldId,
+        tTableName,
         tFieldName,
         tDisplayName,
         tFieldType,
@@ -84,6 +80,7 @@ GO
 
 CREATE PROCEDURE dbo.sproc_CreateField
     @aFieldId INT,
+    @tTableName NVARCHAR(128),
     @tFieldName NVARCHAR(200),
     @tDisplayName NVARCHAR(200),
     @tFieldType NVARCHAR(50),
@@ -96,27 +93,13 @@ BEGIN
 
     INSERT INTO dbo.tblFieldConfiguration
     (
-        aFieldId,
-        tFieldName,
-        tDisplayName,
-        tFieldType,
-        bIsRequired,
-        bIsActive,
-        nDisplayOrder,
-        dtCreatedDate,
-        dtModifiedDate
+        aFieldId, tTableName, tFieldName, tDisplayName, tFieldType,
+        bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate
     )
     VALUES
     (
-        @aFieldId,
-        @tFieldName,
-        @tDisplayName,
-        @tFieldType,
-        @bIsRequired,
-        @bIsActive,
-        @nDisplayOrder,
-        GETDATE(),
-        NULL
+        @aFieldId, @tTableName, @tFieldName, @tDisplayName, @tFieldType,
+        @bIsRequired, @bIsActive, @nDisplayOrder, GETDATE(), NULL
     );
 
     SELECT @aFieldId AS aFieldId;
@@ -129,6 +112,7 @@ GO
 
 CREATE PROCEDURE dbo.sproc_UpdateField
     @aFieldId INT,
+    @tTableName NVARCHAR(128),
     @tFieldName NVARCHAR(200),
     @tDisplayName NVARCHAR(200),
     @tFieldType NVARCHAR(50),
@@ -141,6 +125,7 @@ BEGIN
 
     UPDATE dbo.tblFieldConfiguration
     SET
+        tTableName = @tTableName,
         tFieldName = @tFieldName,
         tDisplayName = @tDisplayName,
         tFieldType = @tFieldType,
