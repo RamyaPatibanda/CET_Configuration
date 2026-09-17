@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
-import Switch from "../../../components/common/Switch/Switch";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import fieldConfigurationService from "../services/fieldConfigurationService";
 
@@ -48,7 +47,7 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
       }
     };
 
-    setForm(field ? { ...EMPTY_FIELD, ...field } : { ...EMPTY_FIELD, fieldId: nextFieldId });
+    setForm(field ? { ...EMPTY_FIELD, ...field } : { ...EMPTY_FIELD, fieldId: nextFieldId, isActive: true, isRequired: false });
     setColumns([]);
     setError("");
     loadTables();
@@ -102,7 +101,7 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
       return;
     }
     setError("");
-    await onSave(form);
+    await onSave({ ...form, isActive: field ? form.isActive : true });
   };
 
   return (
@@ -146,10 +145,6 @@ function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
           <div className="field-type-value">{form.fieldType || "Select a column"}</div>
         </div>
         <TextBox name="displayName" label="Display Name" value={form.displayName} required onChange={(e) => update("displayName", e.target.value)} />
-        <div className="field-form-switches">
-          <Switch name="isRequired" label="Required" checked={form.isRequired} onChange={(e) => update("isRequired", e.target.checked)} />
-          <Switch name="isActive" label="Active" checked={form.isActive} onChange={(e) => update("isActive", e.target.checked)} />
-        </div>
       </form>
     </Dialog>
   );
