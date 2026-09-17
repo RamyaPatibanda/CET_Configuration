@@ -3,7 +3,7 @@
     Target database: CET_configuration
 
     Execute this script manually against the CET_configuration database.
-    Existing tables are not modified.
+    Existing tables are not modified by this script.
 */
 
 IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NULL
@@ -28,6 +28,7 @@ BEGIN
     CREATE TABLE dbo.tblFieldConfiguration
     (
         aFieldId        INT NOT NULL,
+        tTableName      NVARCHAR(128) NOT NULL,
         tFieldName      NVARCHAR(200) NOT NULL,
         tDisplayName    NVARCHAR(200) NOT NULL,
         tFieldType      NVARCHAR(50) NOT NULL,
