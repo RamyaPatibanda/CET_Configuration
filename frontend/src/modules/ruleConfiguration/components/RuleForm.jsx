@@ -1,121 +1,125 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { FiMenu, FiPlus, FiTrash2, FiUsers, FiUserX } from "react-icons/fi";
-import Dialog from "../../../components/common/Dialog";
-import Button from "../../../components/common/Button";
-import Input from "../../../components/common/Input";
-import Select from "../../../components/common/Select";
-import Switch from "../../../components/common/Switch";
+import { useEffect, useMemo, useState } from "react";
+import { FiCheckSquare, FiMenu, FiPlus, FiTrash2, FiUsers } from "react-icons/fi";
+import Button from "../../../components/common/Button/Button";
+import Dialog from "../../../components/common/Dialog/Dialog";
+import Select from "../../../components/common/Select/Select";
+import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
 import "./RuleConditionGrouping.css";
 
-const operators = [
-  "Equals",
-  "Not Equals",
-  "Greater Than",
-  "Greater Than or Equal",
-  "Less Than",
-  "Less Than or Equal",
-  "Contains",
-  "Starts With",
-  "Ends With",
+const EMPTY_RULE = {
+  ruleId: 0,
+  ruleName: "",
+  description: "",
+  priority: 1,
+  isActive: true,
+  conditions: [],
+};
+
+const OPERATORS = {
+  Text: [
+    { value: "Equals", label: "Equals" },
+    { value: "NotEquals", label: "Not Equals" },
+    { value: "Contains", label: "Contains" },
+    { value: "StartsWith", label: "Starts With" },
+  ],
+  Number: [
+    { value: "Equals", label: "Equals" },
+    { value: "NotEquals", label: "Not Equals" },
+    { value: "GreaterThan", label: "Greater Than" },
+    { value: "LessThan", label: "Less Than" },
+    { value: "GreaterThanOrEqual", label: "Greater Than or Equal" },
+    { value: "LessThanOrEqual", label: "Less Than or Equal" },
+  ],
+  Date: [
+    { value: "Equals", label: "Equals" },
+    { value: "Before", label: "Before" },
+    { value: "After", label: "After" },
+  ],
+  Boolean: [{ value: "Equals", label: "Equals" }],
+};
+
+const LOGICAL_OPTIONS = [
+  { value: "AND", label: "AND" },
+  { value: "OR", label: "OR" },
 ];
 
-const groupColors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444"];
+const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
+
+function optionsForType(type) {
+  return OPERATORS[type] || OPERATORS.Text;
+}
+
+function getResponseItems(response) {
+  return Array.isArray(response) ? response : response?.data || [];
+}
 
 function createCondition(groupId = null) {
   return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `condition-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     groupId,
     fieldId: "",
     logicalOperator: "AND",
     operator: "Equals",
     value: "",
+    groupLogicalOperator: "AND",
   };
 }
 
-function toRows(conditions = []) {
-  return conditions.map((condition, index) => ({
-    id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-    groupId: `group-${condition.groupOrder ?? 1}`,
-    fieldId: condition.fieldId?.toString() ?? "",
-    logicalOperator: condition.logicalOperator || "AND",
-    operator: condition.operator || "Equals",
-    value: condition.value ?? "",
-  }));
+function toRows(conditions) {
+  if (!conditions?.length) return [];
+
+  return [...conditions]
+    .sort(
+      (a, b) =>
+        (a.groupOrder ?? 1) - (b.groupOrder ?? 1) ||
+        (a.conditionOrder ?? 1) - (b.conditionOrder ?? 1)
+    )
+    .map((condition, index) => ({
+      id: `condition-${condition.fieldId}-${condition.conditionOrder}-${index}`,
+      groupId: `group-${condition.groupOrder ?? 1}`,
+      fieldId: condition.fieldId,
+      logicalOperator: condition.logicalOperator || "AND",
+      operator: condition.operator || "Equals",
+      value: condition.value || "",
+      groupLogicalOperator: condition.groupLogicalOperator || "AND",
+    }));
 }
 
-export default function RuleForm({ open, onClose, onSaved, rule = null }) {
-  const [ruleName, setRuleName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [rows, setRows] = useState([createCondition()]);
-  const [selectedRows, setSelectedRows] = useState([]);
+function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
+  const [form, setForm] = useState(EMPTY_RULE);
+  const [rows, setRows] = useState([]);
   const [fields, setFields] = useState([]);
+  const [loadingFields, setLoadingFields] = useState(false);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [draggedRow, setDraggedRow] = useState(null);
 
   useEffect(() => {
     if (!open) return;
 
-    if (rule) {
-      setRuleName(rule.ruleName || "");
-      setDescription(rule.description || "");
-      setIsActive(rule.isActive !== false);
-      setRows(toRows(rule.conditions));
-    } else {
-      setRuleName("");
-      setDescription("");
-      setIsActive(true);
-      setRows([createCondition()]);
-    }
-
+    setForm(rule ? { ...EMPTY_RULE, ...rule } : { ...EMPTY_RULE, ruleId: nextRuleId });
+    setRows(rule ? toRows(rule.conditions) : []);
     setSelectedRows([]);
     setError("");
-  }, [open, rule]);
 
-  useEffect(() => {
-    if (!open) return;
+    const loadFields = async () => {
+      try {
+        setLoadingFields(true);
+        const response = await ruleConfigurationService.getFields();
+        setFields(getResponseItems(response));
+      } catch (loadError) {
+        setError(loadError.message || "Unable to load active fields.");
+      } finally {
+        setLoadingFields(false);
+      }
+    };
 
-    ruleConfigurationService
-      .getActiveFields()
-      .then(setFields)
-      .catch((err) => setError(err.message || "Unable to load fields."));
-  }, [open]);
+    loadFields();
+  }, [open, rule, nextRuleId]);
 
-  const fieldOptions = useMemo(
-    () => fields.map((field) => ({ value: field.fieldId?.toString(), label: field.displayName || field.fieldName })),
-    [fields]
-  );
-
-  const groupedRows = useMemo(() => {
-    const counts = new Map();
-    rows.forEach((row) => {
-      const key = row.groupId || `ungrouped-${row.id}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    return counts;
-  }, [rows]);
-
-  const getBracePosition = (row) => {
-    if (!row.groupId) return "single";
-    const indexes = rows
-      .map((item, index) => (item.groupId === row.groupId ? index : -1))
-      .filter((index) => index >= 0);
-    const index = rows.indexOf(row);
-    if (indexes.length < 2) return "single";
-    if (index === indexes[0]) return "start";
-    if (index === indexes[indexes.length - 1]) return "end";
-    return "middle";
-  };
-
-  const getGroupColor = (row) => {
-    if (!row.groupId) return "#94a3b8";
-    const groupIndex = Array.from(new Set(rows.filter((item) => item.groupId).map((item) => item.groupId))).indexOf(row.groupId);
-    return groupColors[groupIndex % groupColors.length];
-  };
-
-  const updateRow = (rowId, changes) => {
-    setRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...changes } : row)));
+  const update = (name, value) => {
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
   const addRow = () => {
@@ -128,9 +132,17 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
     setSelectedRows((current) => current.filter((id) => id !== rowId));
   };
 
-  const toggleRowSelection = (rowId) => {
+  const updateRow = (rowId, name, value) => {
+    setRows((current) =>
+      current.map((row) => (row.id === rowId ? { ...row, [name]: value } : row))
+    );
+  };
+
+  const toggleSelected = (rowId) => {
     setSelectedRows((current) =>
-      current.includes(rowId) ? current.filter((id) => id !== rowId) : [...current, rowId]
+      current.includes(rowId)
+        ? current.filter((id) => id !== rowId)
+        : [...current, rowId]
     );
   };
 
@@ -142,17 +154,17 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
 
     const selected = rows.filter((row) => selectedRows.includes(row.id));
     const existingGroups = selected.filter((row) => row.groupId).map((row) => row.groupId);
-    if (existingGroups.length && new Set(existingGroups).size === 1 && selected.length > 1) {
+    if (existingGroups.length && new Set(existingGroups).size === 1) {
       setError("The selected conditions are already in the same group.");
       return;
     }
 
-    const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const selectedSet = new Set(selectedRows);
     const firstSelectedIndex = rows.findIndex((row) => selectedSet.has(row.id));
-    const selectedWithGroup = selected.map((row) => ({ ...row, groupId }));
+    const grouped = selected.map((row) => ({ ...row, groupId }));
     const remaining = rows.filter((row) => !selectedSet.has(row.id));
-    remaining.splice(firstSelectedIndex, 0, ...selectedWithGroup);
+    remaining.splice(firstSelectedIndex, 0, ...grouped);
 
     setRows(remaining);
     setSelectedRows([]);
@@ -165,21 +177,23 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
       return;
     }
 
-    const selectedSet = new Set(selectedRows);
-    const selectedGrouped = rows.filter((row) => selectedSet.has(row.id) && row.groupId);
-    const groupedCounts = new Map();
+    const counts = new Map();
     rows.filter((row) => row.groupId).forEach((row) => {
-      groupedCounts.set(row.groupId, (groupedCounts.get(row.groupId) || 0) + 1);
+      counts.set(row.groupId, (counts.get(row.groupId) || 0) + 1);
     });
 
-    if (!selectedGrouped.some((row) => groupedCounts.get(row.groupId) > 1)) {
+    const hasGroup = rows.some(
+      (row) => selectedRows.includes(row.id) && row.groupId && counts.get(row.groupId) > 1
+    );
+
+    if (!hasGroup) {
       setError("Select conditions belonging to a multi-row group to ungroup.");
       return;
     }
 
     setRows((current) =>
       current.map((row) =>
-        selectedSet.has(row.id) && row.groupId && groupedCounts.get(row.groupId) > 1
+        selectedRows.includes(row.id) && row.groupId && counts.get(row.groupId) > 1
           ? { ...row, groupId: null }
           : row
       )
@@ -188,100 +202,115 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
     setError("");
   };
 
+  const handleDragStart = (rowId) => setDraggedRow(rowId);
+
+  const handleDrop = (targetId) => {
+    if (!draggedRow || draggedRow === targetId) return;
+
+    setRows((current) => {
+      const sourceIndex = current.findIndex((row) => row.id === draggedRow);
+      const targetIndex = current.findIndex((row) => row.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setDraggedRow(null);
+  };
+
   const validate = () => {
-    if (!ruleName.trim()) return "Rule name is required.";
+    if (!form.ruleName.trim()) return "Rule name is required.";
     if (!rows.length) return "At least one condition is required.";
-    if (rows.some((row) => !row.fieldId || !row.operator || !row.value.trim())) {
+    if (rows.some((row) => !row.fieldId || !row.operator || !String(row.value).trim())) {
       return "Please complete all condition fields.";
     }
     return "";
   };
 
-  const save = async () => {
+  const handleSubmit = () => {
     const validationError = validate();
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    setSaving(true);
-    setError("");
+    let groupOrder = 0;
+    let previousGroupKey = null;
 
-    try {
-      let groupOrder = 0;
-      let previousGroupKey = null;
-
-      const conditions = rows.map((row, index) => {
-        // Standalone rows must behave as their own groups. Using the row id
-        // for ungrouped rows prevents multiple null groupIds from collapsing
-        // into one group and producing non-sequential group orders.
-        const currentGroupKey = row.groupId || `ungrouped-${row.id}`;
-
-        if (currentGroupKey !== previousGroupKey) {
-          groupOrder += 1;
-          previousGroupKey = currentGroupKey;
-        }
-
-        const groupRows = rows.filter((item) => {
-          const itemGroupKey = item.groupId || `ungrouped-${item.id}`;
-          return itemGroupKey === currentGroupKey;
-        });
-        const isGrouped = Boolean(row.groupId) && groupRows.length > 1;
-
-        return {
-          fieldId: Number(row.fieldId),
-          logicalOperator: row.logicalOperator || "AND",
-          operator: row.operator,
-          value: row.value,
-          conditionOrder: index + 1,
-          groupOrder,
-          groupLogicalOperator: isGrouped ? "AND" : "AND",
-        };
-      });
-
-      const payload = {
-        ruleId: rule?.ruleId || 0,
-        ruleName: ruleName.trim(),
-        description: description.trim(),
-        priority: rule?.priority || 1,
-        isActive,
-        conditions,
-      };
-
-      if (rule) {
-        await ruleConfigurationService.updateRule(rule.ruleId, payload);
-      } else {
-        await ruleConfigurationService.createRule(payload);
+    const conditions = rows.map((row, index) => {
+      // Every standalone row is its own group for backend ordering purposes.
+      const currentGroupKey = row.groupId || `ungrouped-${row.id}`;
+      if (currentGroupKey !== previousGroupKey) {
+        groupOrder += 1;
+        previousGroupKey = currentGroupKey;
       }
 
-      onSaved?.();
-      onClose?.();
-    } catch (err) {
-      setError(err.message || "Unable to save rule.");
-    } finally {
-      setSaving(false);
-    }
+      return {
+        fieldId: Number(row.fieldId),
+        logicalOperator: row.logicalOperator || "AND",
+        operator: row.operator,
+        value: row.value,
+        conditionOrder: index + 1,
+        groupOrder,
+        groupLogicalOperator: row.groupLogicalOperator || "AND",
+      };
+    });
+
+    onSave({
+      ...form,
+      ruleName: form.ruleName.trim(),
+      description: form.description?.trim() || "",
+      conditions,
+    });
   };
+
+  const fieldMap = useMemo(
+    () => new Map(fields.map((field) => [String(field.fieldId), field])),
+    [fields]
+  );
+
+  const groupMeta = useMemo(() => {
+    const map = new Map();
+    rows.forEach((row) => {
+      if (!row.groupId) return;
+      if (!map.has(row.groupId)) map.set(row.groupId, []);
+      map.get(row.groupId).push(row.id);
+    });
+    return map;
+  }, [rows]);
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
       title={rule ? "Edit Rule" : "Create Rule"}
-      maxWidth="1400px"
-      width="85vw"
+      onClose={onClose}
       className="rule-form-dialog"
     >
       <div className="rule-form">
         {error && <div className="rule-form-error">{error}</div>}
 
         <div className="rule-form-header-fields">
-          <Input label="Rule Name" value={ruleName} onChange={(event) => setRuleName(event.target.value)} required />
-          <Input label="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
-          <div className="rule-active-field">
+          <TextBox
+            label="Rule Name"
+            value={form.ruleName}
+            onChange={(event) => update("ruleName", event.target.value)}
+            required
+          />
+          <TextBox
+            label="Description"
+            value={form.description}
+            onChange={(event) => update("description", event.target.value)}
+          />
+          <label className="rule-active-field">
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(event) => update("isActive", event.target.checked)}
+            />
             <span>Active</span>
-            <Switch checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-          </div>
+          </label>
         </div>
 
         <div className="rule-condition-toolbar">
@@ -294,7 +323,7 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
               <FiUsers /> Group
             </Button>
             <Button type="button" variant="secondary" onClick={ungroupSelected} disabled={!selectedRows.length}>
-              <FiUserX /> Ungroup
+              Ungroup
             </Button>
             <Button type="button" onClick={addRow}>
               <FiPlus /> Add Condition
@@ -318,34 +347,86 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const position = getBracePosition(row);
-                const color = getGroupColor(row);
-                const isSelected = selectedRows.includes(row.id);
+                const groupRows = row.groupId ? groupMeta.get(row.groupId) || [] : [];
+                const groupIndex = row.groupId
+                  ? Array.from(groupMeta.keys()).indexOf(row.groupId)
+                  : -1;
+                const position =
+                  groupRows.length < 2
+                    ? "single"
+                    : groupRows[0] === row.id
+                      ? "start"
+                      : groupRows[groupRows.length - 1] === row.id
+                        ? "end"
+                        : "middle";
+                const color = GROUP_COLORS[(groupIndex < 0 ? 0 : groupIndex) % GROUP_COLORS.length];
+                const field = fieldMap.get(String(row.fieldId));
+                const operatorOptions = optionsForType(field?.fieldType);
+
                 return (
-                  <tr key={row.id} className={isSelected ? "selected-condition-row" : ""}>
+                  <tr
+                    key={row.id}
+                    className={selectedRows.includes(row.id) ? "selected-condition-row" : ""}
+                    draggable
+                    onDragStart={() => handleDragStart(row.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => handleDrop(row.id)}
+                  >
                     <td className="group-column">
-                      <div className="group-brace" style={{ "--group-color": color }} data-position={position}>
+                      <div className={`group-brace group-brace-${color}`} data-position={position}>
                         {position === "single" ? "•" : position === "middle" ? "│" : position === "start" ? "(" : ")"}
                       </div>
                     </td>
                     <td className="select-column">
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleRowSelection(row.id)} />
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.includes(row.id)}
+                        onChange={() => toggleSelected(row.id)}
+                        aria-label="Select condition"
+                      />
                     </td>
                     <td>
-                      <Select value={row.fieldId} options={fieldOptions} onChange={(event) => updateRow(row.id, { fieldId: event.target.value })} />
+                      <Select
+                        value={String(row.fieldId ?? "")}
+                        options={fields.map((item) => ({
+                          value: String(item.fieldId),
+                          label: item.displayName || item.fieldName,
+                        }))}
+                        onChange={(event) => updateRow(row.id, "fieldId", event.target.value)}
+                        disabled={loadingFields}
+                      />
                     </td>
                     <td>
-                      <Select value={row.operator} options={operators.map((value) => ({ value, label: value }))} onChange={(event) => updateRow(row.id, { operator: event.target.value })} />
+                      <Select
+                        value={row.operator}
+                        options={operatorOptions}
+                        onChange={(event) => updateRow(row.id, "operator", event.target.value)}
+                      />
                     </td>
                     <td>
-                      <Input value={row.value} onChange={(event) => updateRow(row.id, { value: event.target.value })} />
+                      <TextBox
+                        value={row.value}
+                        onChange={(event) => updateRow(row.id, "value", event.target.value)}
+                      />
                     </td>
                     <td>
-                      <Select value={row.logicalOperator} options={[{ value: "AND", label: "AND" }, { value: "OR", label: "OR" }]} onChange={(event) => updateRow(row.id, { logicalOperator: event.target.value })} />
+                      <Select
+                        value={row.logicalOperator}
+                        options={LOGICAL_OPTIONS}
+                        onChange={(event) => updateRow(row.id, "logicalOperator", event.target.value)}
+                      />
                     </td>
-                    <td className="drag-column"><FiMenu /></td>
+                    <td className="drag-column">
+                      <FiMenu />
+                    </td>
                     <td className="action-column">
-                      <button type="button" className="condition-delete-button" onClick={() => removeRow(row.id)} disabled={rows.length === 1} aria-label="Delete condition">
+                      <button
+                        type="button"
+                        className="condition-delete-button"
+                        onClick={() => removeRow(row.id)}
+                        disabled={rows.length === 1}
+                        aria-label="Delete condition"
+                      >
                         <FiTrash2 />
                       </button>
                     </td>
@@ -357,10 +438,16 @@ export default function RuleForm({ open, onClose, onSaved, rule = null }) {
         </div>
 
         <div className="rule-form-footer">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button type="button" onClick={save} disabled={saving}>{saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}</Button>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={saving}>
+            <FiCheckSquare /> {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
+          </Button>
         </div>
       </div>
     </Dialog>
   );
 }
+
+export default RuleForm;
