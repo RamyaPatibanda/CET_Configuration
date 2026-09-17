@@ -23,7 +23,7 @@ const fieldConfigurationService = {
   },
 
   async createField(field) {
-    try { return await httpClient.post(API_ENDPOINTS.FIELD_CONFIGURATION.LIST, field); }
+    try { return await httpClient.post(API_ENDPOINTS.FIELD_CONFIGURATION.CREATE, field); }
     catch (error) { throw error; }
   },
 
