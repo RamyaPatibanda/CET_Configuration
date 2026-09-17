@@ -35,6 +35,7 @@ namespace api.BusinessLogic.FieldConfiguration
             try
             {
                 Validate(request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.DisplayOrder);
+                await _dataAccess.ValidateFieldSourceAsync(request.TableName, request.FieldName);
                 return await _dataAccess.CreateFieldAsync(request);
             }
             catch (Exception ex) { _logger.LogError(ex, "Error in field configuration business logic while creating field {FieldName}.", request.FieldName); throw; }
@@ -46,6 +47,7 @@ namespace api.BusinessLogic.FieldConfiguration
             {
                 if (request.FieldId <= 0) throw new ArgumentException("Field id must be greater than zero.", nameof(request.FieldId));
                 Validate(request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.DisplayOrder);
+                await _dataAccess.ValidateFieldSourceAsync(request.TableName, request.FieldName);
                 return await _dataAccess.UpdateFieldAsync(request);
             }
             catch (Exception ex) { _logger.LogError(ex, "Error in field configuration business logic while updating field {FieldId}.", request.FieldId); throw; }
@@ -75,6 +77,17 @@ namespace api.BusinessLogic.FieldConfiguration
                 return await _dataAccess.GetColumnsAsync(tableName);
             }
             catch (Exception ex) { _logger.LogError(ex, "Error in field configuration business logic while getting columns for table {TableName}.", tableName); throw; }
+        }
+
+        public async Task ValidateFieldSourceAsync(string tableName, string fieldName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Table name is required.", nameof(tableName));
+                if (string.IsNullOrWhiteSpace(fieldName)) throw new ArgumentException("Column name is required.", nameof(fieldName));
+                await _dataAccess.ValidateFieldSourceAsync(tableName, fieldName);
+            }
+            catch (Exception ex) { _logger.LogError(ex, "Error in field configuration business logic while validating {TableName}.{FieldName}.", tableName, fieldName); throw; }
         }
 
         private static void Validate(string tableName, string fieldName, string displayName, string fieldType, int displayOrder)
