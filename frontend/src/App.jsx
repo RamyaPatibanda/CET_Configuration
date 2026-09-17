@@ -20,15 +20,9 @@ function Login({ onLogin }) {
     if (!password) return setError("Please enter your password.");
     setError("");
     setIsLoading(true);
-    try {
-      await authService.login(username.trim(), password);
-      onLogin();
-      navigate("/overview", { replace: true });
-    } catch (loginError) {
-      setError(loginError.message || "Invalid username or password.");
-    } finally {
-      setIsLoading(false);
-    }
+    try { await authService.login(username.trim(), password); onLogin(); navigate("/overview", { replace: true }); }
+    catch (loginError) { setError(loginError.message || "Invalid username or password."); }
+    finally { setIsLoading(false); }
   };
 
   return (
@@ -50,49 +44,22 @@ function AuthenticatedWorkspace({ onLogout }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const user = authService.getUser();
-  const pageTitle = pathname === "/rules" ? "Rule Configuration" : pathname === "/fields" ? "Field Configuration" : "Overview";
+  const pageTitle = pathname === "/rules" ? "Rule Configuration" : pathname === "/fields" ? "Field Configuration" : pathname === "/allocation" ? "Allocation Run" : "Overview";
 
-  const handleLogout = () => {
-    authService.logout();
-    onLogout();
-    navigate("/login", { replace: true });
-  };
+  const handleLogout = () => { authService.logout(); onLogout(); navigate("/login", { replace: true }); };
 
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <section className="app-main">
-        <header className="app-header glass-header">
-          <div><div className="header-kicker">CONFIGURATION WORKSPACE</div><h2>{pageTitle}</h2></div>
-          <div className="header-actions">
-            <div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div>
-            <button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" onClick={handleLogout}><FiPower size={20}/></button>
-          </div>
-        </header>
-        <main className="app-content"><AppRoutes authenticated /></main>
-      </section>
-    </div>
+    <div className="app-shell"><Sidebar/><section className="app-main">
+      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div><h2>{pageTitle}</h2></div><div className="header-actions"><div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" onClick={handleLogout}><FiPower size={20}/></button></div></header>
+      <main className="app-content"><AppRoutes authenticated /></main>
+    </section></div>
   );
 }
 
 function App() {
   const [authenticated, setAuthenticated] = useState(authService.isAuthenticated());
-
-  useEffect(() => {
-    setAuthenticated(authService.isAuthenticated());
-  }, []);
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        {authenticated ? (
-          <Route path="*" element={<AuthenticatedWorkspace onLogout={() => setAuthenticated(false)} />} />
-        ) : (
-          <Route path="*" element={<Login onLogin={() => setAuthenticated(true)} />} />
-        )}
-      </Routes>
-    </BrowserRouter>
-  );
+  useEffect(() => { setAuthenticated(authService.isAuthenticated()); }, []);
+  return <BrowserRouter><Routes>{authenticated ? <Route path="*" element={<AuthenticatedWorkspace onLogout={() => setAuthenticated(false)} />} /> : <Route path="*" element={<Login onLogin={() => setAuthenticated(true)} />} />}</Routes></BrowserRouter>;
 }
 
 export default App;
