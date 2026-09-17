@@ -12,20 +12,46 @@ function clearCache() {
 
 const ruleConfigurationService = {
   async getRules(forceRefresh = false) {
-    if (!forceRefresh && rulesCache) return rulesCache;
-    if (!forceRefresh && rulesRequest) return rulesRequest;
-    rulesRequest = httpClient.get(API_ENDPOINTS.RULE_CONFIGURATION.LIST)
-      .then((response) => { rulesCache = response; return response; })
-      .finally(() => { rulesRequest = null; });
+    if (!forceRefresh && rulesCache) {
+      return rulesCache;
+    }
+
+    if (!forceRefresh && rulesRequest) {
+      return rulesRequest;
+    }
+
+    rulesRequest = httpClient
+      .get(API_ENDPOINTS.RULE_CONFIGURATION.LIST)
+      .then((response) => {
+        rulesCache = response;
+        return response;
+      })
+      .finally(() => {
+        rulesRequest = null;
+      });
+
     return rulesRequest;
   },
 
   async getFields(forceRefresh = false) {
-    if (!forceRefresh && fieldsCache) return fieldsCache;
-    if (!forceRefresh && fieldsRequest) return fieldsRequest;
-    fieldsRequest = httpClient.get(API_ENDPOINTS.RULE_CONFIGURATION.FIELDS)
-      .then((response) => { fieldsCache = response; return response; })
-      .finally(() => { fieldsRequest = null; });
+    if (!forceRefresh && fieldsCache) {
+      return fieldsCache;
+    }
+
+    if (!forceRefresh && fieldsRequest) {
+      return fieldsRequest;
+    }
+
+    fieldsRequest = httpClient
+      .get(API_ENDPOINTS.RULE_CONFIGURATION.FIELDS)
+      .then((response) => {
+        fieldsCache = response;
+        return response;
+      })
+      .finally(() => {
+        fieldsRequest = null;
+      });
+
     return fieldsRequest;
   },
 
@@ -34,19 +60,50 @@ const ruleConfigurationService = {
   },
 
   async createRule(rule) {
-    const response = await httpClient.post(API_ENDPOINTS.RULE_CONFIGURATION.CREATE, rule);
+    const response = await httpClient.post(
+      API_ENDPOINTS.RULE_CONFIGURATION.CREATE,
+      rule
+    );
+
     clearCache();
     return response;
   },
 
   async updateRule(ruleId, rule) {
-    const response = await httpClient.put(API_ENDPOINTS.RULE_CONFIGURATION.BY_ID(ruleId), rule);
+    const response = await httpClient.put(
+      API_ENDPOINTS.RULE_CONFIGURATION.BY_ID(ruleId),
+      rule
+    );
+
+    clearCache();
+    return response;
+  },
+
+  async setRuleActive(ruleId, isActive) {
+    const response = await httpClient.patch(
+      API_ENDPOINTS.RULE_CONFIGURATION.ACTIVE(ruleId),
+      isActive
+    );
+
+    clearCache();
+    return response;
+  },
+
+  async reorderRules(ruleIds) {
+    const response = await httpClient.put(
+      API_ENDPOINTS.RULE_CONFIGURATION.ORDER,
+      { ruleIds }
+    );
+
     clearCache();
     return response;
   },
 
   async deleteRule(ruleId) {
-    const response = await httpClient.delete(API_ENDPOINTS.RULE_CONFIGURATION.BY_ID(ruleId));
+    const response = await httpClient.delete(
+      API_ENDPOINTS.RULE_CONFIGURATION.BY_ID(ruleId)
+    );
+
     clearCache();
     return response;
   },
