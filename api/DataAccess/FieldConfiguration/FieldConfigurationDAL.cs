@@ -30,11 +30,7 @@ namespace api.DataAccess.FieldConfiguration
                 while (await reader.ReadAsync()) fields.Add(MapField(reader));
                 return fields;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting field configuration.");
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting field configuration."); throw; }
         }
 
         public async Task<FieldDefinition?> GetFieldAsync(int fieldId)
@@ -48,11 +44,7 @@ namespace api.DataAccess.FieldConfiguration
                 await using var reader = await command.ExecuteReaderAsync();
                 return await reader.ReadAsync() ? MapField(reader) : null;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting field {FieldId}.", fieldId);
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting field {FieldId}.", fieldId); throw; }
         }
 
         public async Task<int> CreateFieldAsync(CreateFieldRequest request)
@@ -67,11 +59,7 @@ namespace api.DataAccess.FieldConfiguration
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while creating field {FieldName}.", request.FieldName);
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while creating field {FieldName}.", request.FieldName); throw; }
         }
 
         public async Task<bool> UpdateFieldAsync(UpdateFieldRequest request)
@@ -86,11 +74,7 @@ namespace api.DataAccess.FieldConfiguration
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while updating field {FieldId}.", request.FieldId);
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while updating field {FieldId}.", request.FieldId); throw; }
         }
 
         public async Task<bool> DeleteFieldAsync(int fieldId)
@@ -103,11 +87,7 @@ namespace api.DataAccess.FieldConfiguration
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while deleting field {FieldId}.", fieldId);
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while deleting field {FieldId}.", fieldId); throw; }
         }
 
         public Task<List<FieldSourceOption>> GetAllowedTablesAsync()
@@ -122,11 +102,7 @@ namespace api.DataAccess.FieldConfiguration
                     .ToList();
                 return Task.FromResult(tables);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting configured rule source tables.");
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting configured rule source tables."); throw; }
         }
 
         public async Task<List<FieldSourceOption>> GetColumnsAsync(string tableName)
@@ -136,38 +112,43 @@ namespace api.DataAccess.FieldConfiguration
                 ValidateAllowedTable(tableName);
                 var columns = new List<FieldSourceOption>();
                 await using var connection = new SqlConnection(_connectionString);
+                await using var command = CreateColumnCommand(connection, tableName);
+                await connection.OpenAsync();
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync()) columns.Add(new FieldSourceOption { Name = reader.GetString(0) });
+                if (columns.Count == 0) throw new ArgumentException($"Table '{tableName}' was not found in the dbo schema.", nameof(tableName));
+                return columns;
+            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName); throw; }
+        }
+
+        public async Task ValidateFieldSourceAsync(string tableName, string fieldName)
+        {
+            try
+            {
+                ValidateAllowedTable(tableName);
+                if (string.IsNullOrWhiteSpace(fieldName)) throw new ArgumentException("Column name is required.", nameof(fieldName));
+
+                await using var connection = new SqlConnection(_connectionString);
                 await using var command = new SqlCommand(@"
-                    SELECT COLUMN_NAME
+                    SELECT COUNT(1)
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE TABLE_SCHEMA = 'dbo'
                       AND TABLE_NAME = @tTableName
-                    ORDER BY ORDINAL_POSITION;", connection);
+                      AND COLUMN_NAME = @tFieldName;", connection);
                 command.CommandType = CommandType.Text;
                 command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
+                command.Parameters.Add("@tFieldName", SqlDbType.NVarChar, 128).Value = fieldName;
                 await connection.OpenAsync();
-                await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    columns.Add(new FieldSourceOption { Name = reader.GetString(0) });
-                }
-
-                if (columns.Count == 0)
-                    throw new ArgumentException($"Table '{tableName}' was not found in the dbo schema.", nameof(tableName));
-
-                return columns;
+                var exists = Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+                if (!exists) throw new ArgumentException($"Column '{fieldName}' does not exist in table '{tableName}'.", nameof(fieldName));
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName);
-                throw;
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Error while validating field source {TableName}.{FieldName}.", tableName, fieldName); throw; }
         }
 
         private void ValidateAllowedTable(string tableName)
         {
-            if (string.IsNullOrWhiteSpace(tableName))
-                throw new ArgumentException("Table name is required.", nameof(tableName));
-
+            if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Table name is required.", nameof(tableName));
             if (!_allowedTables.Any(table => string.Equals(table, tableName, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException($"Table '{tableName}' is not configured as an allowed rule source.", nameof(tableName));
         }
@@ -175,6 +156,19 @@ namespace api.DataAccess.FieldConfiguration
         private static SqlCommand CreateCommand(string procedureName, SqlConnection connection)
         {
             return new SqlCommand(procedureName, connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 30 };
+        }
+
+        private static SqlCommand CreateColumnCommand(SqlConnection connection, string tableName)
+        {
+            var command = new SqlCommand(@"
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = 'dbo'
+                  AND TABLE_NAME = @tTableName
+                ORDER BY ORDINAL_POSITION;", connection)
+            { CommandType = CommandType.Text, CommandTimeout = 30 };
+            command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
+            return command;
         }
 
         private static void AddFieldParameters(SqlCommand command, string tableName, string fieldName, string displayName, string fieldType, bool isRequired, bool isActive, int displayOrder)
