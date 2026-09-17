@@ -1,8 +1,10 @@
 using System.Text;
 using api.BusinessLogic;
 using api.BusinessLogic.FieldConfiguration;
+using api.BusinessLogic.RuleConfiguration;
 using api.DataAccess;
 using api.DataAccess.FieldConfiguration;
+using api.DataAccess.RuleConfiguration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,10 +14,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<CETDataAccess>();
+
 builder.Services.AddScoped<IAuthBL, AuthBL>();
+
 builder.Services.AddScoped<IFieldConfigurationDAL, FieldConfigurationDAL>();
 builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
+
+builder.Services.AddScoped<IRuleConfigurationDAL, RuleConfigurationDAL>();
+builder.Services.AddScoped<IRuleConfigurationBL, RuleConfigurationBL>();
+
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
