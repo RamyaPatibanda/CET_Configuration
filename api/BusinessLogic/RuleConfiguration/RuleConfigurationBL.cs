@@ -105,6 +105,17 @@ namespace api.BusinessLogic.RuleConfiguration
                 throw new ArgumentException("Condition groups must have sequential group order.", nameof(conditions));
             }
 
+            var conditionOrders = conditions
+                .Select(condition => condition.ConditionOrder)
+                .OrderBy(order => order)
+                .ToList();
+
+            if (conditionOrders.Any(order => order < 1) ||
+                conditionOrders.Select((order, index) => order == index + 1).Any(isValid => !isValid))
+            {
+                throw new ArgumentException("Condition order must be sequential.", nameof(conditions));
+            }
+
             foreach (var condition in conditions)
             {
                 if (condition.FieldId <= 0)
@@ -119,17 +130,6 @@ namespace api.BusinessLogic.RuleConfiguration
                     throw new ArgumentException("Group logical operator must be AND or OR.", nameof(conditions));
                 if (condition.GroupOrder < 1 || condition.ConditionOrder < 1)
                     throw new ArgumentException("Condition and group order must be greater than zero.", nameof(conditions));
-            }
-
-            foreach (var group in conditions.GroupBy(condition => condition.GroupOrder))
-            {
-                var conditionOrders = group
-                    .Select(condition => condition.ConditionOrder)
-                    .OrderBy(order => order)
-                    .ToList();
-
-                if (conditionOrders.Select((order, index) => order == index + 1).Any(isValid => !isValid))
-                    throw new ArgumentException("Condition order must be sequential within each group.", nameof(conditions));
             }
         }
 
