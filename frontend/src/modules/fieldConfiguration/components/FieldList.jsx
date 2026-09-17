@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FiEdit2, FiMenu, FiTrash2 } from "react-icons/fi";
+import Switch from "../../../components/common/Switch/Switch";
 
-function FieldList({ fields, loading, onEdit, onDelete, onReorder }) {
+function FieldList({ fields, loading, onEdit, onDelete, onReorder, onToggleRequired, onToggleActive }) {
   const [draggedId, setDraggedId] = useState(null);
 
   if (loading) return <div className="field-list-message">Loading fields…</div>;
@@ -25,7 +26,7 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder }) {
       <div className="field-reorder-hint"><FiMenu size={15} /> Drag the handle to rearrange field order.</div>
       <table className="field-table">
         <thead>
-          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Field Type</th><th>Required</th><th>Status</th><th>Actions</th></tr>
+          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Field Type</th><th>Required</th><th>Active</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {fields.map((field) => (
@@ -61,8 +62,22 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder }) {
               <td>{field.fieldName}</td>
               <td>{field.displayName}</td>
               <td>{field.fieldType}</td>
-              <td><span className="required-chip">{field.isRequired ? "Required" : "Optional"}</span></td>
-              <td><span className={`status-chip ${field.isActive ? "active" : "inactive"}`}><span>●</span>{field.isActive ? "Active" : "Inactive"}</span></td>
+              <td>
+                <Switch
+                  name={`required-${field.fieldId}`}
+                  label=""
+                  checked={field.isRequired}
+                  onChange={(event) => onToggleRequired?.(field, event.target.checked)}
+                />
+              </td>
+              <td>
+                <Switch
+                  name={`active-${field.fieldId}`}
+                  label=""
+                  checked={field.isActive}
+                  onChange={(event) => onToggleActive?.(field, event.target.checked)}
+                />
+              </td>
               <td className="field-actions">
                 <button type="button" className="icon-button" title={`Edit ${field.displayName}`} aria-label={`Edit ${field.displayName}`} onClick={() => onEdit(field)}><FiEdit2 size={16} /></button>
                 <button type="button" className="icon-button delete-icon" title={`Delete ${field.displayName}`} aria-label={`Delete ${field.displayName}`} onClick={() => onDelete(field)}><FiTrash2 size={16} /></button>
