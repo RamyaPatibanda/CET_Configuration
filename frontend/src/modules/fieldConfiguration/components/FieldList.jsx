@@ -25,7 +25,7 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder }) {
       <div className="field-reorder-hint"><FiMenu size={15} /> Drag the handle to rearrange field order.</div>
       <table className="field-table">
         <thead>
-          <tr><th className="field-order-column" aria-label="Reorder" /><th>Field Name</th><th>Display Name</th><th>Field Type</th><th>Required</th><th>Status</th><th>Actions</th></tr>
+          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Field Type</th><th>Required</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {fields.map((field) => (
@@ -57,7 +57,8 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder }) {
                   <FiMenu size={17} />
                 </button>
               </td>
-              <td><strong>{field.fieldName}</strong></td>
+              <td><strong>{field.tableName}</strong></td>
+              <td>{field.fieldName}</td>
               <td>{field.displayName}</td>
               <td>{field.fieldType}</td>
               <td><span className="required-chip">{field.isRequired ? "Required" : "Optional"}</span></td>
