@@ -11,5 +11,7 @@ namespace api.Models.RuleConfiguration
         public string Operator { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         public int ConditionOrder { get; set; }
+        public int GroupOrder { get; set; } = 1;
+        public string GroupLogicalOperator { get; set; } = "AND";
     }
 }
