@@ -9,9 +9,11 @@ namespace api.DataAccess
     public class CETDataAccess
     {
         public readonly string DBConnectionStr;
+        private readonly ILogger<CETDataAccess> _logger;
 
-        public CETDataAccess(IConfiguration configuration, IMemoryCache cache)
+        public CETDataAccess(IConfiguration configuration, IMemoryCache cache, ILogger<CETDataAccess> logger)
         {
+            _logger = logger;
             DBConnectionStr = new ConnectionUtils().GetConnectionString(
                 configuration["ConnectionStrings:CrmDbConnection"]
                 ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
@@ -30,10 +32,8 @@ namespace api.DataAccess
 
                 command.Parameters.Add("@tUsername", SqlDbType.NVarChar, 100).Value = username;
                 await connection.OpenAsync();
-
                 await using var reader = await command.ExecuteReaderAsync();
-                if (!await reader.ReadAsync())
-                    return null;
+                if (!await reader.ReadAsync()) return null;
 
                 return new LoginUser
                 {
@@ -45,9 +45,10 @@ namespace api.DataAccess
                     IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive"))
                 };
             }
-            catch(Exception ex) {
-                var a = ex;
-                return null;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting login user {Username}.", username);
+                throw;
             }
         }
     }
