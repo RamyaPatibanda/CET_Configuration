@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
-import Switch from "../../../components/common/Switch/Switch";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
 
@@ -27,23 +27,15 @@ const OPERATORS = {
     { value: "NotEquals", label: "Not Equals" },
     { value: "GreaterThan", label: "Greater Than" },
     { value: "LessThan", label: "Less Than" },
-    {
-      value: "GreaterThanOrEqual",
-      label: "Greater Than or Equal",
-    },
-    {
-      value: "LessThanOrEqual",
-      label: "Less Than or Equal",
-    },
+    { value: "GreaterThanOrEqual", label: "Greater Than or Equal" },
+    { value: "LessThanOrEqual", label: "Less Than or Equal" },
   ],
   Date: [
     { value: "Equals", label: "Equals" },
     { value: "Before", label: "Before" },
     { value: "After", label: "After" },
   ],
-  Boolean: [
-    { value: "Equals", label: "Equals" },
-  ],
+  Boolean: [{ value: "Equals", label: "Equals" }],
 };
 
 function optionsForType(type) {
@@ -51,57 +43,36 @@ function optionsForType(type) {
 }
 
 function getResponseItems(response) {
-  return Array.isArray(response)
-    ? response
-    : response?.data || [];
+  return Array.isArray(response) ? response : response?.data || [];
 }
 
-function RuleForm({
-  open,
-  rule,
-  nextRuleId,
-  saving,
-  onClose,
-  onSave,
-}) {
+function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_RULE);
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
 
     setForm(
       rule
         ? {
             ...EMPTY_RULE,
             ...rule,
-            conditions: (rule.conditions || []).map((condition) => ({
-              ...condition,
-            })),
+            conditions: (rule.conditions || []).map((condition) => ({ ...condition })),
           }
-        : {
-            ...EMPTY_RULE,
-            ruleId: nextRuleId,
-          }
+        : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
-
     setError("");
 
     const loadFields = async () => {
       try {
         setLoadingFields(true);
-
         const response = await ruleConfigurationService.getFields();
-
         setFields(getResponseItems(response));
       } catch (loadError) {
-        setError(
-          loadError.message || "Unable to load active fields."
-        );
+        setError(loadError.message || "Unable to load active fields.");
       } finally {
         setLoadingFields(false);
       }
@@ -111,10 +82,7 @@ function RuleForm({
   }, [open, rule, nextRuleId]);
 
   const update = (name, value) => {
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
   const addCondition = () => {
@@ -137,34 +105,20 @@ function RuleForm({
     setForm((current) => ({
       ...current,
       conditions: current.conditions.map((condition, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...condition,
-              [name]: value,
-            }
-          : condition
+        itemIndex === index ? { ...condition, [name]: value } : condition
       ),
     }));
   };
 
   const changeField = (index, value) => {
-    const field = fields.find(
-      (item) => String(item.fieldId) === String(value)
-    );
-
-    const firstOperator =
-      optionsForType(field?.fieldType).at(0)?.value || "Equals";
+    const field = fields.find((item) => String(item.fieldId) === String(value));
+    const firstOperator = optionsForType(field?.fieldType).at(0)?.value || "Equals";
 
     setForm((current) => ({
       ...current,
       conditions: current.conditions.map((condition, itemIndex) =>
         itemIndex === index
-          ? {
-              ...condition,
-              fieldId: value,
-              operator: firstOperator,
-              value: "",
-            }
+          ? { ...condition, fieldId: value, operator: firstOperator, value: "" }
           : condition
       ),
     }));
@@ -175,10 +129,7 @@ function RuleForm({
       ...current,
       conditions: current.conditions
         .filter((_, itemIndex) => itemIndex !== index)
-        .map((condition, itemIndex) => ({
-          ...condition,
-          conditionOrder: itemIndex + 1,
-        })),
+        .map((condition, itemIndex) => ({ ...condition, conditionOrder: itemIndex + 1 })),
     }));
   };
 
@@ -187,11 +138,6 @@ function RuleForm({
 
     if (!form.ruleName.trim()) {
       setError("Rule name is required.");
-      return;
-    }
-
-    if (!form.priority || Number(form.priority) < 1) {
-      setError("Priority must be greater than zero.");
       return;
     }
 
@@ -216,7 +162,7 @@ function RuleForm({
 
     await onSave({
       ...form,
-      priority: Number(form.priority),
+      priority: Number(form.priority || 1),
       conditions: form.conditions.map((condition, index) => ({
         ...condition,
         fieldId: Number(condition.fieldId),
@@ -232,37 +178,23 @@ function RuleForm({
       onClose={saving ? undefined : onClose}
       footer={
         <>
-          <Button
-            variant="secondary"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="rule-form"
-            disabled={saving || loadingFields}
-          >
-            {saving
-              ? "Saving..."
-              : rule
-                ? "Update"
-                : "Create"}
+          <Button type="submit" form="rule-form" disabled={saving || loadingFields}>
+            {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
           </Button>
         </>
       }
     >
-      <form
-        id="rule-form"
-        className="rule-form"
-        onSubmit={handleSubmit}
-      >
-        {error && (
-          <div className="rule-form-error">
-            {error}
-          </div>
-        )}
+      <form id="rule-form" className="rule-form" onSubmit={handleSubmit}>
+        {error && <div className="rule-form-error">{error}</div>}
+
+        <div className="rule-form-id-row">
+          <span className="rule-form-id-label">Rule ID</span>
+          <span className="rule-form-id-value">#{form.ruleId}</span>
+          <span className="rule-form-id-hint">Priority and status are managed from the rule list.</span>
+        </div>
 
         <div className="rule-form-grid">
           <TextBox
@@ -271,184 +203,123 @@ function RuleForm({
             value={form.ruleName}
             required
             disabled={saving}
-            onChange={(event) =>
-              update("ruleName", event.target.value)
-            }
+            onChange={(event) => update("ruleName", event.target.value)}
           />
-
           <TextBox
-            name="priority"
-            label="Priority"
-            type="number"
-            value={form.priority}
-            required
+            name="description"
+            label="Description"
+            value={form.description}
             disabled={saving}
-            onChange={(event) =>
-              update("priority", event.target.value)
-            }
-          />
-        </div>
-
-        <TextBox
-          name="description"
-          label="Description"
-          value={form.description}
-          disabled={saving}
-          onChange={(event) =>
-            update("description", event.target.value)
-          }
-        />
-
-        <div className="rule-active-row">
-          <span>Active</span>
-          <Switch
-            checked={form.isActive}
-            onChange={(event) =>
-              update("isActive", event.target.checked)
-            }
+            onChange={(event) => update("description", event.target.value)}
           />
         </div>
 
         <div className="conditions-header">
           <div>
+            <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <p>
-              Conditions use active fields from Field Configuration.
-            </p>
+            <p>Select fields configured in Field Configuration and define the rule logic.</p>
           </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={addCondition}
-          >
-            + Add Condition
+          <Button type="button" variant="secondary" onClick={addCondition} className="add-condition-button">
+            <FiPlus size={16} />
+            Add Condition
           </Button>
         </div>
 
         <div className="conditions-list">
           {form.conditions.map((condition, index) => {
-            const field = fields.find(
-              (item) =>
-                String(item.fieldId) ===
-                String(condition.fieldId)
-            );
-
+            const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
             const operators = optionsForType(field?.fieldType);
 
             return (
-              <div
-                className="condition-row"
-                key={`${condition.conditionOrder}-${index}`}
-              >
-                <div className="condition-logic">
-                  {index === 0 ? (
-                    "IF"
-                  ) : (
+              <div className="condition-card" key={`${condition.conditionOrder}-${index}`}>
+                <div className="condition-card-topline">
+                  <div className="condition-number">{index + 1}</div>
+                  <div className="condition-card-title">
+                    <strong>{index === 0 ? "Match when" : "Then"}</strong>
+                    <span>{index === 0 ? "Define the first condition" : "Connect this condition to the previous one"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="condition-remove"
+                    title="Remove condition"
+                    aria-label="Remove condition"
+                    onClick={() => removeCondition(index)}
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                </div>
+
+                <div className="condition-card-fields">
+                  {index > 0 && (
                     <Select
+                      label="Logic"
                       value={condition.logicalOperator}
                       options={[
                         { value: "AND", label: "AND" },
                         { value: "OR", label: "OR" },
                       ]}
-                      onChange={(event) =>
-                        updateCondition(
-                          index,
-                          "logicalOperator",
-                          event.target.value
-                        )
+                      onChange={(event) => updateCondition(index, "logicalOperator", event.target.value)}
+                    />
+                  )}
+
+                  <Select
+                    label="Field"
+                    value={condition.fieldId}
+                    options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))}
+                    placeholder={loadingFields ? "Loading fields..." : "Select field"}
+                    disabled={loadingFields || saving}
+                    onChange={(event) => changeField(index, event.target.value)}
+                  />
+
+                  <Select
+                    label="Operator"
+                    value={condition.operator}
+                    options={operators}
+                    disabled={!field || saving}
+                    onChange={(event) => updateCondition(index, "operator", event.target.value)}
+                  />
+
+                  {field?.fieldType === "Boolean" ? (
+                    <Select
+                      label="Value"
+                      value={condition.value}
+                      options={[
+                        { value: "Y", label: "Yes" },
+                        { value: "N", label: "No" },
+                      ]}
+                      placeholder="Select value"
+                      onChange={(event) => updateCondition(index, "value", event.target.value)}
+                    />
+                  ) : (
+                    <TextBox
+                      label="Value"
+                      value={condition.value}
+                      type={
+                        field?.fieldType === "Number"
+                          ? "number"
+                          : field?.fieldType === "Date"
+                            ? "date"
+                            : "text"
                       }
+                      disabled={!field || saving}
+                      onChange={(event) => updateCondition(index, "value", event.target.value)}
                     />
                   )}
                 </div>
-
-                <Select
-                  label={index === 0 ? "Field" : undefined}
-                  value={condition.fieldId}
-                  options={fields.map((item) => ({
-                    value: item.fieldId,
-                    label: item.displayName,
-                  }))}
-                  placeholder={
-                    loadingFields
-                      ? "Loading fields..."
-                      : "Select field"
-                  }
-                  disabled={loadingFields || saving}
-                  onChange={(event) =>
-                    changeField(index, event.target.value)
-                  }
-                />
-
-                <Select
-                  label={index === 0 ? "Operator" : undefined}
-                  value={condition.operator}
-                  options={operators}
-                  disabled={!field || saving}
-                  onChange={(event) =>
-                    updateCondition(
-                      index,
-                      "operator",
-                      event.target.value
-                    )
-                  }
-                />
-
-                {field?.fieldType === "Boolean" ? (
-                  <Select
-                    label={index === 0 ? "Value" : undefined}
-                    value={condition.value}
-                    options={[
-                      { value: "Y", label: "Yes" },
-                      { value: "N", label: "No" },
-                    ]}
-                    placeholder="Select value"
-                    onChange={(event) =>
-                      updateCondition(
-                        index,
-                        "value",
-                        event.target.value
-                      )
-                    }
-                  />
-                ) : (
-                  <TextBox
-                    label={index === 0 ? "Value" : undefined}
-                    value={condition.value}
-                    type={
-                      field?.fieldType === "Number"
-                        ? "number"
-                        : field?.fieldType === "Date"
-                          ? "date"
-                          : "text"
-                    }
-                    disabled={!field || saving}
-                    onChange={(event) =>
-                      updateCondition(
-                        index,
-                        "value",
-                        event.target.value
-                      )
-                    }
-                  />
-                )}
-
-                <button
-                  type="button"
-                  className="condition-remove"
-                  title="Remove condition"
-                  onClick={() => removeCondition(index)}
-                >
-                  ×
-                </button>
               </div>
             );
           })}
 
           {!form.conditions.length && (
             <div className="conditions-empty">
-              No conditions added. Click{" "}
-              <strong>Add Condition</strong> to start.
+              <div className="conditions-empty-icon">+</div>
+              <strong>No conditions yet</strong>
+              <span>Add a condition to define when this rule should apply.</span>
+              <Button type="button" variant="secondary" onClick={addCondition}>
+                <FiPlus size={15} />
+                Add First Condition
+              </Button>
             </div>
           )}
         </div>
