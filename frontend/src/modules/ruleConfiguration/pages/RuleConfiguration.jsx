@@ -21,7 +21,6 @@ function RuleConfiguration() {
     try {
       setLoading(true);
       setError("");
-
       const response = await ruleConfigurationService.getRules(true);
       const items = Array.isArray(response) ? response : response?.data || [];
 
@@ -67,12 +66,16 @@ function RuleConfiguration() {
           isActive: selectedRule.isActive,
         });
       } else {
+        const nextPriority = rules.length
+          ? Math.max(...rules.map((item) => item.priority ?? 0)) + 1
+          : 1;
+
         await ruleConfigurationService.createRule({
           ...rule,
           ruleId: rules.length
             ? Math.max(...rules.map((item) => item.ruleId ?? 0)) + 1
             : 1,
-          priority: rules.length + 1,
+          priority: nextPriority,
           isActive: true,
         });
       }
@@ -102,7 +105,9 @@ function RuleConfiguration() {
     } catch (toggleError) {
       setRules((current) =>
         current.map((item) =>
-          item.ruleId === rule.ruleId ? { ...item, isActive: rule.isActive } : item
+          item.ruleId === rule.ruleId
+            ? { ...item, isActive: rule.isActive }
+            : item
         )
       );
       setError(toggleError.message || "Unable to update rule status.");
@@ -117,8 +122,12 @@ function RuleConfiguration() {
 
     const previousRules = [...rules];
     const nextRules = [...rules];
-    const draggedIndex = nextRules.findIndex((item) => item.ruleId === draggedRuleId);
-    const targetIndex = nextRules.findIndex((item) => item.ruleId === targetRuleId);
+    const draggedIndex = nextRules.findIndex(
+      (item) => item.ruleId === draggedRuleId
+    );
+    const targetIndex = nextRules.findIndex(
+      (item) => item.ruleId === targetRuleId
+    );
 
     if (draggedIndex < 0 || targetIndex < 0) {
       setDraggedRuleId(null);
@@ -160,7 +169,9 @@ function RuleConfiguration() {
         <div>
           <span className="page-eyebrow">Allocation rules</span>
           <h1>Rule Configuration</h1>
-          <p>Create reusable rules from the fields configured in Field Configuration.</p>
+          <p>
+            Create reusable rules from the fields configured in Field Configuration.
+          </p>
         </div>
 
         <Button onClick={openCreate} title="Create Rule" aria-label="Create Rule">
@@ -173,7 +184,9 @@ function RuleConfiguration() {
         <div className="rule-order-note-icon">↕</div>
         <div>
           <strong>Rule order controls priority</strong>
-          <span>Drag a rule to change its execution order. Active status can be changed directly here.</span>
+          <span>
+            Drag a rule to change its execution order. Active status can be changed directly here.
+          </span>
         </div>
       </div>
 
@@ -230,7 +243,8 @@ function RuleConfiguration() {
                   <td>{rule.description || "—"}</td>
                   <td>
                     <span className="condition-count">
-                      {rule.conditions?.length ?? 0} condition{(rule.conditions?.length ?? 0) === 1 ? "" : "s"}
+                      {rule.conditions?.length ?? 0} condition
+                      {(rule.conditions?.length ?? 0) === 1 ? "" : "s"}
                     </span>
                   </td>
                   <td>
@@ -245,10 +259,20 @@ function RuleConfiguration() {
                     </div>
                   </td>
                   <td className="rule-actions">
-                    <button type="button" title="Edit rule" aria-label="Edit rule" onClick={() => openEdit(rule)}>
+                    <button
+                      type="button"
+                      title="Edit rule"
+                      aria-label="Edit rule"
+                      onClick={() => openEdit(rule)}
+                    >
                       <FiEdit2 />
                     </button>
-                    <button type="button" title="Delete rule" aria-label="Delete rule" onClick={() => setDeleteRule(rule)}>
+                    <button
+                      type="button"
+                      title="Delete rule"
+                      aria-label="Delete rule"
+                      onClick={() => setDeleteRule(rule)}
+                    >
                       <FiTrash2 />
                     </button>
                   </td>
@@ -262,7 +286,11 @@ function RuleConfiguration() {
       <RuleForm
         open={formOpen}
         rule={selectedRule}
-        nextRuleId={rules.length ? Math.max(...rules.map((item) => item.ruleId ?? 0)) + 1 : 1}
+        nextRuleId={
+          rules.length
+            ? Math.max(...rules.map((item) => item.ruleId ?? 0)) + 1
+            : 1
+        }
         saving={saving}
         onClose={() => setFormOpen(false)}
         onSave={handleSave}
@@ -284,7 +312,9 @@ function RuleConfiguration() {
         }
       >
         <div className="rule-delete-confirmation">
-          <p>The rule <strong>{deleteRule?.ruleName}</strong> is going to be deleted permanently.</p>
+          <p>
+            The rule <strong>{deleteRule?.ruleName}</strong> is going to be deleted permanently.
+          </p>
           <p>This action cannot be undone. Do you want to continue?</p>
         </div>
       </Dialog>
