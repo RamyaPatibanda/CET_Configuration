@@ -14,7 +14,6 @@ BEGIN
         tUsername      NVARCHAR(100) NOT NULL,
         tPassword      NVARCHAR(500) NOT NULL,
         tDisplayName   NVARCHAR(200) NOT NULL,
-        tRole          NVARCHAR(100) NULL,
         bIsAdmin       BIT NOT NULL CONSTRAINT DF_tblUsers_bIsAdmin DEFAULT (0),
         bIsActive      BIT NOT NULL CONSTRAINT DF_tblUsers_bIsActive DEFAULT (1),
         dtCreatedDate  DATETIME NOT NULL CONSTRAINT DF_tblUsers_dtCreatedDate DEFAULT (GETDATE()),
