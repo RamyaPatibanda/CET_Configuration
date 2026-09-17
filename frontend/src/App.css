@@ -40,3 +40,63 @@ button { -webkit-tap-highlight-color: transparent; }
 ::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(105,125,151,.28); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(82,108,139,.42); }
 ::selection { color: #20324b; background: rgba(158,190,223,.42); }
+
+/* Wide, premium rule editor */
+.common-dialog.rule-dialog {
+  width: min(88vw, 1420px);
+  max-width: 1420px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(248, 251, 255, 0.78);
+  box-shadow: 0 34px 90px rgba(31, 46, 70, 0.2), inset 0 1px rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+.common-dialog.rule-dialog .common-dialog-header {
+  padding: 20px 24px 17px;
+  border-bottom: 1px solid rgba(145, 157, 177, 0.12);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.common-dialog.rule-dialog .common-dialog-header h2 {
+  color: #1d2b40;
+  font-size: 18px;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.common-dialog.rule-dialog .common-dialog-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: #718097;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(143, 156, 178, 0.13);
+  font-size: 19px;
+  transition: 0.18s;
+}
+
+.common-dialog.rule-dialog .common-dialog-close:hover:not(:disabled) {
+  color: #2f5c89;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 7px 18px rgba(54, 73, 102, 0.08);
+}
+
+.common-dialog.rule-dialog .common-dialog-body {
+  max-height: calc(100vh - 210px);
+  padding: 22px 24px;
+  overflow: auto;
+}
+
+.common-dialog.rule-dialog .common-dialog-footer {
+  padding: 15px 24px;
+  border-top: 1px solid rgba(145, 157, 177, 0.12);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+@media (max-width: 900px) {
+  .common-dialog.rule-dialog {
+    width: calc(100vw - 28px);
+  }
+}
