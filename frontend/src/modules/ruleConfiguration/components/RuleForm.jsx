@@ -2,82 +2,459 @@ import { useEffect, useState } from "react";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
-import TextBox from "../../../components/common/TextBox/TextBox";
 import Switch from "../../../components/common/Switch/Switch";
+import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
 
-const EMPTY_RULE = { ruleId: 0, ruleName: "", description: "", priority: 1, isActive: true, conditions: [] };
-const OPERATORS = {
-  Text: [{ value: "Equals", label: "Equals" }, { value: "NotEquals", label: "Not Equals" }, { value: "Contains", label: "Contains" }, { value: "StartsWith", label: "Starts With" }],
-  Number: [{ value: "Equals", label: "Equals" }, { value: "NotEquals", label: "Not Equals" }, { value: "GreaterThan", label: "Greater Than" }, { value: "LessThan", label: "Less Than" }, { value: "GreaterThanOrEqual", label: "Greater Than or Equal" }, { value: "LessThanOrEqual", label: "Less Than or Equal" }],
-  Date: [{ value: "Equals", label: "Equals" }, { value: "Before", label: "Before" }, { value: "After", label: "After" }],
-  Boolean: [{ value: "Equals", label: "Equals" }],
+const EMPTY_RULE = {
+  ruleId: 0,
+  ruleName: "",
+  description: "",
+  priority: 1,
+  isActive: true,
+  conditions: [],
 };
 
-function optionsForType(type) { return OPERATORS[type] || OPERATORS.Text; }
-function getResponseItems(response) { return Array.isArray(response) ? response : response?.data || []; }
+const OPERATORS = {
+  Text: [
+    { value: "Equals", label: "Equals" },
+    { value: "NotEquals", label: "Not Equals" },
+    { value: "Contains", label: "Contains" },
+    { value: "StartsWith", label: "Starts With" },
+  ],
+  Number: [
+    { value: "Equals", label: "Equals" },
+    { value: "NotEquals", label: "Not Equals" },
+    { value: "GreaterThan", label: "Greater Than" },
+    { value: "LessThan", label: "Less Than" },
+    {
+      value: "GreaterThanOrEqual",
+      label: "Greater Than or Equal",
+    },
+    {
+      value: "LessThanOrEqual",
+      label: "Less Than or Equal",
+    },
+  ],
+  Date: [
+    { value: "Equals", label: "Equals" },
+    { value: "Before", label: "Before" },
+    { value: "After", label: "After" },
+  ],
+  Boolean: [
+    { value: "Equals", label: "Equals" },
+  ],
+};
 
-function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
+function optionsForType(type) {
+  return OPERATORS[type] || OPERATORS.Text;
+}
+
+function getResponseItems(response) {
+  return Array.isArray(response)
+    ? response
+    : response?.data || [];
+}
+
+function RuleForm({
+  open,
+  rule,
+  nextRuleId,
+  saving,
+  onClose,
+  onSave,
+}) {
   const [form, setForm] = useState(EMPTY_RULE);
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open) return;
-    setForm(rule ? { ...EMPTY_RULE, ...rule, conditions: (rule.conditions || []).map((c) => ({ ...c })) } : { ...EMPTY_RULE, ruleId: nextRuleId });
+    if (!open) {
+      return;
+    }
+
+    setForm(
+      rule
+        ? {
+            ...EMPTY_RULE,
+            ...rule,
+            conditions: (rule.conditions || []).map((condition) => ({
+              ...condition,
+            })),
+          }
+        : {
+            ...EMPTY_RULE,
+            ruleId: nextRuleId,
+          }
+    );
+
     setError("");
+
     const loadFields = async () => {
-      try { setLoadingFields(true); const response = await ruleConfigurationService.getFields(); setFields(getResponseItems(response)); }
-      catch (loadError) { setError(loadError.message || "Unable to load active fields."); }
-      finally { setLoadingFields(false); }
+      try {
+        setLoadingFields(true);
+
+        const response = await ruleConfigurationService.getFields();
+
+        setFields(getResponseItems(response));
+      } catch (loadError) {
+        setError(
+          loadError.message || "Unable to load active fields."
+        );
+      } finally {
+        setLoadingFields(false);
+      }
     };
+
     loadFields();
   }, [open, rule, nextRuleId]);
 
-  const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
-  const addCondition = () => setForm((current) => ({ ...current, conditions: [...current.conditions, { fieldId: "", logicalOperator: current.conditions.length ? "AND" : "AND", operator: "Equals", value: "", conditionOrder: current.conditions.length + 1 }] }));
-  const updateCondition = (index, name, value) => setForm((current) => ({ ...current, conditions: current.conditions.map((condition, i) => i === index ? { ...condition, [name]: value } : condition) }));
-  const changeField = (index, value) => {
-    const field = fields.find((item) => String(item.fieldId) === String(value));
-    const firstOperator = optionsForType(field?.fieldType).at(0)?.value || "Equals";
-    setForm((current) => ({ ...current, conditions: current.conditions.map((condition, i) => i === index ? { ...condition, fieldId: value, operator: firstOperator, value: "" } : condition) }));
+  const update = (name, value) => {
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
   };
-  const removeCondition = (index) => setForm((current) => ({ ...current, conditions: current.conditions.filter((_, i) => i !== index).map((condition, i) => ({ ...condition, conditionOrder: i + 1 })) }));
+
+  const addCondition = () => {
+    setForm((current) => ({
+      ...current,
+      conditions: [
+        ...current.conditions,
+        {
+          fieldId: "",
+          logicalOperator: "AND",
+          operator: "Equals",
+          value: "",
+          conditionOrder: current.conditions.length + 1,
+        },
+      ],
+    }));
+  };
+
+  const updateCondition = (index, name, value) => {
+    setForm((current) => ({
+      ...current,
+      conditions: current.conditions.map((condition, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...condition,
+              [name]: value,
+            }
+          : condition
+      ),
+    }));
+  };
+
+  const changeField = (index, value) => {
+    const field = fields.find(
+      (item) => String(item.fieldId) === String(value)
+    );
+
+    const firstOperator =
+      optionsForType(field?.fieldType).at(0)?.value || "Equals";
+
+    setForm((current) => ({
+      ...current,
+      conditions: current.conditions.map((condition, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...condition,
+              fieldId: value,
+              operator: firstOperator,
+              value: "",
+            }
+          : condition
+      ),
+    }));
+  };
+
+  const removeCondition = (index) => {
+    setForm((current) => ({
+      ...current,
+      conditions: current.conditions
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((condition, itemIndex) => ({
+          ...condition,
+          conditionOrder: itemIndex + 1,
+        })),
+    }));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.ruleName.trim()) return setError("Rule name is required.");
-    if (!form.priority || Number(form.priority) < 1) return setError("Priority must be greater than zero.");
-    if (!form.conditions.length) return setError("Add at least one condition.");
-    if (form.conditions.some((condition) => !condition.fieldId || !condition.operator || !String(condition.value).trim())) return setError("Complete every condition before saving.");
+
+    if (!form.ruleName.trim()) {
+      setError("Rule name is required.");
+      return;
+    }
+
+    if (!form.priority || Number(form.priority) < 1) {
+      setError("Priority must be greater than zero.");
+      return;
+    }
+
+    if (!form.conditions.length) {
+      setError("Add at least one condition.");
+      return;
+    }
+
+    if (
+      form.conditions.some(
+        (condition) =>
+          !condition.fieldId ||
+          !condition.operator ||
+          !String(condition.value).trim()
+      )
+    ) {
+      setError("Complete every condition before saving.");
+      return;
+    }
+
     setError("");
-    await onSave({ ...form, priority: Number(form.priority), conditions: form.conditions.map((condition, index) => ({ ...condition, fieldId: Number(condition.fieldId), conditionOrder: index + 1 })) });
+
+    await onSave({
+      ...form,
+      priority: Number(form.priority),
+      conditions: form.conditions.map((condition, index) => ({
+        ...condition,
+        fieldId: Number(condition.fieldId),
+        conditionOrder: index + 1,
+      })),
+    });
   };
 
-  return <Dialog open={open} title={rule ? "Edit Rule" : "Create Rule"} onClose={saving ? undefined : onClose} footer={<><Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" form="rule-form" disabled={saving || loadingFields}>{saving ? "Saving..." : rule ? "Update" : "Create"}</Button></>}>
-    <form id="rule-form" className="rule-form" onSubmit={handleSubmit}>
-      {error && <div className="rule-form-error">{error}</div>}
-      <div className="rule-form-grid"><TextBox name="ruleName" label="Rule Name" value={form.ruleName} required disabled={saving} onChange={(e) => update("ruleName", e.target.value)} /><TextBox name="priority" label="Priority" type="number" value={form.priority} required disabled={saving} onChange={(e) => update("priority", e.target.value)} /></div>
-      <TextBox name="description" label="Description" value={form.description} disabled={saving} onChange={(e) => update("description", e.target.value)} />
-      <div className="rule-active-row"><span>Active</span><Switch checked={form.isActive} onChange={(e) => update("isActive", e.target.checked)} /></div>
-      <div className="conditions-header"><div><h3>Conditions</h3><p>Conditions use active fields from Field Configuration.</p></div><Button type="button" variant="secondary" onClick={addCondition}>+ Add Condition</Button></div>
-      <div className="conditions-list">
-        {form.conditions.map((condition, index) => {
-          const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
-          const operators = optionsForType(field?.fieldType);
-          return <div className="condition-row" key={`${condition.conditionOrder}-${index}`}>
-            <div className="condition-logic">{index === 0 ? "IF" : <Select value={condition.logicalOperator} options={[{ value: "AND", label: "AND" }, { value: "OR", label: "OR" }]} onChange={(e) => updateCondition(index, "logicalOperator", e.target.value)} />}</div>
-            <Select label={index === 0 ? "Field" : undefined} value={condition.fieldId} options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))} placeholder={loadingFields ? "Loading fields..." : "Select field"} disabled={loadingFields || saving} onChange={(e) => changeField(index, e.target.value)} />
-            <Select label={index === 0 ? "Operator" : undefined} value={condition.operator} options={operators} disabled={!field || saving} onChange={(e) => updateCondition(index, "operator", e.target.value)} />
-            {field?.fieldType === "Boolean" ? <Select label={index === 0 ? "Value" : undefined} value={condition.value} options={[{ value: "Y", label: "Yes" }, { value: "N", label: "No" }]} placeholder="Select value" onChange={(e) => updateCondition(index, "value", e.target.value)} /> : <TextBox label={index === 0 ? "Value" : undefined} value={condition.value} type={field?.fieldType === "Number" ? "number" : field?.fieldType === "Date" ? "date" : "text"} disabled={!field || saving} onChange={(e) => updateCondition(index, "value", e.target.value)} />}
-            <button type="button" className="condition-remove" title="Remove condition" onClick={() => removeCondition(index)}>×</button>
-          </div>;
-        })}
-        {!form.conditions.length && <div className="conditions-empty">No conditions added. Click <strong>Add Condition</strong> to start.</div>}
-      </div>
-    </form>
-  </Dialog>;
+  return (
+    <Dialog
+      open={open}
+      title={rule ? "Edit Rule" : "Create Rule"}
+      onClose={saving ? undefined : onClose}
+      footer={
+        <>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="rule-form"
+            disabled={saving || loadingFields}
+          >
+            {saving
+              ? "Saving..."
+              : rule
+                ? "Update"
+                : "Create"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="rule-form"
+        className="rule-form"
+        onSubmit={handleSubmit}
+      >
+        {error && (
+          <div className="rule-form-error">
+            {error}
+          </div>
+        )}
+
+        <div className="rule-form-grid">
+          <TextBox
+            name="ruleName"
+            label="Rule Name"
+            value={form.ruleName}
+            required
+            disabled={saving}
+            onChange={(event) =>
+              update("ruleName", event.target.value)
+            }
+          />
+
+          <TextBox
+            name="priority"
+            label="Priority"
+            type="number"
+            value={form.priority}
+            required
+            disabled={saving}
+            onChange={(event) =>
+              update("priority", event.target.value)
+            }
+          />
+        </div>
+
+        <TextBox
+          name="description"
+          label="Description"
+          value={form.description}
+          disabled={saving}
+          onChange={(event) =>
+            update("description", event.target.value)
+          }
+        />
+
+        <div className="rule-active-row">
+          <span>Active</span>
+          <Switch
+            checked={form.isActive}
+            onChange={(event) =>
+              update("isActive", event.target.checked)
+            }
+          />
+        </div>
+
+        <div className="conditions-header">
+          <div>
+            <h3>Conditions</h3>
+            <p>
+              Conditions use active fields from Field Configuration.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={addCondition}
+          >
+            + Add Condition
+          </Button>
+        </div>
+
+        <div className="conditions-list">
+          {form.conditions.map((condition, index) => {
+            const field = fields.find(
+              (item) =>
+                String(item.fieldId) ===
+                String(condition.fieldId)
+            );
+
+            const operators = optionsForType(field?.fieldType);
+
+            return (
+              <div
+                className="condition-row"
+                key={`${condition.conditionOrder}-${index}`}
+              >
+                <div className="condition-logic">
+                  {index === 0 ? (
+                    "IF"
+                  ) : (
+                    <Select
+                      value={condition.logicalOperator}
+                      options={[
+                        { value: "AND", label: "AND" },
+                        { value: "OR", label: "OR" },
+                      ]}
+                      onChange={(event) =>
+                        updateCondition(
+                          index,
+                          "logicalOperator",
+                          event.target.value
+                        )
+                      }
+                    />
+                  )}
+                </div>
+
+                <Select
+                  label={index === 0 ? "Field" : undefined}
+                  value={condition.fieldId}
+                  options={fields.map((item) => ({
+                    value: item.fieldId,
+                    label: item.displayName,
+                  }))}
+                  placeholder={
+                    loadingFields
+                      ? "Loading fields..."
+                      : "Select field"
+                  }
+                  disabled={loadingFields || saving}
+                  onChange={(event) =>
+                    changeField(index, event.target.value)
+                  }
+                />
+
+                <Select
+                  label={index === 0 ? "Operator" : undefined}
+                  value={condition.operator}
+                  options={operators}
+                  disabled={!field || saving}
+                  onChange={(event) =>
+                    updateCondition(
+                      index,
+                      "operator",
+                      event.target.value
+                    )
+                  }
+                />
+
+                {field?.fieldType === "Boolean" ? (
+                  <Select
+                    label={index === 0 ? "Value" : undefined}
+                    value={condition.value}
+                    options={[
+                      { value: "Y", label: "Yes" },
+                      { value: "N", label: "No" },
+                    ]}
+                    placeholder="Select value"
+                    onChange={(event) =>
+                      updateCondition(
+                        index,
+                        "value",
+                        event.target.value
+                      )
+                    }
+                  />
+                ) : (
+                  <TextBox
+                    label={index === 0 ? "Value" : undefined}
+                    value={condition.value}
+                    type={
+                      field?.fieldType === "Number"
+                        ? "number"
+                        : field?.fieldType === "Date"
+                          ? "date"
+                          : "text"
+                    }
+                    disabled={!field || saving}
+                    onChange={(event) =>
+                      updateCondition(
+                        index,
+                        "value",
+                        event.target.value
+                      )
+                    }
+                  />
+                )}
+
+                <button
+                  type="button"
+                  className="condition-remove"
+                  title="Remove condition"
+                  onClick={() => removeCondition(index)}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+
+          {!form.conditions.length && (
+            <div className="conditions-empty">
+              No conditions added. Click{" "}
+              <strong>Add Condition</strong> to start.
+            </div>
+          )}
+        </div>
+      </form>
+    </Dialog>
+  );
 }
 
 export default RuleForm;
