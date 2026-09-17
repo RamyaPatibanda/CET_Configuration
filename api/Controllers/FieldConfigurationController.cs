@@ -52,7 +52,7 @@ namespace api.Controllers
             catch (Exception ex) { _logger.LogError(ex, "Error while getting field {FieldId}.", fieldId); return StatusCode(500, new { message = "Unable to get field." }); }
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<ActionResult<int>> CreateField([FromBody] CreateFieldRequest request)
         {
             try
