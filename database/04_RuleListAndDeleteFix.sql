@@ -1,7 +1,7 @@
 /*
-    Rule list/delete fixes.
-    Execute this script manually against CET_configuration after the existing
-    database scripts, including 03_RuleConditionGrouping.sql.
+    Rule list / edit / delete fixes.
+    Execute this script manually against CET_configuration after
+    01_Tables.sql, 02_StoredProcedures.sql and 03_RuleConditionGrouping.sql.
 */
 
 IF OBJECT_ID(N'dbo.sproc_GetRules', N'P') IS NOT NULL
@@ -17,9 +17,7 @@ BEGIN
            r.tDescription,
            r.nPriority,
            r.bIsActive,
-           (SELECT COUNT(1)
-            FROM dbo.tblRuleCondition rc
-            WHERE rc.aRuleId = r.aRuleId) AS nConditionCount,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId) AS nConditionCount,
            r.dtCreatedDate,
            r.dtModifiedDate
     FROM dbo.tblRule r
@@ -41,14 +39,17 @@ BEGIN
            r.tDescription,
            r.nPriority,
            r.bIsActive,
-           (SELECT COUNT(1)
-            FROM dbo.tblRuleCondition rcCount
-            WHERE rcCount.aRuleId = r.aRuleId) AS nConditionCount,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId) AS nConditionCount,
            r.dtCreatedDate,
            r.dtModifiedDate
     FROM dbo.tblRule r
     WHERE r.aRuleId = @aRuleId;
 
+    /*
+       LEFT JOIN is intentional. Older rules may have conditions created
+       before condition groups were introduced. Such conditions are treated
+       as one default group while being edited.
+    */
     SELECT rc.aRuleConditionId,
            rc.aRuleId,
            rc.aFieldId,
@@ -58,15 +59,15 @@ BEGIN
            rc.tOperator,
            rc.tValue,
            rc.nConditionOrder,
-           rg.nGroupOrder,
-           rg.tLogicalOperator AS tGroupLogicalOperator
+           COALESCE(rg.nGroupOrder, 1) AS nGroupOrder,
+           COALESCE(rg.tLogicalOperator, 'AND') AS tGroupLogicalOperator
     FROM dbo.tblRuleCondition rc
     INNER JOIN dbo.tblFieldConfiguration fc
         ON fc.aFieldId = rc.aFieldId
-    INNER JOIN dbo.tblRuleConditionGroup rg
+    LEFT JOIN dbo.tblRuleConditionGroup rg
         ON rg.aRuleConditionGroupId = rc.aRuleConditionGroupId
     WHERE rc.aRuleId = @aRuleId
-    ORDER BY rg.nGroupOrder, rc.nConditionOrder, rc.aRuleConditionId;
+    ORDER BY COALESCE(rg.nGroupOrder, 1), rc.nConditionOrder, rc.aRuleConditionId;
 END;
 GO
 
@@ -89,7 +90,6 @@ BEGIN
             RETURN;
         END;
 
-        -- Delete dependent records before deleting the rule itself.
         DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
         DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId = @aRuleId;
         DELETE FROM dbo.tblRule WHERE aRuleId = @aRuleId;
