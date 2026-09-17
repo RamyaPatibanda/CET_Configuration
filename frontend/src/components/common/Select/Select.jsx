@@ -1,4 +1,4 @@
-function Select({ label, value, options = [], onChange, required = false, disabled = false, name, error = "" }) {
+function Select({ label, value, options = [], onChange, required = false, disabled = false, name, error = "", placeholder = "Select" }) {
   return (
     <div className="common-form-control">
       {label && <label htmlFor={name}>{label}{required && <span className="common-required"> *</span>}</label>}
@@ -10,6 +10,7 @@ function Select({ label, value, options = [], onChange, required = false, disabl
         disabled={disabled}
         className={error ? "common-input common-input-error" : "common-input"}
       >
+        {!value && <option value="">{placeholder}</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
