@@ -1,10 +1,11 @@
+import { NavLink } from "react-router-dom";
 import { FiChevronRight, FiGrid, FiList, FiSliders } from "react-icons/fi";
 
-function Sidebar({ activeItem = "fields", onNavigate }) {
+function Sidebar() {
   const items = [
-    { id: "overview", label: "Overview", icon: FiGrid },
-    { id: "fields", label: "Field Configuration", icon: FiSliders },
-    { id: "rules", label: "Rule Configuration", icon: FiList },
+    { path: "/overview", label: "Overview", icon: FiGrid },
+    { path: "/fields", label: "Field Configuration", icon: FiSliders },
+    { path: "/rules", label: "Rule Configuration", icon: FiList },
   ];
 
   return (
@@ -15,17 +16,20 @@ function Sidebar({ activeItem = "fields", onNavigate }) {
       </div>
       <div className="sidebar-section-label">WORKSPACE</div>
       <nav className="sidebar-nav" aria-label="Workspace navigation">
-        {items.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            className={`sidebar-item ${activeItem === id ? "active" : ""}`}
-            onClick={() => onNavigate?.(id)}
+        {items.map(({ path, label, icon: Icon }) => (
+          <NavLink
+            key={path}
+            to={path}
+            className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
           >
-            <Icon size={19} strokeWidth={1.8} />
-            <span>{label}</span>
-            {activeItem === id && <FiChevronRight size={15} strokeWidth={1.8} />}
-          </button>
+            {({ isActive }) => (
+              <>
+                <Icon size={19} strokeWidth={1.8} />
+                <span>{label}</span>
+                {isActive && <FiChevronRight size={15} strokeWidth={1.8} />}
+              </>
+            )}
+          </NavLink>
         ))}
       </nav>
       <div className="sidebar-bottom">
