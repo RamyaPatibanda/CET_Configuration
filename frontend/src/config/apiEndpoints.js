@@ -4,7 +4,7 @@ const API_ENDPOINTS = {
   },
   FIELD_CONFIGURATION: {
     LIST: "/api/field-configuration",
-    CREATE: "/api/field-configuration",
+    CREATE: "/api/field-configuration/create",
     TABLES: "/api/field-configuration/tables",
     COLUMNS: (tableName) => `/api/field-configuration/columns?tableName=${encodeURIComponent(tableName)}`,
     BY_ID: (fieldId) => `/api/field-configuration/${fieldId}`,
