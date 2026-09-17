@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SqlClient;
 using api.Models.FieldConfiguration;
 using api.Utils;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace api.DataAccess.FieldConfiguration
 {
@@ -9,11 +10,17 @@ namespace api.DataAccess.FieldConfiguration
     {
         private readonly string _connectionString;
         private readonly List<string> _allowedTables;
+        private readonly IMemoryCache _cache;
         private readonly ILogger<FieldConfigurationDAL> _logger;
+        private static readonly TimeSpan ColumnCacheDuration = TimeSpan.FromMinutes(30);
 
-        public FieldConfigurationDAL(IConfiguration configuration, ILogger<FieldConfigurationDAL> logger)
+        public FieldConfigurationDAL(
+            IConfiguration configuration,
+            IMemoryCache cache,
+            ILogger<FieldConfigurationDAL> logger)
         {
             _logger = logger;
+            _cache = cache;
             _connectionString = new ConnectionUtils().GetConnectionString(configuration["ConnectionStrings:CrmDbConnection"] ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
             _allowedTables = configuration.GetSection("RuleConfiguration:AllowedTables").Get<List<string>>() ?? new List<string>();
         }
@@ -110,6 +117,17 @@ namespace api.DataAccess.FieldConfiguration
             try
             {
                 ValidateAllowedTable(tableName);
+                var cacheKey = $"field-configuration-columns:{tableName.Trim().ToLowerInvariant()}";
+
+                if (_cache.TryGetValue(cacheKey, out List<FieldSourceOption>? cachedColumns) && cachedColumns is not null)
+                {
+                    return cachedColumns.Select(column => new FieldSourceOption
+                    {
+                        Name = column.Name,
+                        FieldType = column.FieldType
+                    }).ToList();
+                }
+
                 var columns = new List<FieldSourceOption>();
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateColumnCommand(connection, tableName);
@@ -125,7 +143,17 @@ namespace api.DataAccess.FieldConfiguration
                 }
 
                 if (columns.Count == 0) throw new ArgumentException($"Table '{tableName}' was not found in the dbo schema.", nameof(tableName));
-                return columns;
+
+                _cache.Set(cacheKey, columns, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ColumnCacheDuration
+                });
+
+                return columns.Select(column => new FieldSourceOption
+                {
+                    Name = column.Name,
+                    FieldType = column.FieldType
+                }).ToList();
             }
             catch (Exception ex) { _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName); throw; }
         }
