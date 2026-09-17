@@ -17,7 +17,7 @@ namespace api.Models.RuleConfiguration
     public class RuleConditionRequest
     {
         public int FieldId { get; set; }
-        public string ConditionLogicalOperator { get; set; } = "AND";
+        public string LogicalOperator { get; set; } = "AND";
         public string Operator { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         public int ConditionOrder { get; set; }
@@ -28,7 +28,6 @@ namespace api.Models.RuleConfiguration
     public class RuleFieldOption
     {
         public int FieldId { get; set; }
-        public string FieldName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string FieldType { get; set; } = string.Empty;
     }
