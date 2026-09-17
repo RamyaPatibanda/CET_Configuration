@@ -16,25 +16,21 @@ const EMPTY_FIELD = {
   displayOrder: 0,
 };
 
-function FieldForm({ open, field, saving, onClose, onSave }) {
+function FieldForm({ open, field, nextFieldId = 1, saving, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_FIELD);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setForm(field ? { ...EMPTY_FIELD, ...field } : EMPTY_FIELD);
+    setForm(field ? { ...EMPTY_FIELD, ...field } : { ...EMPTY_FIELD, fieldId: nextFieldId });
     setError("");
-  }, [field, open]);
+  }, [field, nextFieldId, open]);
 
   const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (form.fieldId <= 0 || !form.fieldName.trim() || !form.displayName.trim() || !form.fieldType) {
-      setError("Field ID, field name, display name and field type are required.");
-      return;
-    }
-    if (form.displayOrder < 0) {
-      setError("Display order cannot be negative.");
+    if (!form.fieldName.trim() || !form.displayName.trim() || !form.fieldType) {
+      setError("Field name, display name and field type are required.");
       return;
     }
     setError("");
@@ -57,11 +53,9 @@ function FieldForm({ open, field, saving, onClose, onSave }) {
     >
       <form id="field-form" onSubmit={handleSubmit} className="field-form">
         {error && <div className="field-form-error">{error}</div>}
-        <TextBox name="fieldId" label="Field ID" type="number" value={form.fieldId} required disabled={Boolean(field)} onChange={(e) => update("fieldId", Number(e.target.value))} />
         <TextBox name="fieldName" label="Field Name" value={form.fieldName} required onChange={(e) => update("fieldName", e.target.value)} />
         <TextBox name="displayName" label="Display Name" value={form.displayName} required onChange={(e) => update("displayName", e.target.value)} />
         <Select name="fieldType" label="Field Type" value={form.fieldType} required options={FIELD_TYPES} onChange={(e) => update("fieldType", e.target.value)} />
-        <TextBox name="displayOrder" label="Display Order" type="number" value={form.displayOrder} onChange={(e) => update("displayOrder", Number(e.target.value))} />
         <Checkbox name="isRequired" label="Required" checked={form.isRequired} onChange={(e) => update("isRequired", e.target.checked)} />
         <Checkbox name="isActive" label="Active" checked={form.isActive} onChange={(e) => update("isActive", e.target.checked)} />
       </form>
