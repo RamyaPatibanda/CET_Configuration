@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { FiArrowRight, FiEye, FiEyeOff, FiPower } from "react-icons/fi";
 import authService from "./services/authService";
 import Sidebar from "./components/layout/Sidebar";
@@ -48,9 +48,9 @@ function Login({ onLogin }) {
 
 function AuthenticatedWorkspace({ onLogout }) {
   const navigate = useNavigate();
-  const location = window.location;
+  const { pathname } = useLocation();
   const user = authService.getUser();
-  const pageTitle = location.pathname === "/rules" ? "Rule Configuration" : location.pathname === "/fields" ? "Field Configuration" : "Overview";
+  const pageTitle = pathname === "/rules" ? "Rule Configuration" : pathname === "/fields" ? "Field Configuration" : "Overview";
 
   const handleLogout = () => {
     authService.logout();
