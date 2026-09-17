@@ -10,5 +10,7 @@ namespace api.BusinessLogic.RuleConfiguration
         Task<bool> UpdateRuleAsync(UpdateRuleRequest request);
         Task<bool> DeleteRuleAsync(int ruleId);
         Task<List<RuleFieldOption>> GetActiveFieldsAsync();
+        Task<bool> SetRuleActiveAsync(int ruleId, bool isActive);
+        Task ReorderRulesAsync(List<int> ruleIds);
     }
 }
