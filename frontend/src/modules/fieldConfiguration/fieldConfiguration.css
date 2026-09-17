@@ -1,0 +1,72 @@
+.field-configuration-page {
+  padding: 24px;
+}
+
+.field-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.field-page-header h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.field-page-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.field-page-error,
+.field-form-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.field-list-message {
+  padding: 32px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.field-table-wrapper {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.field-table th,
+.field-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+}
+
+.field-table th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.field-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.field-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
