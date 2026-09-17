@@ -71,7 +71,7 @@ namespace api.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost]
         public async Task<ActionResult<int>> CreateRule([FromBody] CreateRuleRequest request)
         {
             try
