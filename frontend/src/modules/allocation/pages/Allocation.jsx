@@ -1,47 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiPlay, FiRefreshCw } from "react-icons/fi";
+import { FiCheck, FiPlay, FiRefreshCw } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import allocationService from "../services/allocationService";
 import "../allocation.css";
 
 const SAMPLE_DATA = {
   candidates: [
-    {
-      candidateId: 1001,
-      categoryId: 2,
-      previousCategoryId: -1,
-      gender: "F",
-      isOms: "N",
-      isNri: "N",
-      isPh: "Y",
-      isExServicemen: "N",
-      isOrphan: "N",
-      isEligibleForOpen: "Y",
-      meritNo: 1,
-      exServicemenMeritNo: 0,
-      preferences: [
-        { preferenceNo: 1, collegeId: 101, choiceCode: 101 },
-        { preferenceNo: 2, collegeId: 102, choiceCode: 102 },
-      ],
-    },
-    {
-      candidateId: 1002,
-      categoryId: 1,
-      previousCategoryId: -1,
-      gender: "M",
-      isOms: "N",
-      isNri: "N",
-      isPh: "N",
-      isExServicemen: "N",
-      isOrphan: "N",
-      isEligibleForOpen: "Y",
-      meritNo: 2,
-      exServicemenMeritNo: 0,
-      preferences: [
-        { preferenceNo: 1, collegeId: 101, choiceCode: 101 },
-        { preferenceNo: 2, collegeId: 102, choiceCode: 102 },
-      ],
-    },
+    { candidateId: 1001, categoryId: 2, previousCategoryId: -1, gender: "F", isOms: "N", isNri: "N", isPh: "Y", isExServicemen: "N", isOrphan: "N", isEligibleForOpen: "Y", meritNo: 1, exServicemenMeritNo: 0, preferences: [{ preferenceNo: 1, collegeId: 101, choiceCode: 101 }, { preferenceNo: 2, collegeId: 102, choiceCode: 102 }] },
+    { candidateId: 1002, categoryId: 1, previousCategoryId: -1, gender: "M", isOms: "N", isNri: "N", isPh: "N", isExServicemen: "N", isOrphan: "N", isEligibleForOpen: "Y", meritNo: 2, exServicemenMeritNo: 0, preferences: [{ preferenceNo: 1, collegeId: 101, choiceCode: 101 }, { preferenceNo: 2, collegeId: 102, choiceCode: 102 }] },
   ],
   seats: [
     { collegeId: 101, categoryId: 1, quotaId: 1, general: 1, female: 0, ph: 1, defence: 0, orphan: 0 },
@@ -49,140 +15,78 @@ const SAMPLE_DATA = {
   ],
 };
 
-function getItems(response) {
-  return Array.isArray(response) ? response : response?.data || [];
-}
+const getItems = (response) => (Array.isArray(response) ? response : response?.data || []);
 
 function Allocation() {
   const [stages, setStages] = useState([]);
   const [capRound, setCapRound] = useState(1);
+  const [ruleSet, setRuleSet] = useState("CET 2026 - Round 1");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const loadStages = async () => {
-    try {
-      const response = await allocationService.getStages();
-      setStages(getItems(response));
-    } catch (loadError) {
-      setError(loadError.message || "Unable to load allocation stages.");
-    }
-  };
-
   useEffect(() => {
-    loadStages();
+    allocationService.getStages().then((response) => setStages(getItems(response))).catch((e) => setError(e.message || "Unable to load allocation steps."));
   }, []);
 
-  const runSimulation = async () => {
+  const runAllocation = async () => {
     try {
       setRunning(true);
       setError("");
-      const response = await allocationService.simulate({
-        capRound: Number(capRound),
-        ruleSetVersionId: "draft-runtime",
-        ...SAMPLE_DATA,
-      });
+      const response = await allocationService.simulate({ capRound: Number(capRound), ruleSetVersionId: "draft-runtime", ...SAMPLE_DATA });
       setResult(response?.data || response);
-    } catch (runError) {
-      setError(runError.message || "Unable to run allocation simulation.");
+    } catch (e) {
+      setError(e.message || "Unable to run allocation.");
     } finally {
       setRunning(false);
     }
   };
 
   const decisions = useMemo(() => result?.decisions || [], [result]);
+  const activeStages = stages.filter((stage) => stage.enabled);
 
   return (
     <div className="allocation-page">
       <div className="allocation-hero">
         <div>
-          <span className="page-eyebrow">Allocation engine</span>
+          <span className="page-eyebrow">CET Allocation</span>
           <h1>Allocation Run</h1>
-          <p>Execute the allocation pipeline independently from the rule administration screens.</p>
+          <p>Run the configured CET allocation rules for a CAP round.</p>
         </div>
-        <div className="allocation-run-controls">
-          <label htmlFor="cap-round">CAP Round</label>
-          <input id="cap-round" type="number" min="1" value={capRound} onChange={(event) => setCapRound(event.target.value)} />
-          <Button onClick={runSimulation} disabled={running}>
-            {running ? <FiRefreshCw className="allocation-spin" size={16} /> : <FiPlay size={16} />}
-            {running ? "Running..." : "Run Simulation"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="allocation-notice">
-        <strong>Simulation mode</strong>
-        <span>The current endpoint runs the engine against a controlled sample input. Database-backed candidate/seat loading and transactional persistence are intentionally kept separate from this first engine slice.</span>
       </div>
 
       {error && <div className="allocation-error">{error}</div>}
 
-      <section className="allocation-section">
-        <div className="allocation-section-heading">
-          <div>
-            <span>Pipeline</span>
-            <h2>Allocation stages</h2>
-          </div>
-          <span className="allocation-count">{stages.filter((stage) => stage.enabled).length} active</span>
+      <section className="allocation-section allocation-setup">
+        <div className="allocation-section-heading"><div><span>Setup</span><h2>Allocation Setup</h2></div></div>
+        <div className="allocation-form-grid">
+          <label>CAP Round<select value={capRound} onChange={(e) => setCapRound(e.target.value)}><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option></select></label>
+          <label>Rule Set<select value={ruleSet} onChange={(e) => setRuleSet(e.target.value)}><option>CET 2026 - Round 1</option><option>CET 2026 - Round 2</option></select></label>
         </div>
+      </section>
 
-        <div className="allocation-stage-grid">
-          {stages.map((stage) => (
-            <div className={`allocation-stage-card ${stage.enabled ? "enabled" : "disabled"}`} key={stage.stageCode}>
-              <div className="stage-sequence">{stage.sequence}</div>
-              <div>
-                <strong>{stage.stageCode.replaceAll("_", " ")}</strong>
-                <span>{stage.enabled ? "Enabled" : "Planned"}</span>
-              </div>
-            </div>
+      <section className="allocation-section">
+        <div className="allocation-section-heading"><div><span>Configured process</span><h2>Allocation Steps</h2></div><span className="allocation-count">{activeStages.length} selected</span></div>
+        <div className="allocation-step-list">
+          {activeStages.map((stage) => (
+            <div className="allocation-step" key={stage.stageCode}><span className="allocation-step-check"><FiCheck size={15} /></span><div><strong>{stage.stageCode.replaceAll("_", " ")}</strong><span>Included in this allocation run</span></div></div>
           ))}
         </div>
+        <div className="allocation-run-action"><Button onClick={runAllocation} disabled={running}><span>{running ? <FiRefreshCw className="allocation-spin" size={16} /> : <FiPlay size={16} />}</span>{running ? "Running Allocation..." : "Run Allocation"}</Button></div>
       </section>
 
       {result && (
         <section className="allocation-section allocation-result-section">
-          <div className="allocation-section-heading">
-            <div>
-              <span>Run result</span>
-              <h2>Allocation decisions</h2>
-            </div>
-            <span className="allocation-status">{result.run?.status}</span>
-          </div>
-
+          <div className="allocation-section-heading"><div><span>Completed run</span><h2>Allocation Result</h2></div><span className="allocation-status">{result.run?.status || "Completed"}</span></div>
           <div className="allocation-summary-grid">
-            <div><span>Run ID</span><strong>{result.run?.allocationRunId}</strong></div>
-            <div><span>CAP Round</span><strong>{result.run?.capRound}</strong></div>
-            <div><span>Decisions</span><strong>{decisions.length}</strong></div>
+            <div><span>Candidates Processed</span><strong>{SAMPLE_DATA.candidates.length}</strong></div>
+            <div><span>Allocations Made</span><strong>{decisions.length}</strong></div>
+            <div><span>Not Allocated</span><strong>{Math.max(0, SAMPLE_DATA.candidates.length - decisions.length)}</strong></div>
           </div>
-
           <div className="allocation-stage-results">
-            {(result.stages || []).map((stage) => (
-              <div className="allocation-stage-result" key={stage.stageCode}>
-                <div><strong>{stage.stageCode.replaceAll("_", " ")}</strong><span>{stage.status}</span></div>
-                <strong>{stage.decisionsCreated} decisions</strong>
-              </div>
-            ))}
+            {(result.stages || []).map((stage) => <div className="allocation-stage-result" key={stage.stageCode}><div><strong>{stage.stageCode.replaceAll("_", " ")}</strong><span>{stage.status}</span></div><strong>{stage.decisionsCreated || 0} allocations</strong></div>)}
           </div>
-
-          {decisions.length > 0 ? (
-            <div className="allocation-table-wrapper">
-              <table className="allocation-table">
-                <thead><tr><th>Candidate</th><th>College</th><th>Preference</th><th>Category</th><th>Seat</th><th>Step</th></tr></thead>
-                <tbody>
-                  {decisions.map((decision) => (
-                    <tr key={decision.decisionId}>
-                      <td>{decision.candidateId}</td>
-                      <td>{decision.collegeId}</td>
-                      <td>{decision.preferenceNo}</td>
-                      <td>{decision.categoryId}</td>
-                      <td>{decision.originalAllocatedType}</td>
-                      <td>{decision.stepId}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : <div className="allocation-empty">No allocation was produced for this run.</div>}
+          {decisions.length > 0 ? <div className="allocation-table-wrapper"><table className="allocation-table"><thead><tr><th>Candidate</th><th>College</th><th>Preference</th><th>Category</th><th>Allocation Type</th></tr></thead><tbody>{decisions.map((decision) => <tr key={decision.decisionId}><td>{decision.candidateId}</td><td>{decision.collegeId}</td><td>{decision.preferenceNo}</td><td>{decision.categoryId}</td><td>{decision.originalAllocatedType}</td></tr>)}</tbody></table></div> : <div className="allocation-empty">No candidates were allocated in this run.</div>}
         </section>
       )}
     </div>
