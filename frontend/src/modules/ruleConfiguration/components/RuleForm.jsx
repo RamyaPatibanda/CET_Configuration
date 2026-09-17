@@ -62,7 +62,6 @@ function createCondition(groupId = null) {
     logicalOperator: "AND",
     operator: "Equals",
     value: "",
-    groupLogicalOperator: "AND",
   };
 }
 
@@ -136,6 +135,21 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setRows((current) =>
       current.map((row) => (row.id === rowId ? { ...row, [name]: value } : row))
     );
+    setError("");
+  };
+
+  const changeField = (rowId, value) => {
+    const field = fields.find((item) => String(item.fieldId) === String(value));
+    const firstOperator = optionsForType(field?.fieldType)[0]?.value || "Equals";
+
+    setRows((current) =>
+      current.map((row) =>
+        row.id === rowId
+          ? { ...row, fieldId: value, operator: firstOperator, value: "" }
+          : row
+      )
+    );
+    setError("");
   };
 
   const toggleSelected = (rowId) => {
@@ -144,290 +158,367 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         ? current.filter((id) => id !== rowId)
         : [...current, rowId]
     );
+    setError("");
+  };
+
+  const selectAll = () => {
+    setSelectedRows((current) =>
+      current.length === rows.length ? [] : rows.map((row) => row.id)
+    );
+    setError("");
   };
 
   const groupSelected = () => {
     if (selectedRows.length < 2) {
-      setError("Select at least two conditions to group.");
+      setError("Select at least two conditions to create a group.");
       return;
     }
 
-    const selected = rows.filter((row) => selectedRows.includes(row.id));
-    const existingGroups = selected.filter((row) => row.groupId).map((row) => row.groupId);
-    if (existingGroups.length && new Set(existingGroups).size === 1) {
-      setError("The selected conditions are already in the same group.");
-      return;
-    }
+    setRows((current) => {
+      const selectedSet = new Set(selectedRows);
+      const selected = current.filter((row) => selectedSet.has(row.id));
+      const firstSelectedIndex = current.findIndex((row) => selectedSet.has(row.id));
 
-    const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const selectedSet = new Set(selectedRows);
-    const firstSelectedIndex = rows.findIndex((row) => selectedSet.has(row.id));
-    const grouped = selected.map((row) => ({ ...row, groupId }));
-    const remaining = rows.filter((row) => !selectedSet.has(row.id));
-    remaining.splice(firstSelectedIndex, 0, ...grouped);
+      if (selected.length < 2 || firstSelectedIndex < 0) {
+        setError("The selected conditions could not be grouped.");
+        return current;
+      }
 
-    setRows(remaining);
+      const existingGroupIds = new Set(selected.map((row) => row.groupId).filter(Boolean));
+      if (existingGroupIds.size === 1 && selected.every((row) => row.groupId)) {
+        setError("The selected conditions are already in the same group.");
+        return current;
+      }
+
+      const groupId = `group-${Date.now()}`;
+      const remaining = current.filter((row) => !selectedSet.has(row.id));
+      remaining.splice(firstSelectedIndex, 0, ...selected.map((row) => ({ ...row, groupId })));
+      return remaining;
+    });
+
     setSelectedRows([]);
     setError("");
   };
 
   const ungroupSelected = () => {
     if (!selectedRows.length) {
-      setError("Select conditions to ungroup.");
+      setError("Select at least one condition to ungroup.");
       return;
     }
 
-    const counts = new Map();
-    rows.filter((row) => row.groupId).forEach((row) => {
-      counts.set(row.groupId, (counts.get(row.groupId) || 0) + 1);
-    });
+    setRows((current) => {
+      const selectedSet = new Set(selectedRows);
+      const groupedSelection = current.filter(
+        (row) =>
+          selectedSet.has(row.id) &&
+          current.filter((item) => item.groupId && item.groupId === row.groupId).length > 1
+      );
 
-    const hasGroup = rows.some(
-      (row) => selectedRows.includes(row.id) && row.groupId && counts.get(row.groupId) > 1
-    );
+      if (!groupedSelection.length) {
+        setError("Select a condition that belongs to a group before ungrouping.");
+        return current;
+      }
 
-    if (!hasGroup) {
-      setError("Select conditions belonging to a multi-row group to ungroup.");
-      return;
-    }
-
-    setRows((current) =>
-      current.map((row) =>
-        selectedRows.includes(row.id) && row.groupId && counts.get(row.groupId) > 1
+      return current.map((row) =>
+        selectedSet.has(row.id) && groupedSelection.some((item) => item.id === row.id)
           ? { ...row, groupId: null }
           : row
-      )
-    );
+      );
+    });
+
     setSelectedRows([]);
     setError("");
   };
 
-  const handleDragStart = (rowId) => setDraggedRow(rowId);
-
-  const handleDrop = (targetId) => {
+  const moveRow = (targetId) => {
     if (!draggedRow || draggedRow === targetId) return;
 
     setRows((current) => {
-      const sourceIndex = current.findIndex((row) => row.id === draggedRow);
-      const targetIndex = current.findIndex((row) => row.id === targetId);
+      const next = [...current];
+      const sourceIndex = next.findIndex((row) => row.id === draggedRow);
+      const targetIndex = next.findIndex((row) => row.id === targetId);
+
       if (sourceIndex < 0 || targetIndex < 0) return current;
 
-      const next = [...current];
       const [moved] = next.splice(sourceIndex, 1);
       next.splice(targetIndex, 0, moved);
       return next;
     });
+
     setDraggedRow(null);
   };
 
-  const validate = () => {
-    if (!form.ruleName.trim()) return "Rule name is required.";
-    if (!rows.length) return "At least one condition is required.";
-    if (rows.some((row) => !row.fieldId || !row.operator || !String(row.value).trim())) {
-      return "Please complete all condition fields.";
-    }
-    return "";
+  const groupedRows = useMemo(() => {
+    const groups = new Map();
+    rows.forEach((row) => {
+      const groupId = row.groupId || `ungrouped-${row.id}`;
+      if (!groups.has(groupId)) groups.set(groupId, []);
+      groups.get(groupId).push(row);
+    });
+    return groups;
+  }, [rows]);
+
+  const getBracePosition = (row) => {
+    if (!row.groupId) return "single";
+
+    const group = groupedRows.get(row.groupId) || [];
+    const groupIndex = group.findIndex((item) => item.id === row.id);
+
+    if (group.length === 1) return "single";
+    if (groupIndex === 0) return "start";
+    if (groupIndex === group.length - 1) return "end";
+    return "middle";
   };
 
-  const handleSubmit = () => {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
+  const getGroupColor = (row) => {
+    if (!row.groupId) return "blue";
+
+    const groupIds = [...groupedRows.keys()];
+    const groupIndex = groupIds.indexOf(row.groupId);
+    return GROUP_COLORS[groupIndex % GROUP_COLORS.length];
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!form.ruleName.trim()) {
+      setError("Rule name is required.");
       return;
     }
 
+    if (!rows.length) {
+      setError("Add at least one condition.");
+      return;
+    }
+
+    const conditions = [];
     let groupOrder = 0;
     let previousGroupKey = null;
 
-    const conditions = rows.map((row, index) => {
-      // Every standalone row is its own group for backend ordering purposes.
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+
+      if (!row.fieldId || !row.operator || !String(row.value).trim()) {
+        setError("Complete every condition before saving.");
+        return;
+      }
+
       const currentGroupKey = row.groupId || `ungrouped-${row.id}`;
       if (currentGroupKey !== previousGroupKey) {
         groupOrder += 1;
         previousGroupKey = currentGroupKey;
       }
 
-      return {
+      const groupRows = groupedRows.get(row.groupId || `ungrouped-${row.id}`) || [row];
+      const rowIndex = groupRows.findIndex((item) => item.id === row.id);
+      const isGrouped = Boolean(row.groupId) && groupRows.length > 1;
+
+      conditions.push({
         fieldId: Number(row.fieldId),
-        logicalOperator: row.logicalOperator || "AND",
+        logicalOperator:
+          isGrouped && rowIndex === groupRows.length - 1
+            ? "AND"
+            : row.logicalOperator || "AND",
         operator: row.operator,
         value: row.value,
         conditionOrder: index + 1,
         groupOrder,
         groupLogicalOperator: row.groupLogicalOperator || "AND",
-      };
-    });
+      });
+    }
 
-    onSave({
+    setError("");
+    await onSave({
       ...form,
-      ruleName: form.ruleName.trim(),
-      description: form.description?.trim() || "",
+      priority: Number(form.priority || 1),
       conditions,
     });
   };
-
-  const fieldMap = useMemo(
-    () => new Map(fields.map((field) => [String(field.fieldId), field])),
-    [fields]
-  );
-
-  const groupMeta = useMemo(() => {
-    const map = new Map();
-    rows.forEach((row) => {
-      if (!row.groupId) return;
-      if (!map.has(row.groupId)) map.set(row.groupId, []);
-      map.get(row.groupId).push(row.id);
-    });
-    return map;
-  }, [rows]);
 
   return (
     <Dialog
       open={open}
       title={rule ? "Edit Rule" : "Create Rule"}
-      onClose={onClose}
-      className="rule-form-dialog"
+      className="rule-dialog"
+      onClose={saving ? undefined : onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" form="rule-form" disabled={saving || loadingFields}>
+            {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
+          </Button>
+        </>
+      }
     >
-      <div className="rule-form">
+      <form id="rule-form" className="rule-form" onSubmit={handleSubmit}>
         {error && <div className="rule-form-error">{error}</div>}
 
-        <div className="rule-form-header-fields">
+        <div className="rule-form-grid">
           <TextBox
+            name="ruleName"
             label="Rule Name"
             value={form.ruleName}
-            onChange={(event) => update("ruleName", event.target.value)}
             required
+            disabled={saving}
+            onChange={(event) => update("ruleName", event.target.value)}
           />
           <TextBox
+            name="description"
             label="Description"
             value={form.description}
+            disabled={saving}
             onChange={(event) => update("description", event.target.value)}
           />
-          <label className="rule-active-field">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(event) => update("isActive", event.target.checked)}
-            />
-            <span>Active</span>
-          </label>
         </div>
 
-        <div className="rule-condition-toolbar">
+        <div className="conditions-header">
           <div>
+            <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <span>Select rows and use Group/Ungroup to manage condition groups.</span>
+            <p>Select rows and group them together. The small colored round braces show which rows belong to the same group.</p>
           </div>
-          <div className="rule-condition-actions">
+          <div className="condition-toolbar-actions">
             <Button type="button" variant="secondary" onClick={groupSelected} disabled={selectedRows.length < 2}>
-              <FiUsers /> Group
+              <FiUsers size={14} />
+              Group {selectedRows.length > 1 ? `(${selectedRows.length})` : ""}
             </Button>
             <Button type="button" variant="secondary" onClick={ungroupSelected} disabled={!selectedRows.length}>
               Ungroup
             </Button>
-            <Button type="button" onClick={addRow}>
-              <FiPlus /> Add Condition
+            <Button type="button" variant="secondary" onClick={addRow}>
+              <FiPlus size={14} />
+              Add Condition
             </Button>
           </div>
         </div>
 
-        <div className="rule-condition-table-wrap">
-          <table className="rule-condition-table">
+        <div className="condition-selection-note">
+          {selectedRows.length
+            ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected`
+            : "Select two or more rows to group them. Select grouped rows and click Ungroup to separate them."}
+        </div>
+
+        <div className="condition-single-table-wrapper">
+          <table className="condition-single-table">
             <thead>
               <tr>
-                <th className="group-column">Group</th>
-                <th className="select-column">Select</th>
+                <th className="condition-check-column">
+                  <input
+                    type="checkbox"
+                    checked={rows.length > 0 && selectedRows.length === rows.length}
+                    onChange={selectAll}
+                    aria-label="Select all conditions"
+                  />
+                </th>
+                <th className="condition-brace-column">Group</th>
+                <th className="condition-drag-column" />
                 <th>Field</th>
                 <th>Operator</th>
                 <th>Value</th>
                 <th>Logic</th>
-                <th className="drag-column" />
-                <th className="action-column" />
+                <th className="condition-action-column" />
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
-                const groupRows = row.groupId ? groupMeta.get(row.groupId) || [] : [];
-                const groupIndex = row.groupId
-                  ? Array.from(groupMeta.keys()).indexOf(row.groupId)
-                  : -1;
-                const position =
-                  groupRows.length < 2
-                    ? "single"
-                    : groupRows[0] === row.id
-                      ? "start"
-                      : groupRows[groupRows.length - 1] === row.id
-                        ? "end"
-                        : "middle";
-                const color = GROUP_COLORS[(groupIndex < 0 ? 0 : groupIndex) % GROUP_COLORS.length];
-                const field = fieldMap.get(String(row.fieldId));
-                const operatorOptions = optionsForType(field?.fieldType);
+                const field = fields.find((item) => String(item.fieldId) === String(row.fieldId));
+                const operators = optionsForType(field?.fieldType);
+                const bracePosition = getBracePosition(row);
+                const groupColor = getGroupColor(row);
+                const isSelected = selectedRows.includes(row.id);
 
                 return (
                   <tr
                     key={row.id}
-                    className={selectedRows.includes(row.id) ? "selected-condition-row" : ""}
                     draggable
-                    onDragStart={() => handleDragStart(row.id)}
+                    className={isSelected ? "condition-row-selected" : ""}
+                    onDragStart={() => setDraggedRow(row.id)}
                     onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => handleDrop(row.id)}
+                    onDrop={() => moveRow(row.id)}
+                    onDragEnd={() => setDraggedRow(null)}
                   >
-                    <td className="group-column">
-                      <div className={`group-brace group-brace-${color}`} data-position={position}>
-                        {position === "single" ? "•" : position === "middle" ? "│" : position === "start" ? "(" : ")"}
-                      </div>
-                    </td>
-                    <td className="select-column">
+                    <td className="condition-check-cell">
                       <input
                         type="checkbox"
-                        checked={selectedRows.includes(row.id)}
+                        checked={isSelected}
                         onChange={() => toggleSelected(row.id)}
                         aria-label="Select condition"
                       />
                     </td>
+                    <td className={`condition-brace-cell brace-${groupColor}`}>
+                      <span className={`condition-brace brace-${bracePosition}`} aria-hidden="true">
+                        {bracePosition === "start" && "("}
+                        {bracePosition === "middle" && "│"}
+                        {bracePosition === "end" && ")"}
+                        {bracePosition === "single" && "•"}
+                      </span>
+                    </td>
+                    <td className="condition-drag-cell">
+                      <span className="condition-drag-handle" title="Drag to rearrange">
+                        <FiMenu size={14} />
+                      </span>
+                    </td>
                     <td>
                       <Select
-                        value={String(row.fieldId ?? "")}
-                        options={fields.map((item) => ({
-                          value: String(item.fieldId),
-                          label: item.displayName || item.fieldName,
-                        }))}
-                        onChange={(event) => updateRow(row.id, "fieldId", event.target.value)}
-                        disabled={loadingFields}
+                        label=""
+                        value={row.fieldId}
+                        options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))}
+                        placeholder={loadingFields ? "Loading..." : "Field"}
+                        disabled={loadingFields || saving}
+                        onChange={(event) => changeField(row.id, event.target.value)}
                       />
                     </td>
                     <td>
                       <Select
+                        label=""
                         value={row.operator}
-                        options={operatorOptions}
+                        options={operators}
+                        placeholder="Operator"
+                        disabled={!field || saving}
                         onChange={(event) => updateRow(row.id, "operator", event.target.value)}
                       />
                     </td>
                     <td>
-                      <TextBox
-                        value={row.value}
-                        onChange={(event) => updateRow(row.id, "value", event.target.value)}
-                      />
+                      {field?.fieldType === "Boolean" ? (
+                        <Select
+                          label=""
+                          value={row.value}
+                          options={[{ value: "Y", label: "Yes" }, { value: "N", label: "No" }]}
+                          placeholder="Value"
+                          disabled={saving}
+                          onChange={(event) => updateRow(row.id, "value", event.target.value)}
+                        />
+                      ) : (
+                        <TextBox
+                          label=""
+                          value={row.value}
+                          type={field?.fieldType === "Number" ? "number" : field?.fieldType === "Date" ? "date" : "text"}
+                          disabled={!field || saving}
+                          placeholder={field ? "Value" : "Select field"}
+                          onChange={(event) => updateRow(row.id, "value", event.target.value)}
+                        />
+                      )}
                     </td>
                     <td>
                       <Select
+                        label=""
                         value={row.logicalOperator}
                         options={LOGICAL_OPTIONS}
+                        disabled={saving}
                         onChange={(event) => updateRow(row.id, "logicalOperator", event.target.value)}
                       />
                     </td>
-                    <td className="drag-column">
-                      <FiMenu />
-                    </td>
-                    <td className="action-column">
+                    <td className="condition-action-cell">
                       <button
                         type="button"
-                        className="condition-delete-button"
-                        onClick={() => removeRow(row.id)}
-                        disabled={rows.length === 1}
+                        className="condition-remove"
+                        title="Delete condition"
                         aria-label="Delete condition"
+                        onClick={() => removeRow(row.id)}
                       >
-                        <FiTrash2 />
+                        <FiTrash2 size={14} />
                       </button>
                     </td>
                   </tr>
@@ -435,17 +526,20 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               })}
             </tbody>
           </table>
-        </div>
 
-        <div className="rule-form-footer">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleSubmit} disabled={saving}>
-            <FiCheckSquare /> {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
-          </Button>
+          {!rows.length && (
+            <div className="conditions-empty">
+              <FiCheckSquare size={22} />
+              <strong>No conditions yet</strong>
+              <span>Add a condition, then select rows when you want to group them.</span>
+              <Button type="button" variant="secondary" onClick={addRow}>
+                <FiPlus size={14} />
+                Add Condition
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      </form>
     </Dialog>
   );
 }
