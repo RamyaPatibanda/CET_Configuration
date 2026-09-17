@@ -124,6 +124,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const addRow = () => {
     const groupId = rows.length ? rows[rows.length - 1].groupId : "group-1";
     setRows((current) => [...current, createCondition(groupId)]);
+    setError("");
   };
 
   const removeRow = (rowId) => {
@@ -135,6 +136,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setRows((current) =>
       current.map((row) => (row.id === rowId ? { ...row, [name]: value } : row))
     );
+    setError("");
   };
 
   const changeField = (rowId, value) => {
@@ -148,6 +150,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           : row
       )
     );
+    setError("");
   };
 
   const toggleSelected = (rowId) => {
@@ -156,37 +159,74 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         ? current.filter((id) => id !== rowId)
         : [...current, rowId]
     );
+    setError("");
   };
 
   const selectAll = () => {
     setSelectedRows((current) =>
       current.length === rows.length ? [] : rows.map((row) => row.id)
     );
+    setError("");
   };
 
   const groupSelected = () => {
-    if (selectedRows.length < 2) return;
+    if (selectedRows.length < 2) {
+      setError("Select at least two conditions to create a group.");
+      return;
+    }
 
-    const groupId = `group-${Date.now()}`;
-    setRows((current) =>
-      current.map((row) =>
-        selectedRows.includes(row.id) ? { ...row, groupId } : row
-      )
-    );
+    setRows((current) => {
+      const selectedSet = new Set(selectedRows);
+      const selected = current.filter((row) => selectedSet.has(row.id));
+      const firstSelectedIndex = current.findIndex((row) => selectedSet.has(row.id));
+
+      if (selected.length < 2 || firstSelectedIndex < 0) {
+        setError("The selected conditions could not be grouped.");
+        return current;
+      }
+
+      const existingGroupIds = new Set(selected.map((row) => row.groupId));
+      if (existingGroupIds.size === 1) {
+        setError("The selected conditions are already in the same group.");
+        return current;
+      }
+
+      const groupId = `group-${Date.now()}`;
+      const remaining = current.filter((row) => !selectedSet.has(row.id));
+      remaining.splice(firstSelectedIndex, 0, ...selected.map((row) => ({ ...row, groupId })));
+      return remaining;
+    });
+
     setSelectedRows([]);
+    setError("");
   };
 
   const ungroupSelected = () => {
-    if (!selectedRows.length) return;
+    if (!selectedRows.length) {
+      setError("Select at least one condition to ungroup.");
+      return;
+    }
 
-    setRows((current) =>
-      current.map((row) =>
-        selectedRows.includes(row.id)
+    setRows((current) => {
+      const selectedSet = new Set(selectedRows);
+      const groupedSelection = current.filter(
+        (row) => selectedSet.has(row.id) && current.filter((item) => item.groupId === row.groupId).length > 1
+      );
+
+      if (!groupedSelection.length) {
+        setError("Select a condition that belongs to a group before ungrouping.");
+        return current;
+      }
+
+      return current.map((row) =>
+        selectedSet.has(row.id) && groupedSelection.some((item) => item.id === row.id)
           ? { ...row, groupId: `group-${row.id}` }
           : row
-      )
-    );
+      );
+    });
+
     setSelectedRows([]);
+    setError("");
   };
 
   const moveRow = (targetId) => {
@@ -269,7 +309,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         value: row.value,
         conditionOrder: index + 1,
         groupOrder,
-        groupLogicalOperator: rowIndex === 0 ? row.groupLogicalOperator || "AND" : row.groupLogicalOperator || "AND",
+        groupLogicalOperator: row.groupLogicalOperator || "AND",
       });
     }
 
@@ -323,7 +363,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           <div>
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <p>Select rows and group them together. The colored braces show which rows belong to the same group.</p>
+            <p>Select rows and group them together. The small colored round braces show which rows belong to the same group.</p>
           </div>
           <div className="condition-toolbar-actions">
             <Button type="button" variant="secondary" onClick={groupSelected} disabled={selectedRows.length < 2}>
@@ -397,10 +437,10 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                     </td>
                     <td className={`condition-brace-cell brace-${groupColor}`}>
                       <span className={`condition-brace brace-${bracePosition}`} aria-hidden="true">
-                        {bracePosition === "start" && "⎧"}
-                        {bracePosition === "middle" && "⎪"}
-                        {bracePosition === "end" && "⎩"}
-                        {bracePosition === "single" && "⎨"}
+                        {bracePosition === "start" && "("}
+                        {bracePosition === "middle" && "│"}
+                        {bracePosition === "end" && ")"}
+                        {bracePosition === "single" && "•"}
                       </span>
                     </td>
                     <td className="condition-drag-cell">
