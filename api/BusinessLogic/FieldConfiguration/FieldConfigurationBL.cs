@@ -1,0 +1,105 @@
+using api.DataAccess.FieldConfiguration;
+using api.Models.FieldConfiguration;
+
+namespace api.BusinessLogic.FieldConfiguration
+{
+    public class FieldConfigurationBL : IFieldConfigurationBL
+    {
+        private readonly IFieldConfigurationDAL _dataAccess;
+        private readonly ILogger<FieldConfigurationBL> _logger;
+
+        public FieldConfigurationBL(IFieldConfigurationDAL dataAccess, ILogger<FieldConfigurationBL> logger)
+        {
+            _dataAccess = dataAccess;
+            _logger = logger;
+        }
+
+        public async Task<List<FieldDefinition>> GetFieldsAsync()
+        {
+            try
+            {
+                return await _dataAccess.GetFieldsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in field configuration business logic while getting fields.");
+                throw;
+            }
+        }
+
+        public async Task<FieldDefinition?> GetFieldAsync(int fieldId)
+        {
+            try
+            {
+                if (fieldId <= 0)
+                    throw new ArgumentException("Field id must be greater than zero.", nameof(fieldId));
+
+                return await _dataAccess.GetFieldAsync(fieldId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in field configuration business logic while getting field {FieldId}.", fieldId);
+                throw;
+            }
+        }
+
+        public async Task<int> CreateFieldAsync(CreateFieldRequest request)
+        {
+            try
+            {
+                Validate(request.FieldName, request.DisplayName, request.FieldType, request.DisplayOrder);
+                return await _dataAccess.CreateFieldAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in field configuration business logic while creating field {FieldName}.", request.FieldName);
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateFieldAsync(UpdateFieldRequest request)
+        {
+            try
+            {
+                if (request.FieldId <= 0)
+                    throw new ArgumentException("Field id must be greater than zero.", nameof(request.FieldId));
+
+                Validate(request.FieldName, request.DisplayName, request.FieldType, request.DisplayOrder);
+                return await _dataAccess.UpdateFieldAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in field configuration business logic while updating field {FieldId}.", request.FieldId);
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteFieldAsync(int fieldId)
+        {
+            try
+            {
+                if (fieldId <= 0)
+                    throw new ArgumentException("Field id must be greater than zero.", nameof(fieldId));
+
+                return await _dataAccess.DeleteFieldAsync(fieldId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in field configuration business logic while deleting field {FieldId}.", fieldId);
+                throw;
+            }
+        }
+
+        private static void Validate(string fieldName, string displayName, string fieldType, int displayOrder)
+        {
+            if (string.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("Field name is required.", nameof(fieldName));
+            if (string.IsNullOrWhiteSpace(displayName))
+                throw new ArgumentException("Display name is required.", nameof(displayName));
+            if (string.IsNullOrWhiteSpace(fieldType))
+                throw new ArgumentException("Field type is required.", nameof(fieldType));
+            if (displayOrder < 0)
+                throw new ArgumentException("Display order cannot be negative.", nameof(displayOrder));
+        }
+    }
+}
