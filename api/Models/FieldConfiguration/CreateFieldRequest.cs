@@ -3,6 +3,7 @@ namespace api.Models.FieldConfiguration
     public class CreateFieldRequest
     {
         public int FieldId { get; set; }
+        public string TableName { get; set; } = string.Empty;
         public string FieldName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string FieldType { get; set; } = string.Empty;
