@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import authService from "./services/authService";
 import FieldConfiguration from "./modules/fieldConfiguration/pages/FieldConfiguration";
+import Sidebar from "./components/layout/Sidebar";
 import "./App.css";
+
+function Icon({ name, size = 19 }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+  const paths = {
+    eye: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></>,
+    arrow: <><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></>,
+    power: <><path d="M12 3v9"/><path d="M7.1 5.8a8 8 0 1 0 9.8 0"/></>
+  };
+  return <svg {...common}>{paths[name]}</svg>;
+}
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -9,58 +20,25 @@ function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
   const handleLogin = async (event) => {
     event.preventDefault();
-    if (!username.trim()) {
-      setError("Please enter your username.");
-      return;
-    }
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
-
-    setError("");
-    setIsLoading(true);
-    try {
-      await authService.login(username.trim(), password);
-      onLogin();
-    } catch (loginError) {
-      setError(loginError.message || "Invalid username or password.");
-    } finally {
-      setIsLoading(false);
-    }
+    if (!username.trim()) return setError("Please enter your username.");
+    if (!password) return setError("Please enter your password.");
+    setError(""); setIsLoading(true);
+    try { await authService.login(username.trim(), password); onLogin(); }
+    catch (loginError) { setError(loginError.message || "Invalid username or password."); }
+    finally { setIsLoading(false); }
   };
-
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="logo">CET</div>
-          <h1>CET Configuration</h1>
-          <p>Sign in to manage configuration</p>
-        </div>
+    <div className="login-page"><div className="login-orb orb-one"/><div className="login-orb orb-two"/>
+      <div className="login-card glass-panel">
+        <div className="login-header"><div className="logo">C</div><div className="eyebrow">CET PLATFORM</div><h1>Welcome back</h1><p>Sign in to manage your configuration workspace.</p></div>
         <form className="login-form" onSubmit={handleLogin}>
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input id="username" type="text" value={username} placeholder="Enter your username" onChange={(event) => setUsername(event.target.value)} autoComplete="username" disabled={isLoading} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-wrapper">
-              <input id="password" type={showPassword ? "text" : "password"} value={password} placeholder="Enter your password" onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" disabled={isLoading} />
-              <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
+          <div className="form-group"><label htmlFor="username">Username</label><input id="username" type="text" value={username} placeholder="Enter your username" onChange={(e) => setUsername(e.target.value)} autoComplete="username" disabled={isLoading}/></div>
+          <div className="form-group"><label htmlFor="password">Password</label><div className="password-wrapper"><input id="password" type={showPassword ? "text" : "password"} value={password} placeholder="Enter your password" onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" disabled={isLoading}/><button type="button" className="icon-button input-icon" title={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)} disabled={isLoading}><Icon name="eye" size={18}/></button></div></div>
           {error && <div className="login-error">{error}</div>}
-          <button type="submit" className="login-button" disabled={isLoading}>
-            {isLoading ? "Signing In..." : "Sign In"}
-          </button>
-        </form>
-        <div className="login-footer">CET Configuration System</div>
+          <button type="submit" className="login-button" disabled={isLoading}>{isLoading ? "Signing in…" : <>Sign in <Icon name="arrow" size={18}/></>}</button>
+        </form><div className="login-footer">CET Configuration System</div>
       </div>
     </div>
   );
@@ -68,31 +46,18 @@ function Login({ onLogin }) {
 
 function App() {
   const [authenticated, setAuthenticated] = useState(authService.isAuthenticated());
-
-  useEffect(() => {
-    setAuthenticated(authService.isAuthenticated());
-  }, []);
-
-  if (!authenticated) {
-    return <Login onLogin={() => setAuthenticated(true)} />;
-  }
-
-  const handleLogout = () => {
-    authService.logout();
-    setAuthenticated(false);
-  };
-
+  const [activeItem, setActiveItem] = useState("fields");
+  useEffect(() => setAuthenticated(authService.isAuthenticated()), []);
+  if (!authenticated) return <Login onLogin={() => setAuthenticated(true)}/>;
+  const handleLogout = () => { authService.logout(); setAuthenticated(false); };
+  const navigate = (item) => { if (item === "fields") setActiveItem(item); };
+  const user = authService.getUser();
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="app-brand">CET Configuration</div>
-        <button type="button" className="logout-button" onClick={handleLogout}>Logout</button>
-      </header>
-      <main className="app-content">
-        <FieldConfiguration />
-      </main>
-    </div>
+    <div className="app-shell"><Sidebar activeItem={activeItem} onNavigate={navigate}/><section className="app-main">
+      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div><h2>Field Configuration</h2></div>
+        <div className="header-actions"><div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" onClick={handleLogout}><Icon name="power" size={20}/></button></div>
+      </header><main className="app-content"><FieldConfiguration/></main>
+    </section></div>
   );
 }
-
 export default App;
