@@ -115,14 +115,22 @@ namespace api.DataAccess.FieldConfiguration
                 await using var command = CreateColumnCommand(connection, tableName);
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync()) columns.Add(new FieldSourceOption { Name = reader.GetString(0) });
+                while (await reader.ReadAsync())
+                {
+                    columns.Add(new FieldSourceOption
+                    {
+                        Name = reader.GetString(0),
+                        FieldType = MapSqlTypeToFieldType(reader.GetString(1))
+                    });
+                }
+
                 if (columns.Count == 0) throw new ArgumentException($"Table '{tableName}' was not found in the dbo schema.", nameof(tableName));
                 return columns;
             }
             catch (Exception ex) { _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName); throw; }
         }
 
-        public async Task ValidateFieldSourceAsync(string tableName, string fieldName)
+        public async Task<string> ValidateFieldSourceAsync(string tableName, string fieldName)
         {
             try
             {
@@ -131,17 +139,20 @@ namespace api.DataAccess.FieldConfiguration
 
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = new SqlCommand(@"
-                    SELECT COUNT(1)
+                    SELECT DATA_TYPE
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE TABLE_SCHEMA = 'dbo'
                       AND TABLE_NAME = @tTableName
-                      AND COLUMN_NAME = @tFieldName;", connection);
-                command.CommandType = CommandType.Text;
+                      AND COLUMN_NAME = @tFieldName;", connection)
+                { CommandType = CommandType.Text, CommandTimeout = 30 };
                 command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
                 command.Parameters.Add("@tFieldName", SqlDbType.NVarChar, 128).Value = fieldName;
                 await connection.OpenAsync();
-                var exists = Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
-                if (!exists) throw new ArgumentException($"Column '{fieldName}' does not exist in table '{tableName}'.", nameof(fieldName));
+                var sqlType = await command.ExecuteScalarAsync() as string;
+                if (string.IsNullOrWhiteSpace(sqlType))
+                    throw new ArgumentException($"Column '{fieldName}' does not exist in table '{tableName}'.", nameof(fieldName));
+
+                return MapSqlTypeToFieldType(sqlType);
             }
             catch (Exception ex) { _logger.LogError(ex, "Error while validating field source {TableName}.{FieldName}.", tableName, fieldName); throw; }
         }
@@ -161,7 +172,7 @@ namespace api.DataAccess.FieldConfiguration
         private static SqlCommand CreateColumnCommand(SqlConnection connection, string tableName)
         {
             var command = new SqlCommand(@"
-                SELECT COLUMN_NAME
+                SELECT COLUMN_NAME, DATA_TYPE
                 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = 'dbo'
                   AND TABLE_NAME = @tTableName
@@ -169,6 +180,17 @@ namespace api.DataAccess.FieldConfiguration
             { CommandType = CommandType.Text, CommandTimeout = 30 };
             command.Parameters.Add("@tTableName", SqlDbType.NVarChar, 128).Value = tableName;
             return command;
+        }
+
+        private static string MapSqlTypeToFieldType(string sqlType)
+        {
+            return sqlType.ToLowerInvariant() switch
+            {
+                "bit" => "Boolean",
+                "tinyint" or "smallint" or "int" or "bigint" or "decimal" or "numeric" or "float" or "real" or "money" or "smallmoney" => "Number",
+                "date" or "datetime" or "datetime2" or "smalldatetime" or "time" => "Date",
+                _ => "Text"
+            };
         }
 
         private static void AddFieldParameters(SqlCommand command, string tableName, string fieldName, string displayName, string fieldType, bool isRequired, bool isActive, int displayOrder)
