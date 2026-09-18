@@ -158,7 +158,7 @@ public sealed class AllocationController : ControllerBase
             ],
             AllocationConfiguration.Step1 =>
             [
-                new CandidateQualificationStage(ruleEvaluator),
+                new CandidateQualificationStage(),
                 new Step1AllocationStage(new SeatInventoryService())
             ],
             _ => throw new InvalidOperationException(
