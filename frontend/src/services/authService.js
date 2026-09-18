@@ -19,7 +19,9 @@ const authService = {
         username: response.username,
         displayName: response.displayName,
         roleName: response.roleName,
+        isAdmin: response.isAdmin,
         expiresAt: response.expiresAt,
+        isAdmin: response.isAdmin,
       })
     );
 
