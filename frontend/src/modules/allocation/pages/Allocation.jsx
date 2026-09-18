@@ -444,8 +444,12 @@ function Allocation() {
             <div className="allocation-action-error" role="alert">
               <span className="allocation-action-error-icon">!</span>
               <div>
-                <strong>Validation required</strong>
-                <span>{error}</span>
+                <strong>Please complete the following:</strong>
+                <ul>
+                  {error.split(". ").filter(Boolean).map((item, index) => (
+                    <li key={index}>{item.replace(/\\.$/, "")}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
