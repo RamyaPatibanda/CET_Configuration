@@ -163,6 +163,53 @@ public sealed class Step0CandidateRepository
             });
         }
 
+        await LoadPreferencesAsync(connection, result, cancellationToken);
         return result;
+    }
+    private static async Task LoadPreferencesAsync(
+        SqlConnection connection,
+        IList<AllocationCandidate> candidates,
+        CancellationToken cancellationToken)
+    {
+        if (candidates.Count == 0)
+            return;
+
+        var parameters = new List<string>(candidates.Count);
+        await using var command = new SqlCommand
+        {
+            Connection = connection,
+            CommandType = CommandType.Text,
+            CommandTimeout = 0
+        };
+
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            var name = $"@Candidate{index}";
+            parameters.Add(name);
+            command.Parameters.Add(name, SqlDbType.BigInt).Value = candidates[index].CandidateId;
+        }
+
+        command.CommandText = $"""
+            SELECT CandidateID, PreferenceNo, ChoiceCode
+            FROM dbo.Allocation_CollegePref
+            WHERE CandidateID IN ({string.Join(", ", parameters)})
+            ORDER BY CandidateID, PreferenceNo;
+            """;
+
+        var byCandidate = candidates.ToDictionary(candidate => candidate.CandidateId);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var candidateId = reader.GetInt64(reader.GetOrdinal("CandidateID"));
+            if (!byCandidate.TryGetValue(candidateId, out var candidate))
+                continue;
+
+            candidate.Preferences.Add(new CollegePreference
+            {
+                PreferenceNo = reader.GetInt32(reader.GetOrdinal("PreferenceNo")),
+                ChoiceCode = reader.GetInt64(reader.GetOrdinal("ChoiceCode"))
+            });
+        }
     }
 }
