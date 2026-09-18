@@ -46,8 +46,8 @@ public sealed class AllocationCandidate
     public string IsExServicemen { get; set; } = "N";
     public string IsOrphan { get; set; } = "N";
     public string IsEligibleForOpen { get; set; } = "N";
-    public int MeritNo { get; set; }
-    public int ExServicemenMeritNo { get; set; }
+    public long MeritNo { get; set; }
+    public long ExServicemenMeritNo { get; set; }
     public List<CollegePreference> Preferences { get; set; } = [];
     public ExistingAllotment? ExistingAllotment { get; set; }
     public bool IsInTempPhDef { get; set; }
