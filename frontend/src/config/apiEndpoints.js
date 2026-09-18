@@ -19,7 +19,7 @@ const API_ENDPOINTS = {
     BY_ID: (ruleId) => `/api/rule-configuration/${ruleId}`,
   },
   ALLOCATION: {
-    STAGES: "/api/allocation/stages",
+    STEPS: "/api/allocation/steps",
     SIMULATE: "/api/allocation/simulate",
   },
 };
