@@ -113,7 +113,7 @@ public sealed class AllocationController : ControllerBase
                 RuleSetVersionId = BuildRuleSetVersionId(step.Code, ruleGroups)
             };
 
-            var stages = BuildStages(step.Code, configuredRuleGroups);
+            var stages = BuildStages(step.Code);
             var engine = new AllocationEngine(stages);
             var context = await engine.RunAsync(
                 run,
@@ -145,9 +145,7 @@ public sealed class AllocationController : ControllerBase
         }
     }
 
-    private static IReadOnlyList<IAllocationStage> BuildStages(
-        string allocationStep,
-        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> configuredRuleGroups)
+    private static IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
     {
         var ruleEvaluator = new RuleEvaluator();
 
