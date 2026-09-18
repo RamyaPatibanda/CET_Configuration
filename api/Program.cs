@@ -2,6 +2,7 @@ using System.Text;
 using api.BusinessLogic.Auth;
 using api.BusinessLogic.FieldConfiguration;
 using api.BusinessLogic.RuleConfiguration;
+using api.BusinessLogic.UserManagement;
 using api.DataAccess;
 using api.DataAccess.FieldConfiguration;
 using api.DataAccess.RuleConfiguration;
@@ -19,6 +20,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<CETDataAccess>();
 
 builder.Services.AddScoped<IAuthBL, AuthBL>();
+builder.Services.AddScoped<IUserManagementBL, UserManagementBL>();
 
 builder.Services.AddScoped<IFieldConfigurationDAL, FieldConfigurationDAL>();
 builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
