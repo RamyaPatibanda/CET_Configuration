@@ -40,14 +40,18 @@ public sealed class AllocationEngine
 
                 await stage.ExecuteAsync(context, cancellationToken);
 
-                context.StageResults.Add(new AllocationStageResult
+                if (!context.StageResults.Any(result =>
+                        result.StageCode.Equals(stage.StageCode, StringComparison.OrdinalIgnoreCase)))
                 {
-                    StageCode = stage.StageCode,
-                    Sequence = StageSequence(stage.StageCode),
-                    CandidateCountBefore = beforeCandidates,
-                    CandidateCountAfter = context.Candidates.Count,
-                    DecisionsCreated = context.Decisions.Count - beforeDecisions
-                });
+                    context.StageResults.Add(new AllocationStageResult
+                    {
+                        StageCode = stage.StageCode,
+                        Sequence = StageSequence(stage.StageCode),
+                        CandidateCountBefore = beforeCandidates,
+                        CandidateCountAfter = context.Candidates.Count,
+                        DecisionsCreated = context.Decisions.Count - beforeDecisions
+                    });
+                }
             }
 
             run.Status = AllocationRunStatus.Completed;
