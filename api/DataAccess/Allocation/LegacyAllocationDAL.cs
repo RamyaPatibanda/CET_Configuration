@@ -129,30 +129,6 @@ public sealed class LegacyAllocationDAL
                         if (!eligible)
                             continue;
 
-                        if (existing is not null &&
-                            !MatchesArea(ruleGroups, AllocationConfiguration.Betterment, candidate))
-                            continue;
-
-                        if (vacancyType == "Def")
-                        {
-                            if (!MatchesArea(ruleGroups, AllocationConfiguration.Conversion, candidate))
-                                continue;
-
-                            await ExecuteDefConversionAsync(
-                                connection,
-                                transaction,
-                                preference.ChoiceCode,
-                                candidates,
-                                ruleGroups,
-                                cancellationToken);
-
-                            existing = await GetActiveAllocationAsync(
-                                connection, transaction, candidate.CandidateId, cancellationToken);
-
-                            if (existing is null)
-                                continue;
-                        }
-
                         if (existing is not null)
                         {
                             await RestoreAllocationAsync(
