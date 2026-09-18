@@ -38,7 +38,7 @@ public sealed class Step0CandidateRepository
         if (effectiveBatchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize));
 
-        var lastMeritNo = int.MinValue;
+        long lastMeritNo = long.MinValue;
         long lastCandidateId = long.MinValue;
 
         while (true)
@@ -104,7 +104,7 @@ public sealed class Step0CandidateRepository
             FROM dbo.Allocation_MeritList
             WHERE
                 (
-                    @LastMeritNo = -2147483648
+                    @LastMeritNo = -9223372036854775808
                     OR MeritNo > @LastMeritNo
                     OR (MeritNo = @LastMeritNo AND CandidateID > @LastCandidateId)
                 )
@@ -155,10 +155,10 @@ public sealed class Step0CandidateRepository
                     IsPh = Convert.ToString(reader["FinalIsPh"]) ?? "N",
                     IsExServicemen = Convert.ToString(reader["FinalIsExServicemen"]) ?? "N",
                     IsOrphan = Convert.ToString(reader["FinalIsOrphan"]) ?? "N",
-                    MeritNo = Convert.ToInt32(reader["MeritNo"]),
+                    MeritNo = Convert.ToInt64(reader["MeritNo"]),
                     ExServicemenMeritNo = reader["ExServicemenMeritNo"] == DBNull.Value
                         ? 0
-                        : Convert.ToInt32(reader["ExServicemenMeritNo"]),
+                        : Convert.ToInt64(reader["ExServicemenMeritNo"]),
                     IsEligibleForOpen = Convert.ToString(reader["IsEligibleForOpen"]) ?? "N",
                     IsOms = Convert.ToString(reader["IsOMS"]) ?? "N",
                     IsNri = Convert.ToString(reader["IsNRI"]) ?? "N",
