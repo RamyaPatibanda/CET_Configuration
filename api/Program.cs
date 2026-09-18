@@ -5,6 +5,7 @@ using api.BusinessLogic.RuleConfiguration;
 using api.DataAccess;
 using api.DataAccess.FieldConfiguration;
 using api.DataAccess.RuleConfiguration;
+using api.DataAccess.Allocation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
 
 builder.Services.AddScoped<IRuleConfigurationDAL, RuleConfigurationDAL>();
 builder.Services.AddScoped<IRuleConfigurationBL, RuleConfigurationBL>();
+builder.Services.AddScoped<AllocationRunHistoryDAL>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
