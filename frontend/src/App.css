@@ -101,11 +101,11 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 }
 
-.sidebar-collapse-button{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(143,156,178,.18);border-radius:9px;color:#5d6d84;background:rgba(255,255,255,.62);cursor:pointer;transition:.18s}
-.sidebar-collapse-button:hover{color:#315d8c;background:rgba(238,242,255,.9);border-color:rgba(99,102,241,.18)}
+.sidebar-collapse-button{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;color:#5d6d84;background:transparent;cursor:pointer;transition:.18s;padding:0}
+.sidebar-collapse-button:hover{color:#315d8c;background:rgba(255,255,255,.45)}
 .sidebar-top-toggle{position:absolute;top:12px;right:10px;z-index:2}
 .app-sidebar.collapsed{flex-basis:76px;width:76px;padding-left:10px;padding-right:10px}
-.app-sidebar.collapsed .sidebar-top-toggle{top:12px;right:50%;transform:translateX(50%);width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 5px 14px rgba(49,65,91,.12)}
+.app-sidebar.collapsed .sidebar-top-toggle{top:12px;right:50%;transform:translateX(50%);width:28px;height:28px;border-radius:8px;background:transparent;box-shadow:none}
 .app-sidebar.collapsed .sidebar-brand{justify-content:center;padding:28px 0 26px}
 .app-sidebar.collapsed .sidebar-logo{width:32px;height:32px;flex-basis:32px;border-radius:10px;font-size:14px}
 .app-sidebar.collapsed .sidebar-nav{margin-top:2px}
