@@ -6,10 +6,14 @@ namespace api.Services.Allocation;
 public sealed class Step0AllocationStage : IAllocationStage
 {
     private readonly LegacyAllocationDAL _legacyAllocation;
+    private readonly Step0CandidateRepository _candidateRepository;
 
-    public Step0AllocationStage(LegacyAllocationDAL legacyAllocation)
+    public Step0AllocationStage(
+        LegacyAllocationDAL legacyAllocation,
+        Step0CandidateRepository candidateRepository)
     {
         _legacyAllocation = legacyAllocation;
+        _candidateRepository = candidateRepository;
     }
 
     public string StageCode => "STEP_0_ALLOCATION";
@@ -18,50 +22,32 @@ public sealed class Step0AllocationStage : IAllocationStage
         AllocationContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = await _legacyAllocation.ExecuteStep0Async(
-            context.Candidates.ToList(),
-            context.RuleGroups,
-            cancellationToken);
+        var processedCandidates = 0;
 
-        foreach (var allocation in result.Allocations)
+        await foreach (var candidateBatch in _candidateRepository.ReadEligibleBatchesAsync(
+                           context.RuleGroups,
+                           cancellationToken: cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var candidate = context.Candidates.FirstOrDefault(
-                c => c.CandidateId == allocation.CandidateId);
+            // Keep only one batch in the middle layer at a time.
+            // The frontend never supplies candidate data.
+            processedCandidates += candidateBatch.Count;
 
-            var collegeId = candidate?.Preferences
-                .FirstOrDefault(p =>
-                    p.ChoiceCode == allocation.ChoiceCode &&
-                    p.PreferenceNo == allocation.PreferenceNo)
-                ?.CollegeId ?? 0;
+            var result = await _legacyAllocation.ExecuteStep0Async(
+                candidateBatch,
+                context.RuleGroups,
+                cancellationToken);
 
-            context.Decisions.Add(new AllocationDecision
+            foreach (var allocation in result.Allocations)
             {
-                AllocationRunId = context.Run.AllocationRunId,
-                CandidateId = allocation.CandidateId,
-                CollegeId = collegeId,
-                ChoiceCode = allocation.ChoiceCode,
-                PreferenceNo = allocation.PreferenceNo,
-                CategoryId = allocation.AllocatedCategoryId,
-                AllocatedType = allocation.AllocatedType,
-                OriginalAllocatedType = allocation.OriginalAllocatedType,
-                VacancyType = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
-                    ? allocation.OriginalAllocatedType
-                    : string.Empty,
-                StepId = allocation.StepId,
-                DecisionArea = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
-                    ? AllocationConfiguration.SpecialReservationEligibility
-                    : AllocationConfiguration.SeatEligibility,
-                RuleCode = ResolveRuleCode(context, allocation.OriginalAllocatedType),
-                Status = "Allocated"
-            });
+                cancellationToken.ThrowIfCancellationRequested();
 
-            if (candidate is not null)
-            {
-                candidate.ExistingAllotment = new ExistingAllotment
+                context.Decisions.Add(new AllocationDecision
                 {
-                    CollegeId = collegeId,
+                    AllocationRunId = context.Run.AllocationRunId,
+                    CandidateId = allocation.CandidateId,
+                    CollegeId = 0,
                     ChoiceCode = allocation.ChoiceCode,
                     PreferenceNo = allocation.PreferenceNo,
                     CategoryId = allocation.AllocatedCategoryId,
@@ -69,10 +55,26 @@ public sealed class Step0AllocationStage : IAllocationStage
                     OriginalAllocatedType = allocation.OriginalAllocatedType,
                     VacancyType = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
                         ? allocation.OriginalAllocatedType
-                        : string.Empty
-                };
+                        : string.Empty,
+                    StepId = allocation.StepId,
+                    DecisionArea = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
+                        ? AllocationConfiguration.SpecialReservationEligibility
+                        : AllocationConfiguration.SeatEligibility,
+                    RuleCode = ResolveRuleCode(context, allocation.OriginalAllocatedType),
+                    Status = "Allocated"
+                });
             }
         }
+
+        context.StageResults.Add(new AllocationStageResult
+        {
+            StageCode = StageCode,
+            Sequence = 20,
+            CandidateCountBefore = 0,
+            CandidateCountAfter = processedCandidates,
+            DecisionsCreated = context.Decisions.Count,
+            Status = "Completed"
+        });
     }
 
     private static string ResolveRuleCode(
