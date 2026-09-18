@@ -18,17 +18,20 @@ public sealed class AllocationController : ControllerBase
     private readonly ILogger<AllocationController> _logger;
     private readonly AllocationRunHistoryDAL _runHistory;
     private readonly LegacyAllocationDAL _legacyAllocation;
+    private readonly Step0CandidateRepository _step0CandidateRepository;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
         ILogger<AllocationController> logger,
         AllocationRunHistoryDAL runHistory,
-        LegacyAllocationDAL legacyAllocation)
+        LegacyAllocationDAL legacyAllocation,
+        Step0CandidateRepository step0CandidateRepository)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
         _runHistory = runHistory;
         _legacyAllocation = legacyAllocation;
+        _step0CandidateRepository = step0CandidateRepository;
     }
 
     [HttpGet("steps")]
@@ -250,8 +253,6 @@ public sealed class AllocationController : ControllerBase
 
         if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
             return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
-        if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
-            return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
 
         var run = new AllocationRun
         {
@@ -313,15 +314,11 @@ public sealed class AllocationController : ControllerBase
 
     private IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
     {
-        var ruleEvaluator = new RuleEvaluator();
-
         return allocationStep.ToUpperInvariant() switch
         {
             AllocationConfiguration.Step0 =>
             [
-                new Step0AllocationStage(_legacyAllocation, new Step0CandidateRepository(
-                    HttpContext.RequestServices.GetRequiredService<IConfiguration>(),
-                    HttpContext.RequestServices.GetRequiredService<IRuleEvaluator>()))
+                new Step0AllocationStage(_legacyAllocation, _step0CandidateRepository)
             ],
             AllocationConfiguration.Step1 =>
             [
