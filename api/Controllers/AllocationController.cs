@@ -47,7 +47,7 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
-        var prepared = await PrepareAsync(request, requireData: false, allowIncompleteDraft: true);
+        var prepared = await PrepareAsync(request, allowIncompleteDraft: true);
         if (prepared.Error is not null)
             return BadRequest(new { message = prepared.Error });
 
@@ -62,7 +62,7 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
-        var prepared = await PrepareAsync(request, requireData: true);
+        var prepared = await PrepareAsync(request);
         if (prepared.Error is not null)
             return BadRequest(new { message = prepared.Error });
 
@@ -179,7 +179,6 @@ public sealed class AllocationController : ControllerBase
 
     private async Task<PreparedAllocation> PrepareAsync(
         AllocationRunRequest request,
-        bool requireData,
         bool allowIncompleteDraft = false)
     {
         if (string.IsNullOrWhiteSpace(request.AllocationRunName))
