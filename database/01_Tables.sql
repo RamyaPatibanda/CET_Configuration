@@ -282,3 +282,46 @@ BEGIN
         ON dbo.tblAllocationRunHistory (dtStartedAtUtc DESC);
 END;
 GO
+
+
+/* Allocation run lifecycle and persisted allocation results. */
+IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'dtCreatedAtUtc') IS NULL
+        ALTER TABLE dbo.tblAllocationRunHistory ADD dtCreatedAtUtc DATETIME2 NULL;
+
+    IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'dtStartedAtUtc') IS NOT NULL
+        ALTER TABLE dbo.tblAllocationRunHistory ALTER COLUMN dtStartedAtUtc DATETIME2 NULL;
+
+    UPDATE dbo.tblAllocationRunHistory
+    SET dtCreatedAtUtc = COALESCE(dtCreatedAtUtc, dtStartedAtUtc, GETUTCDATE())
+    WHERE dtCreatedAtUtc IS NULL;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.tblAllocationRunDecision', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblAllocationRunDecision
+    (
+        aDecisionId UNIQUEIDENTIFIER NOT NULL,
+        aAllocationRunId UNIQUEIDENTIFIER NOT NULL,
+        nCandidateId BIGINT NOT NULL,
+        nCollegeId INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nCollegeId DEFAULT (0),
+        nPreferenceNo INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nPreferenceNo DEFAULT (0),
+        nCategoryId INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nCategoryId DEFAULT (0),
+        tAllocatedType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationRunDecision_tAllocatedType DEFAULT (N''),
+        tOriginalAllocatedType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationRunDecision_tOriginalAllocatedType DEFAULT (N''),
+        nStepId INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nStepId DEFAULT (0),
+        tDecisionArea NVARCHAR(100) NOT NULL,
+        tRuleCode NVARCHAR(200) NOT NULL,
+        tStatus NVARCHAR(30) NOT NULL,
+        dtCreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_tblAllocationRunDecision_dtCreatedAtUtc DEFAULT (GETUTCDATE()),
+        CONSTRAINT PK_tblAllocationRunDecision PRIMARY KEY (aDecisionId),
+        CONSTRAINT FK_tblAllocationRunDecision_Run FOREIGN KEY (aAllocationRunId)
+            REFERENCES dbo.tblAllocationRunHistory(aAllocationRunId)
+    );
+
+    CREATE INDEX IX_tblAllocationRunDecision_Run
+        ON dbo.tblAllocationRunDecision(aAllocationRunId, nCandidateId);
+END;
+GO
