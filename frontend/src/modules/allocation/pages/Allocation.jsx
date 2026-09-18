@@ -161,8 +161,14 @@ function Allocation() {
   };
 
   const saveDraft = async () => {
-    const validationError = validateClient();
-    if (validationError) return setError(validationError);
+    // Drafts are intentionally allowed to be incomplete. Only basic run
+    // information is required; full rule validation happens on Validate.
+    if (!runName.trim()) {
+      return setError("Enter an allocation run name.");
+    }
+    if (!selectedStep?.enabled) {
+      return setError("Select an available allocation step.");
+    }
 
     try {
       setRunning(true);
