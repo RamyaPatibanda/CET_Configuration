@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { FiClock, FiEdit2, FiRefreshCw } from "react-icons/fi";
+import { FiClock, FiEdit2, FiEye, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import FieldConfiguration from "../modules/fieldConfiguration/pages/FieldConfiguration";
 import RuleConfiguration from "../modules/ruleConfiguration/pages/RuleConfiguration";
@@ -22,6 +22,17 @@ function Overview() {
   const [runs, setRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [runError, setRunError] = useState("");
+
+  const deleteRun = async (runId, runName) => {
+    if (!window.confirm(`Delete allocation "${runName}"? This will remove its saved history and decisions.`)) return;
+    try {
+      setRunError("");
+      await allocationService.delete(runId);
+      await loadRuns();
+    } catch (error) {
+      setRunError(error.message || "Unable to delete allocation run.");
+    }
+  };
 
   const loadRuns = async () => {
     try {
@@ -104,7 +115,8 @@ function Overview() {
               <tbody>
                 {runs.map((run) => {
                   const status = String(run.status || "Draft");
-                  const isDraft = status.toLowerCase() === "draft";
+                  const normalizedStatus = status.toLowerCase();
+                  const canEdit = ["draft", "ready", "failed", "cancelled"].includes(normalizedStatus);
                   return (
                     <tr key={run.allocationRunId}>
                       <td>
@@ -125,19 +137,27 @@ function Overview() {
                       <td>{run.decisionCount ?? 0}</td>
                       <td>{formatDate(run.createdAtUtc || run.startedAtUtc)}</td>
                       <td>
-                        {isDraft ? (
+                        <div className="overview-action-icons">
                           <button
                             type="button"
-                            className="overview-edit-button"
+                            className="overview-icon-button"
                             onClick={() => navigate("/allocation?runId=" + encodeURIComponent(run.allocationRunId))}
-                            title="Edit draft"
+                            title={canEdit ? "Edit allocation" : "View allocation"}
+                            aria-label={canEdit ? "Edit allocation" : "View allocation"}
                           >
-                            <FiEdit2 size={14} />
-                            Edit
+                            {canEdit ? <FiEdit2 size={15} /> : <FiEye size={15} />}
                           </button>
-                        ) : (
-                          <span className="overview-readonly">View only</span>
-                        )}
+                          <button
+                            type="button"
+                            className="overview-icon-button danger"
+                            onClick={() => deleteRun(run.allocationRunId, run.allocationRunName)}
+                            title="Delete allocation"
+                            aria-label="Delete allocation"
+                            disabled={normalizedStatus === "running"}
+                          >
+                            <FiTrash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
