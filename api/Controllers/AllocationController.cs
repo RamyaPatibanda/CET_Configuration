@@ -76,8 +76,6 @@ public sealed class AllocationController : ControllerBase
 
             var context = await new AllocationEngine(BuildStages(run.AllocationStep)).RunAsync(
                 run,
-                Array.Empty<AllocationCandidate>(),
-                Array.Empty<SeatInventory>(),
                 prepared.RuleGroups!,
                 cancellationToken);
 
