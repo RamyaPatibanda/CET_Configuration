@@ -820,3 +820,39 @@
   gap: 3px;
 }
 
+
+
+.allocation-selected-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.allocation-selected-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.allocation-selected-rule-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.allocation-rule-or {
+  color: #6b7280;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
