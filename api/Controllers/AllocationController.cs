@@ -4,6 +4,7 @@ using api.Models.RuleConfiguration;
 using api.Services.Allocation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace api.Controllers;
 
@@ -14,18 +15,27 @@ public sealed class AllocationController : ControllerBase
 {
     private readonly IRuleConfigurationBL _ruleConfiguration;
     private readonly ILogger<AllocationController> _logger;
+    private readonly AllocationRunHistoryDAL _runHistory;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
-        ILogger<AllocationController> logger)
+        ILogger<AllocationController> logger,
+        AllocationRunHistoryDAL runHistory)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
+        _runHistory = runHistory;
     }
 
     [HttpGet("steps")]
     public ActionResult<IReadOnlyList<AllocationStepDefinition>> GetSteps() =>
         Ok(AllocationConfiguration.GetSteps());
+
+    [HttpGet("history")]
+    public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(CancellationToken cancellationToken)
+    {
+        return Ok(await _runHistory.GetRecentAsync());
+    }
 
     [HttpPost("simulate")]
     public async Task<ActionResult<AllocationRunResponse>> Simulate(
@@ -79,6 +89,8 @@ public sealed class AllocationController : ControllerBase
             });
         }
 
+        AllocationRun? run = null;
+
         try
         {
             var allRules = await _ruleConfiguration.GetRulesAsync();
@@ -109,7 +121,7 @@ public sealed class AllocationController : ControllerBase
 
             var configuredRuleGroups = BuildRuleGroups(ruleGroups, detailedById);
 
-            var run = new AllocationRun
+            run = new AllocationRun
             {
                 AllocationRunName = request.AllocationRunName.Trim(),
                 CapRound = request.CapRound,
@@ -125,6 +137,28 @@ public sealed class AllocationController : ControllerBase
                 request.Seats,
                 configuredRuleGroups,
                 cancellationToken);
+
+            await _runHistory.SaveAsync(new AllocationRunHistory
+            {
+                AllocationRunId = run.AllocationRunId,
+                AllocationRunName = run.AllocationRunName,
+                CapRound = run.CapRound,
+                AllocationStep = run.AllocationStep,
+                Status = run.Status.ToString(),
+                RuleGroupsJson = JsonSerializer.Serialize(ruleGroups.Select(group => new
+                {
+                    type = group.Type,
+                    rules = group.RuleIds.Select(id => new
+                    {
+                        ruleId = id,
+                        ruleName = detailedById[id].RuleName
+                    })
+                })),
+                StartedAtUtc = run.StartedAtUtc,
+                CompletedAtUtc = run.CompletedAtUtc,
+                CandidateCount = request.Candidates.Count,
+                DecisionCount = context.Decisions.Count
+            });
 
             return Ok(new AllocationRunResponse
             {
