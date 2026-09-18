@@ -5,7 +5,6 @@ import {
   FiChevronRight,
   FiGrid,
   FiList,
-  FiMenu,
   FiPlayCircle,
   FiSliders,
 } from "react-icons/fi";
@@ -37,7 +36,7 @@ function Sidebar() {
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <FiMenu size={17} /> : <FiChevronLeft size={17} />}
+          {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={17} />}
         </button>
       </div>
 
