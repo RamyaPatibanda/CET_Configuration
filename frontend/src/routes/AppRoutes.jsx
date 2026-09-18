@@ -48,11 +48,6 @@ function Overview() {
         </div>
       </div>
 
-      <div className="overview-grid">
-        <div className="overview-card"><span>Field Configuration</span><strong>Ready</strong><p>Define reusable fields used by CET rules.</p></div>
-        <div className="overview-card"><span>Rule Configuration</span><strong>Ready</strong><p>Configure allocation and decision rules using the fields you define.</p></div>
-        <div className="overview-card"><span>Allocation Engine</span><strong>Pipeline Ready</strong><p>Run the current qualification, special reservation and merit allocation stages.</p></div>
-      </div>
 
       <section className="overview-runs">
         <div className="overview-runs-heading">
