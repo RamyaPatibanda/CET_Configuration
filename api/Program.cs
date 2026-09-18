@@ -28,6 +28,7 @@ builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
 builder.Services.AddScoped<IRuleConfigurationDAL, RuleConfigurationDAL>();
 builder.Services.AddScoped<IRuleConfigurationBL, RuleConfigurationBL>();
 builder.Services.AddScoped<AllocationRunHistoryDAL>();
+builder.Services.AddScoped<IRuleEvaluator, RuleEvaluator>();
 builder.Services.AddScoped<LegacyAllocationDAL>();
 
 builder.Services.AddAuthorization();
