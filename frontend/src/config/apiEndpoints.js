@@ -30,6 +30,7 @@ const API_ENDPOINTS = {
     SIMULATE: "/api/allocation/simulate",
     HISTORY: "/api/allocation/history",
     ARCHIVE: (runId) => `/api/allocation/${runId}/archive`,
+    BY_ID: (runId) => `/api/allocation/${runId}`,
   },
 };
 
