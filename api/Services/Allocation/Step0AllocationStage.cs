@@ -39,7 +39,7 @@ public sealed class Step0AllocationStage : IAllocationStage
             .ToList();
 
         context.Candidates.Clear();
-        context.Candidates.AddRange(candidates);
+        context.Candidates.ToList().AddRange(candidates);
 
         foreach (var candidate in candidates)
         {
