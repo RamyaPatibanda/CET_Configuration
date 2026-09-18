@@ -9,12 +9,6 @@ public sealed class AllocationRunRequest
     public List<SeatInventory> Seats { get; set; } = [];
 }
 
-public sealed class AllocationRuleGroupRequest
-{
-    public string Type { get; set; } = string.Empty;
-    public List<int> RuleIds { get; set; } = [];
-}
-
 public sealed class AllocationRunResponse
 {
     public AllocationRun Run { get; set; } = new();
