@@ -1,4 +1,5 @@
 using api.BusinessLogic.RuleConfiguration;
+using api.DataAccess.Allocation;
 using api.Models.Allocation;
 using api.Models.RuleConfiguration;
 using api.Services.Allocation;
