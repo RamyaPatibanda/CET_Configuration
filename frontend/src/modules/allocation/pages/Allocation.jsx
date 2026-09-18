@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiArchive, FiCheck, FiCopy, FiPlay, FiRefreshCw, FiSave } from "react-icons/fi";
+import { FiArchive, FiCheck, FiCopy, FiEye, FiPlay, FiRefreshCw, FiSave } from "react-icons/fi";
 import Step0DecisionAreas, { STEP_0_STAGES } from "../components/Step0DecisionAreas";
 import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAreas";
 import Button from "../../../components/common/Button/Button";
@@ -56,7 +56,7 @@ const getDecisionAreaConfig = (stepCode) => DECISION_AREA_COMPONENTS[stepCode] |
 const createRuleGroups = (stepCode) =>
   (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
-const editableStatuses = new Set(["Draft", "Ready"]);
+const editableStatuses = new Set(["Draft", "Ready", "Failed", "Cancelled"]);
 const lockedStatuses = new Set(["Running", "Completed", "Failed", "Cancelled", "Archived"]);
 
 const normalizeStatus = (value, fallback = "Draft") => {
@@ -146,7 +146,7 @@ function Allocation() {
           setCapRound(existingRun.capRound || 1);
           setAllocationStep(savedStep?.code || existingRun.allocationStep);
           setRuleGroups(groups);
-          setStatus(existingRun.status || "Draft");
+          setStatus(normalizeStatus(existingRun.status, "Draft"));
           setResult(null);
           setMessage(existingRun.status === "Draft"
             ? "Draft loaded in edit mode. Update the configuration and validate when ready."
