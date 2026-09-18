@@ -92,7 +92,7 @@ public sealed class Step0CandidateRepository
         const string sql = """
             SELECT TOP (@BatchSize)
                 CandidateID,
-                CategoryID,
+                CategoryID = CASE WHEN PreviousCategoryID < 0 THEN CategoryID ELSE PreviousCategoryID END,
                 PreviousCategoryID,
                 Gender,
                 FinalIsPh,
@@ -109,22 +109,6 @@ public sealed class Step0CandidateRepository
                     @LastMeritNo IS NULL
                     OR MeritNo > @LastMeritNo
                     OR (MeritNo = @LastMeritNo AND CandidateID > @LastCandidateId)
-                )
-                AND IsOMS = 'N'
-                AND IsNRI = 'N'
-                AND (FinalIsPh = 'Y' OR FinalIsExServicemen = 'Y' OR FinalIsOrphan = 'Y')
-                AND NOT EXISTS
-                (
-                    SELECT 1
-                    FROM dbo.Allocation_Colleges ac
-                    WHERE ac.CandidateId = Allocation_MeritList.CandidateID
-                      AND ac.PreferenceNo = 1
-                )
-                AND NOT EXISTS
-                (
-                    SELECT 1
-                    FROM dbo.Allocation_tempPHDef tph
-                    WHERE tph.CandidateID = Allocation_MeritList.CandidateID
                 )
             ORDER BY MeritNo, CandidateID;
             """;
