@@ -3,7 +3,7 @@ using api.Models.Allocation;
 namespace api.Services.Allocation;
 
 /// <summary>
-/// Step 0 evaluates only the rules explicitly assigned to the
+/// Step 0 evaluates only rules explicitly assigned to the
 /// SPECIAL_RESERVATION_ELIGIBILITY decision area.
 /// Candidate qualification is handled by CandidateQualificationStage.
 /// Preference traversal, seat mutation and betterment remain engine behavior
