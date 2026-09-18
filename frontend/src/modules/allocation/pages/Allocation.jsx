@@ -205,21 +205,24 @@ function Allocation() {
   });
 
   const validateClient = () => {
-    if (!runName.trim()) return "Enter an allocation run name.";
-    if (!selectedStep?.enabled) return "Select an available allocation step.";
+    if (!runName.trim()) return "Allocation run name is required.";
+    if (!selectedStep?.enabled) return "Please select an available allocation step.";
 
-    const missingAreas = ruleGroups
-      .filter((group) => group.ruleIds.length === 0)
-      .map((group) => {
-        const area = getDecisionAreaConfig(allocationStep)?.stages.find((item) => item.code === group.type);
-        return area?.name || group.type.replaceAll("_", " ");
-      });
+    const configuredAreas = getDecisionAreaConfig(allocationStep)?.stages || [];
+    const selectedGroups = new Map(ruleGroups.map((group) => [group.type, group]));
+
+    const missingAreas = configuredAreas
+      .filter((area) => !(selectedGroups.get(area.code)?.ruleIds?.length > 0))
+      .map((area) => area.name);
 
     if (missingAreas.length > 0) {
-      return `Configure at least one rule for: ${missingAreas.join(", ")}.`;
+      return `Validation failed. Please select at least one rule for: ${missingAreas.join(", ")}.`;
     }
 
-    if (!selectedRuleCount) return "Assign at least one configured rule to a decision area.";
+    if (!selectedRuleCount) {
+      return "Validation failed. Please assign at least one rule to a decision area.";
+    }
+
     return "";
   };
 
