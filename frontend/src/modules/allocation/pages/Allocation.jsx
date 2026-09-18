@@ -217,6 +217,7 @@ function Allocation() {
   };
 
   const decisions = useMemo(() => result?.decisions || [], [result]);
+  const DecisionAreas = getDecisionAreaConfig(allocationStep)?.Component;
 
   return (
     <div className="allocation-page">
@@ -300,18 +301,13 @@ function Allocation() {
               Configuration before running allocation.
             </div>
           ) : (
-            (() => {
-              const DecisionAreas = getDecisionAreaConfig(allocationStep)?.Component;
-              return DecisionAreas ? (
-                <DecisionAreas
-                  rules={rules}
-                  ruleGroups={ruleGroups}
-                  openRuleGroup={openRuleGroup}
-                  setOpenRuleGroup={setOpenRuleGroup}
-                  toggleRule={toggleRule}
-                />
-              ) : null;
-            })()
+            <DecisionAreas
+              rules={rules}
+              ruleGroups={ruleGroups}
+              openRuleGroup={openRuleGroup}
+              setOpenRuleGroup={setOpenRuleGroup}
+              toggleRule={toggleRule}
+            />
           )}
         </section>
       )}
