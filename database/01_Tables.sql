@@ -272,7 +272,7 @@ BEGIN
         tRuleGroupsJson NVARCHAR(MAX) NOT NULL,
         dtStartedAtUtc DATETIME2 NOT NULL,
         dtCompletedAtUtc DATETIME2 NULL,
-        nCandidateCount INT NOT NULL CONSTRAINT DF_tblAllocationRunHistory_nCandidateCount DEFAULT (0),
+        nCandidateCount INT NULL CONSTRAINT DF_tblAllocationRunHistory_nCandidateCount DEFAULT (0),
         nDecisionCount INT NOT NULL CONSTRAINT DF_tblAllocationRunHistory_nDecisionCount DEFAULT (0),
         tErrorMessage NVARCHAR(2000) NOT NULL CONSTRAINT DF_tblAllocationRunHistory_tErrorMessage DEFAULT (N''),
         CONSTRAINT PK_tblAllocationRunHistory PRIMARY KEY (aAllocationRunId)
