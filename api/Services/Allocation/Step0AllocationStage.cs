@@ -3,27 +3,33 @@ using api.Models.Allocation;
 namespace api.Services.Allocation;
 
 /// <summary>
-/// Step 0 only evaluates the configured special-reservation rules.
-/// Business conditions are supplied by Rule Configuration; this stage does not contain
-/// candidate-specific conditions copied from the legacy stored procedures.
+/// Step 0 evaluates only the rules explicitly assigned to the
+/// SPECIAL_RESERVATION_ELIGIBILITY decision area.
+/// Candidate qualification is handled by CandidateQualificationStage.
+/// Preference traversal, seat mutation and betterment remain engine behavior
+/// until their corresponding decision areas are implemented.
 /// </summary>
 public sealed class Step0AllocationStage : IAllocationStage
 {
     private readonly RuleEvaluator _ruleEvaluator;
-    private readonly IReadOnlyList<AllocationRule> _configuredRules;
 
-    public Step0AllocationStage(
-        RuleEvaluator ruleEvaluator,
-        IReadOnlyList<AllocationRule> configuredRules)
+    public Step0AllocationStage(RuleEvaluator ruleEvaluator)
     {
         _ruleEvaluator = ruleEvaluator;
-        _configuredRules = configuredRules ?? throw new ArgumentNullException(nameof(configuredRules));
     }
 
     public string StageCode => "SPECIAL_RESERVATION";
 
     public Task ExecuteAsync(AllocationContext context, CancellationToken cancellationToken = default)
     {
+        if (!context.RuleGroups.TryGetValue(
+                AllocationConfiguration.SpecialReservationEligibility,
+                out var configuredRules) ||
+            configuredRules.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
         foreach (var candidate in context.Candidates.OrderBy(c => c.MeritNo))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -35,7 +41,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                 continue;
             }
 
-            foreach (var rule in _configuredRules)
+            foreach (var rule in configuredRules)
             {
                 if (!_ruleEvaluator.Matches(rule, candidate))
                     continue;
@@ -46,6 +52,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                     CandidateId = candidate.CandidateId,
                     CategoryId = candidate.EffectiveCategoryId,
                     StepId = 0,
+                    DecisionArea = AllocationConfiguration.SpecialReservationEligibility,
                     RuleCode = rule.Code,
                     Status = "Qualified"
                 });
