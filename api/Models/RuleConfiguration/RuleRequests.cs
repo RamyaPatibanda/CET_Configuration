@@ -17,12 +17,11 @@ namespace api.Models.RuleConfiguration
     public class RuleConditionRequest
     {
         public int FieldId { get; set; }
-        public string LogicalOperator { get; set; } = "AND";
+        public string ConditionLogicalOperator { get; set; } = "AND";
         public string Operator { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         public int ConditionOrder { get; set; }
         public int GroupOrder { get; set; } = 1;
-        public string GroupLogicalOperator { get; set; } = "AND";
     }
 
     public class RuleFieldOption
