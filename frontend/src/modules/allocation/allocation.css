@@ -678,3 +678,63 @@
     grid-template-columns:1fr
   }
 }
+
+
+.allocation-run-action {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.allocation-run-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.allocation-action-error,
+.allocation-action-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.allocation-action-error {
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.08);
+  color: #991b1b;
+}
+
+.allocation-action-error > div,
+.allocation-action-message > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.allocation-action-error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.allocation-action-message {
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.08);
+  color: #166534;
+}
+
