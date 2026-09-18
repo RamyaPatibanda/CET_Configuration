@@ -73,8 +73,6 @@ public sealed class AllocationController : ControllerBase
             run.Status = AllocationRunStatus.Running;
             run.StartedAtUtc = DateTime.UtcNow;
             await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
-            run.StartedAtUtc = DateTime.UtcNow;
-            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
 
             var context = await new AllocationEngine(BuildStages(run.AllocationStep)).RunAsync(
                 run,
