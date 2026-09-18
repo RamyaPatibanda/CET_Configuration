@@ -305,3 +305,144 @@ BEGIN
     SELECT CAST(SCOPE_IDENTITY() AS INT) AS aUserId;
 END;
 GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sproc_SaveAllocationRunHistory
+    @aAllocationRunId UNIQUEIDENTIFIER,
+    @tAllocationRunName NVARCHAR(200),
+    @nCapRound INT,
+    @tAllocationStep NVARCHAR(50),
+    @tStatus NVARCHAR(30),
+    @tRuleGroupsJson NVARCHAR(MAX),
+    @dtCreatedAtUtc DATETIME2,
+    @dtStartedAtUtc DATETIME2 = NULL,
+    @dtCompletedAtUtc DATETIME2 = NULL,
+    @nCandidateCount INT = 0,
+    @nDecisionCount INT = 0,
+    @tErrorMessage NVARCHAR(2000) = N''
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.tblAllocationRunHistory
+    SET tAllocationRunName = @tAllocationRunName,
+        nCapRound = @nCapRound,
+        tAllocationStep = @tAllocationStep,
+        tStatus = @tStatus,
+        tRuleGroupsJson = @tRuleGroupsJson,
+        dtCreatedAtUtc = @dtCreatedAtUtc,
+        dtStartedAtUtc = @dtStartedAtUtc,
+        dtCompletedAtUtc = @dtCompletedAtUtc,
+        nCandidateCount = @nCandidateCount,
+        nDecisionCount = @nDecisionCount,
+        tErrorMessage = @tErrorMessage
+    WHERE aAllocationRunId = @aAllocationRunId;
+
+    IF @@ROWCOUNT = 0
+    BEGIN
+        INSERT INTO dbo.tblAllocationRunHistory
+        (
+            aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
+            tStatus, tRuleGroupsJson, dtCreatedAtUtc, dtStartedAtUtc,
+            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage
+        )
+        VALUES
+        (
+            @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
+            @tStatus, @tRuleGroupsJson, @dtCreatedAtUtc, @dtStartedAtUtc,
+            @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage
+        );
+    END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sproc_GetAllocationRunHistory
+    @nTake INT = 50
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (@nTake)
+        aAllocationRunId,
+        tAllocationRunName,
+        nCapRound,
+        tAllocationStep,
+        tStatus,
+        tRuleGroupsJson,
+        dtCreatedAtUtc,
+        dtStartedAtUtc,
+        dtCompletedAtUtc,
+        nCandidateCount,
+        nDecisionCount,
+        tErrorMessage
+    FROM dbo.tblAllocationRunHistory
+    ORDER BY dtCreatedAtUtc DESC;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sproc_SaveAllocationRunDecisions
+    @aAllocationRunId UNIQUEIDENTIFIER,
+    @tDecisionsJson NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    INSERT INTO dbo.tblAllocationRunDecision
+    (
+        aDecisionId,
+        aAllocationRunId,
+        nCandidateId,
+        nCollegeId,
+        nPreferenceNo,
+        nCategoryId,
+        tAllocatedType,
+        tOriginalAllocatedType,
+        nStepId,
+        tDecisionArea,
+        tRuleCode,
+        tStatus
+    )
+    SELECT
+        TRY_CONVERT(UNIQUEIDENTIFIER, JSON_VALUE(j.value, '$.decisionId')),
+        @aAllocationRunId,
+        TRY_CONVERT(BIGINT, JSON_VALUE(j.value, '$.candidateId')),
+        COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.collegeId')), 0),
+        COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.preferenceNo')), 0),
+        COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.categoryId')), 0),
+        COALESCE(JSON_VALUE(j.value, '$.allocatedType'), N''),
+        COALESCE(JSON_VALUE(j.value, '$.originalAllocatedType'), N''),
+        COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.stepId')), 0),
+        COALESCE(JSON_VALUE(j.value, '$.decisionArea'), N''),
+        COALESCE(JSON_VALUE(j.value, '$.ruleCode'), N''),
+        COALESCE(JSON_VALUE(j.value, '$.status'), N'Allocated')
+    FROM OPENJSON(@tDecisionsJson) j
+    WHERE TRY_CONVERT(UNIQUEIDENTIFIER, JSON_VALUE(j.value, '$.decisionId')) IS NOT NULL;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sproc_GetAllocationRunDecisions
+    @aAllocationRunId UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        aDecisionId,
+        aAllocationRunId,
+        nCandidateId,
+        nCollegeId,
+        nPreferenceNo,
+        nCategoryId,
+        tAllocatedType,
+        tOriginalAllocatedType,
+        nStepId,
+        tDecisionArea,
+        tRuleCode,
+        tStatus,
+        dtCreatedAtUtc
+    FROM dbo.tblAllocationRunDecision
+    WHERE aAllocationRunId = @aAllocationRunId
+    ORDER BY nCandidateId, nPreferenceNo, dtCreatedAtUtc;
+END;
+GO
