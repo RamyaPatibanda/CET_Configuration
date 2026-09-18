@@ -2,8 +2,8 @@ import httpClient from "../../../services/httpClient";
 import API_ENDPOINTS from "../../../config/apiEndpoints";
 
 const allocationService = {
-  async getStages() {
-    return httpClient.get(API_ENDPOINTS.ALLOCATION.STAGES);
+  async getSteps() {
+    return httpClient.get(API_ENDPOINTS.ALLOCATION.STEPS);
   },
 
   async simulate(request) {
