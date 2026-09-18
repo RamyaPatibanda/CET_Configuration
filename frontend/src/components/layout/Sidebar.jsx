@@ -28,7 +28,7 @@ function Sidebar() {
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={17} />}
+        {collapsed ? <FiChevronRight size={17} /> : <FiChevronLeft size={17} />}
       </button>
 
       <div className="sidebar-brand">
