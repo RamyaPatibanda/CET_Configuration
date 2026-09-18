@@ -43,24 +43,6 @@ public static class AllocationConfiguration
                     Code = CandidateQualification,
                     Name = "Candidate Eligibility",
                     Description = "Determine the candidates that enter the Step 0 processing pool."
-                },
-                new()
-                {
-                    Code = SeatEligibility,
-                    Name = "Seat Eligibility",
-                    Description = "Determine which seats can be considered for the candidate."
-                },
-                new()
-                {
-                    Code = Betterment,
-                    Name = "Betterment",
-                    Description = "Determine whether an existing allocation can be replaced."
-                },
-                new()
-                {
-                    Code = Conversion,
-                    Name = "Special Vacancy / Conversion",
-                    Description = "Rules governing special-reservation vacancy or conversion decisions."
                 }
             ]
         },
