@@ -153,7 +153,7 @@ public sealed class AllocationController : ControllerBase
         {
             AllocationConfiguration.Step0 =>
             [
-                new CandidateQualificationStage(ruleEvaluator),
+                new CandidateQualificationStage(),
                 new Step0AllocationStage(ruleEvaluator)
             ],
             AllocationConfiguration.Step1 =>
