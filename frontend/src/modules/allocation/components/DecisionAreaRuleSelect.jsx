@@ -19,10 +19,9 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
     .join(", ");
 
   return (
-    <div className={`allocation-decision-area${disabled ? " is-disabled" : ""}`}>
-      <div className="allocation-decision-heading">
-        <div><h3>{area.name}</h3><p>{area.description}</p></div>
-        <span>{group.ruleIds.length} selected</span>
+    <div className={`allocation-stage-card${disabled ? " is-disabled" : ""}`}>
+      <div className="allocation-stage-heading"><div className="allocation-stage-title"><span>Stage</span><h3>{area.name}</h3><p>{area.description}</p></div><span>{group.ruleIds.length} selected</span></div>
+        
       </div>
 
       <div className="allocation-multiselect">
