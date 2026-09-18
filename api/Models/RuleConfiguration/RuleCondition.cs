@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace api.Models.RuleConfiguration
 {
     public class RuleCondition
@@ -14,14 +12,6 @@ namespace api.Models.RuleConfiguration
         public int ConditionOrder { get; set; }
         public int GroupOrder { get; set; } = 1;
         public string GroupLogicalOperator { get; set; } = "AND";
-
         public string ConditionLogicalOperator { get; set; } = "AND";
-
-        [JsonIgnore]
-        public string LogicalOperator
-        {
-            get => ConditionLogicalOperator;
-            set => ConditionLogicalOperator = value;
-        }
     }
 }
