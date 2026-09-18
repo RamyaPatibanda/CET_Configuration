@@ -182,3 +182,74 @@ BEGIN
     END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
 GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sproc_SaveAllocationRunHistory
+    @aAllocationRunId UNIQUEIDENTIFIER,
+    @tAllocationRunName NVARCHAR(200),
+    @nCapRound INT,
+    @tAllocationStep NVARCHAR(50),
+    @tStatus NVARCHAR(30),
+    @tRuleGroupsJson NVARCHAR(MAX),
+    @dtStartedAtUtc DATETIME2,
+    @dtCompletedAtUtc DATETIME2 = NULL,
+    @nCandidateCount INT = 0,
+    @nDecisionCount INT = 0,
+    @tErrorMessage NVARCHAR(2000) = N''
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.tblAllocationRunHistory
+    SET tAllocationRunName = @tAllocationRunName,
+        nCapRound = @nCapRound,
+        tAllocationStep = @tAllocationStep,
+        tStatus = @tStatus,
+        tRuleGroupsJson = @tRuleGroupsJson,
+        dtStartedAtUtc = @dtStartedAtUtc,
+        dtCompletedAtUtc = @dtCompletedAtUtc,
+        nCandidateCount = @nCandidateCount,
+        nDecisionCount = @nDecisionCount,
+        tErrorMessage = @tErrorMessage
+    WHERE aAllocationRunId = @aAllocationRunId;
+
+    IF @@ROWCOUNT = 0
+    BEGIN
+        INSERT INTO dbo.tblAllocationRunHistory
+        (
+            aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
+            tStatus, tRuleGroupsJson, dtStartedAtUtc, dtCompletedAtUtc,
+            nCandidateCount, nDecisionCount, tErrorMessage
+        )
+        VALUES
+        (
+            @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
+            @tStatus, @tRuleGroupsJson, @dtStartedAtUtc, @dtCompletedAtUtc,
+            @nCandidateCount, @nDecisionCount, @tErrorMessage
+        );
+    END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sproc_GetAllocationRunHistory
+    @nTake INT = 50
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (@nTake)
+        aAllocationRunId,
+        tAllocationRunName,
+        nCapRound,
+        tAllocationStep,
+        tStatus,
+        tRuleGroupsJson,
+        dtStartedAtUtc,
+        dtCompletedAtUtc,
+        nCandidateCount,
+        nDecisionCount,
+        tErrorMessage
+    FROM dbo.tblAllocationRunHistory
+    ORDER BY dtStartedAtUtc DESC;
+END;
+GO
