@@ -337,9 +337,6 @@ function Allocation() {
         </div>
       </div>
 
-      {error && <div className="allocation-error">{error}</div>}
-      {message && <div className="allocation-success"><FiCheck size={15} />{message}</div>}
-
       <section className="allocation-section allocation-setup">
         <div className="allocation-section-heading">
           <div><span>Run setup</span><h2>Allocation Run</h2></div>
@@ -425,21 +422,38 @@ function Allocation() {
         </div>
 
         <div className="allocation-run-action">
-          <Button onClick={saveDraft} disabled={running || !canEdit}>
-            <FiSave size={16} /> Save Draft
-          </Button>
-          <Button onClick={validateRun} disabled={running || !canEdit}>
-            <FiCheck size={16} /> Validate
-          </Button>
-          <Button onClick={runAllocation} disabled={running || status !== "Ready" || isLocked}>
-            {running ? <FiRefreshCw className="allocation-spin" size={16} /> : <FiPlay size={16} />}
-            {running ? "Running Allocation..." : "Run Allocation"}
-          </Button>
-          {status === "Completed" && (
-            <>
-              <Button onClick={cloneRun}><FiCopy size={16} /> Clone Run</Button>
-              <Button onClick={archiveRun} disabled={running}><FiArchive size={16} /> Archive</Button>
-            </>
+          <div className="allocation-run-actions-buttons">
+            <Button onClick={saveDraft} disabled={running || !canEdit}>
+              <FiSave size={16} /> Save Draft
+            </Button>
+            <Button onClick={validateRun} disabled={running || !canEdit}>
+              <FiCheck size={16} /> Validate
+            </Button>
+            <Button onClick={runAllocation} disabled={running || status !== "Ready" || isLocked}>
+              {running ? <FiRefreshCw className="allocation-spin" size={16} /> : <FiPlay size={16} />}
+              {running ? "Running Allocation..." : "Run Allocation"}
+            </Button>
+            {status === "Completed" && (
+              <>
+                <Button onClick={cloneRun}><FiCopy size={16} /> Clone Run</Button>
+                <Button onClick={archiveRun} disabled={running}><FiArchive size={16} /> Archive</Button>
+              </>
+            )}
+          </div>
+          {error && (
+            <div className="allocation-action-error" role="alert">
+              <span className="allocation-action-error-icon">!</span>
+              <div>
+                <strong>Validation required</strong>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+          {message && (
+            <div className="allocation-action-message">
+              <FiCheck size={15} />
+              <span>{message}</span>
+            </div>
           )}
         </div>
 
