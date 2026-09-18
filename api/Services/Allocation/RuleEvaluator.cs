@@ -2,7 +2,13 @@ using api.Models.Allocation;
 
 namespace api.Services.Allocation;
 
-public sealed record RuleCondition(string Field, string Operator, string Value);
+public sealed record RuleCondition(
+    string Field,
+    string Operator,
+    string Value,
+    string ConditionLogicalOperator = "AND",
+    int GroupOrder = 1,
+    int ConditionOrder = 0);
 
 public sealed class AllocationRule
 {
@@ -24,10 +30,37 @@ public sealed class RuleEvaluator : IRuleEvaluator
         if (rule.Conditions.Count == 0)
             return false;
 
-        var results = rule.Conditions.Select(c => Evaluate(c, candidate)).ToList();
-        return rule.LogicalOperator.Equals("OR", StringComparison.OrdinalIgnoreCase)
-            ? results.Any(x => x)
-            : results.All(x => x);
+        var groups = rule.Conditions
+            .GroupBy(condition => condition.GroupOrder)
+            .OrderBy(group => group.Key)
+            .ToList();
+
+        // Conditions inside a group use the logical operator defined by the
+        // first condition in that group. Groups are combined with AND.
+        // This represents: A AND B AND (C OR D OR E).
+        return groups.All(group => EvaluateGroup(group.ToList(), candidate));
+    }
+
+    private static bool EvaluateGroup(
+        IReadOnlyList<RuleCondition> conditions,
+        AllocationCandidate candidate)
+    {
+        if (conditions.Count == 0)
+            return false;
+
+        var results = conditions
+            .OrderBy(condition => condition.ConditionOrder)
+            .Select(condition => Evaluate(condition, candidate))
+            .ToList();
+
+        var logicalOperator = conditions
+            .OrderBy(condition => condition.ConditionOrder)
+            .First()
+            .ConditionLogicalOperator;
+
+        return logicalOperator.Equals("OR", StringComparison.OrdinalIgnoreCase)
+            ? results.Any(result => result)
+            : results.All(result => result);
     }
 
     private static bool Evaluate(RuleCondition condition, AllocationCandidate candidate)
@@ -60,6 +93,11 @@ public sealed class RuleEvaluator : IRuleEvaluator
         _ => null
     };
 
-    private static bool CompareNumbers(string? actual, string expected, Func<decimal, decimal, bool> comparison)
-        => decimal.TryParse(actual, out var a) && decimal.TryParse(expected, out var b) && comparison(a, b);
+    private static bool CompareNumbers(
+        string? actual,
+        string expected,
+        Func<decimal, decimal, bool> comparison)
+        => decimal.TryParse(actual, out var a) &&
+           decimal.TryParse(expected, out var b) &&
+           comparison(a, b);
 }
