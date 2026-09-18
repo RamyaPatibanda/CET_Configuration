@@ -21,8 +21,6 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
   return (
     <div className={`allocation-stage-card${disabled ? " is-disabled" : ""}`}>
       <div className="allocation-stage-heading"><div className="allocation-stage-title"><span>Stage</span><h3>{area.name}</h3><p>{area.description}</p></div><span>{group.ruleIds.length} selected</span></div>
-        
-      </div>
 
       <div className="allocation-multiselect">
         <button type="button"
