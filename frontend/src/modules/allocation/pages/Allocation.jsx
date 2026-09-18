@@ -57,7 +57,7 @@ const createRuleGroups = (stepCode) =>
   (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
 const editableStatuses = new Set(["Draft", "Ready", "Failed", "Cancelled"]);
-const lockedStatuses = new Set(["Running", "Completed", "Failed", "Cancelled", "Archived"]);
+const lockedStatuses = new Set(["Running", "Completed", "Archived"]);
 
 const normalizeStatus = (value, fallback = "Draft") => {
   if (typeof value === "string") return value;
@@ -149,7 +149,7 @@ function Allocation() {
           setStatus(normalizeStatus(existingRun.status, "Draft"));
           setResult(null);
           setMessage(existingRun.status === "Draft"
-            ? "Draft loaded in edit mode. Update the configuration and validate when ready."
+            ? "Draft loaded in edit mode. Update the configuration and run when ready."
             : "Allocation run loaded with status " + existingRun.status + ".");
           return;
         }
@@ -250,35 +250,10 @@ function Allocation() {
     }
   };
 
-  const validateRun = async () => {
-    const validationError = validateClient();
-    if (validationError) return setError(validationError);
-
-    try {
-      setRunning(true);
-      setError("");
-      setMessage("");
-      const response = await allocationService.validate(buildRequest());
-      const data = response?.data || response;
-      setRunId(data.run?.allocationRunId);
-      setStatus(normalizeStatus(data.run?.status, "Ready"));
-      setMessage("Configuration validated. The run is Ready to execute.");
-    } catch (e) {
-      setError(e.message || "Unable to validate allocation configuration.");
-    } finally {
-      setRunning(false);
-    }
-  };
-
   const runAllocation = async () => {
     const validationError = validateClient();
     if (validationError) return setError(validationError);
-    if (status !== "Ready") {
-      setError("Validate the allocation configuration before running it.");
-      return;
-    }
-
-    try {
+        try {
       setRunning(true);
       setError("");
       setMessage("");
@@ -329,7 +304,7 @@ function Allocation() {
         <div>
           <span className="page-eyebrow">CET Allocation</span>
           <h1>Allocation Run</h1>
-          <p>Configure, validate, save and execute a controlled allocation run.</p>
+          <p>Configure and execute a controlled allocation run.</p>
         </div>
         <div className="allocation-hero-badge">
           <span>Run status</span>
@@ -426,10 +401,7 @@ function Allocation() {
             <Button onClick={saveDraft} disabled={running || !canEdit}>
               <FiSave size={16} /> Save Draft
             </Button>
-            <Button onClick={validateRun} disabled={running || !canEdit}>
-              <FiCheck size={16} /> Validate
-            </Button>
-            <Button onClick={runAllocation} disabled={running || status !== "Ready" || isLocked}>
+            <Button onClick={runAllocation} disabled={running || !canEdit}>
               {running ? <FiRefreshCw className="allocation-spin" size={16} /> : <FiPlay size={16} />}
               {running ? "Running Allocation..." : "Run Allocation"}
             </Button>
