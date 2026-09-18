@@ -35,7 +35,8 @@ public sealed class AllocationRunHistoryDAL
             command.Parameters.Add("@tAllocationStep", SqlDbType.NVarChar, 50).Value = history.AllocationStep;
             command.Parameters.Add("@tStatus", SqlDbType.NVarChar, 30).Value = history.Status;
             command.Parameters.Add("@tRuleGroupsJson", SqlDbType.NVarChar, -1).Value = history.RuleGroupsJson;
-            command.Parameters.Add("@dtStartedAtUtc", SqlDbType.DateTime2).Value = history.StartedAtUtc;
+            command.Parameters.Add("@dtCreatedAtUtc", SqlDbType.DateTime2).Value = history.CreatedAtUtc;
+            command.Parameters.Add("@dtStartedAtUtc", SqlDbType.DateTime2).Value = (object?)history.StartedAtUtc ?? DBNull.Value;
             command.Parameters.Add("@dtCompletedAtUtc", SqlDbType.DateTime2).Value = (object?)history.CompletedAtUtc ?? DBNull.Value;
             command.Parameters.Add("@nCandidateCount", SqlDbType.Int).Value = history.CandidateCount;
             command.Parameters.Add("@nDecisionCount", SqlDbType.Int).Value = history.DecisionCount;
@@ -47,6 +48,47 @@ public sealed class AllocationRunHistoryDAL
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while saving allocation run history {AllocationRunId}.", history.AllocationRunId);
+            throw;
+        }
+    }
+
+    public async Task SaveDecisionsAsync(Guid runId, IReadOnlyCollection<AllocationDecision> decisions)
+    {
+        if (decisions.Count == 0) return;
+
+        try
+        {
+            var rows = decisions.Select(d => new
+            {
+                decisionId = d.DecisionId,
+                candidateId = d.CandidateId,
+                collegeId = d.CollegeId,
+                preferenceNo = d.PreferenceNo,
+                categoryId = d.CategoryId,
+                allocatedType = d.AllocatedType,
+                originalAllocatedType = d.OriginalAllocatedType,
+                stepId = d.StepId,
+                decisionArea = d.DecisionArea,
+                ruleCode = d.RuleCode,
+                status = d.Status
+            });
+
+            await using var connection = new SqlConnection(_connectionString);
+            await using var command = new SqlCommand("sproc_SaveAllocationRunDecisions", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aAllocationRunId", SqlDbType.UniqueIdentifier).Value = runId;
+            command.Parameters.Add("@tDecisionsJson", SqlDbType.NVarChar, -1).Value =
+                System.Text.Json.JsonSerializer.Serialize(rows);
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while saving allocation decisions for run {AllocationRunId}.", runId);
             throw;
         }
     }
@@ -69,6 +111,10 @@ public sealed class AllocationRunHistoryDAL
 
             while (await reader.ReadAsync())
             {
+                var startedOrdinal = reader.GetOrdinal("dtStartedAtUtc");
+                var completedOrdinal = reader.GetOrdinal("dtCompletedAtUtc");
+                var errorOrdinal = reader.GetOrdinal("tErrorMessage");
+
                 items.Add(new AllocationRunHistory
                 {
                     AllocationRunId = reader.GetGuid(reader.GetOrdinal("aAllocationRunId")),
@@ -77,15 +123,12 @@ public sealed class AllocationRunHistoryDAL
                     AllocationStep = reader.GetString(reader.GetOrdinal("tAllocationStep")),
                     Status = reader.GetString(reader.GetOrdinal("tStatus")),
                     RuleGroupsJson = reader.GetString(reader.GetOrdinal("tRuleGroupsJson")),
-                    StartedAtUtc = reader.GetDateTime(reader.GetOrdinal("dtStartedAtUtc")),
-                    CompletedAtUtc = reader.IsDBNull(reader.GetOrdinal("dtCompletedAtUtc"))
-                        ? null
-                        : reader.GetDateTime(reader.GetOrdinal("dtCompletedAtUtc")),
+                    CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("dtCreatedAtUtc")),
+                    StartedAtUtc = reader.IsDBNull(startedOrdinal) ? null : reader.GetDateTime(startedOrdinal),
+                    CompletedAtUtc = reader.IsDBNull(completedOrdinal) ? null : reader.GetDateTime(completedOrdinal),
                     CandidateCount = reader.GetInt32(reader.GetOrdinal("nCandidateCount")),
                     DecisionCount = reader.GetInt32(reader.GetOrdinal("nDecisionCount")),
-                    ErrorMessage = reader.IsDBNull(reader.GetOrdinal("tErrorMessage"))
-                        ? string.Empty
-                        : reader.GetString(reader.GetOrdinal("tErrorMessage"))
+                    ErrorMessage = reader.IsDBNull(errorOrdinal) ? string.Empty : reader.GetString(errorOrdinal)
                 });
             }
 
