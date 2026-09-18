@@ -105,7 +105,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .sidebar-collapse-button:hover{color:#315d8c;background:rgba(238,242,255,.9);border-color:rgba(99,102,241,.18)}
 .app-sidebar.collapsed{flex-basis:76px;width:76px;padding-left:10px;padding-right:10px}
 .app-sidebar.collapsed .sidebar-brand{justify-content:center;padding-left:0;padding-right:0}
-.app-sidebar.collapsed .sidebar-collapse-button{position:absolute;right:-13px;top:7px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 5px 14px rgba(49,65,91,.12)}
+.app-sidebar.collapsed .sidebar-collapse-button{position:absolute;left:calc(100% + 4px);right:auto;top:7px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 5px 14px rgba(49,65,91,.12);z-index:30}
 .app-sidebar.collapsed .sidebar-nav{margin-top:2px}
 .app-sidebar.collapsed .sidebar-item{justify-content:center;padding-left:0;padding-right:0}
 .app-sidebar.collapsed .sidebar-bottom{justify-content:center}
