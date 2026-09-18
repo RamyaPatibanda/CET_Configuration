@@ -67,6 +67,8 @@ public sealed class AllocationRunHistoryDAL
                 categoryId = d.CategoryId,
                 allocatedType = d.AllocatedType,
                 originalAllocatedType = d.OriginalAllocatedType,
+                vacancyType = d.VacancyType,
+                choiceCode = d.ChoiceCode,
                 stepId = d.StepId,
                 decisionArea = d.DecisionArea,
                 ruleCode = d.RuleCode,
