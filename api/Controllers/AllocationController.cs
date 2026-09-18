@@ -125,8 +125,8 @@ public sealed class AllocationController : ControllerBase
             return Ok(new AllocationRunResponse
             {
                 Run = context.Run,
-                Decisions = context.Decisions.ToList(),
-                Stages = context.StageResults.ToList()
+                Decisions = context.Decisions,
+                Stages = context.StageResults
             });
         }
         catch (OperationCanceledException)
