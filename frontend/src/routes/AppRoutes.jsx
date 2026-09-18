@@ -67,7 +67,7 @@ function Overview() {
         {loadingRuns ? (
           <div className="overview-runs-empty"><FiClock size={20} /><span>Loading allocation history…</span></div>
         ) : runs.length === 0 ? (
-          <div className="overview-runs-empty"><FiClock size={20} /><span>No allocation runs have been completed yet.</span></div>
+          <div className="overview-runs-empty"><FiClock size={20} /><span>No allocation runs have been saved yet.</span></div>
         ) : (
           <div className="overview-run-list">
             {runs.map((run) => {
@@ -80,7 +80,7 @@ function Overview() {
                     <div className="overview-run-title">
                       <div>
                         <h3>{run.allocationRunName}</h3>
-                        <span>{formatDate(run.startedAtUtc)}</span>
+                        <span>{formatDate(run.createdAtUtc || run.startedAtUtc)}</span>
                       </div>
                       <span className={"overview-run-status " + (run.status || "").toLowerCase()}>{run.status}</span>
                     </div>
