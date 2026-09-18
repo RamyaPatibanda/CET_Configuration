@@ -3,10 +3,12 @@ namespace api.Models.Allocation;
 public enum AllocationRunStatus
 {
     Draft,
+    Ready,
     Running,
     Completed,
     Failed,
-    Cancelled
+    Cancelled,
+    Archived
 }
 
 public sealed class AllocationRun
@@ -17,6 +19,7 @@ public sealed class AllocationRun
     public string AllocationStep { get; set; } = AllocationConfiguration.Step0;
     public int CapRound { get; set; }
     public AllocationRunStatus Status { get; set; } = AllocationRunStatus.Draft;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime StartedAtUtc { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
 }
@@ -44,7 +47,6 @@ public sealed class AllocationCandidate
     public int ExServicemenMeritNo { get; set; }
     public List<CollegePreference> Preferences { get; set; } = [];
     public ExistingAllotment? ExistingAllotment { get; set; }
-
     public int EffectiveCategoryId => PreviousCategoryId < 0 ? CategoryId : PreviousCategoryId;
 }
 
