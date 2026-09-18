@@ -97,7 +97,7 @@ public sealed class AllocationController : ControllerBase
                 cancellationToken);
 
             await _runHistory.SaveDecisionsAsync(run.AllocationRunId, context.Decisions.ToList());
-            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken, decisionCount: context.Decisions.Count);
 
             return Ok(new AllocationRunResponse
             {
@@ -266,7 +266,8 @@ public sealed class AllocationController : ControllerBase
         AllocationRunRequest request,
         IReadOnlyDictionary<int, RuleDefinition> rules,
         CancellationToken cancellationToken,
-        string errorMessage = "")
+        string errorMessage = "",
+        int decisionCount = 0)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -295,7 +296,7 @@ public sealed class AllocationController : ControllerBase
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
             CompletedAtUtc = run.CompletedAtUtc,
             CandidateCount = request.Candidates.Count,
-            DecisionCount = 0,
+            DecisionCount = decisionCount,
             ErrorMessage = errorMessage
         });
     }
