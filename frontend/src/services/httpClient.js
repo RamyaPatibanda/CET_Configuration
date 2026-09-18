@@ -40,10 +40,18 @@ async function request(endpoint, options = {}) {
       localStorage.removeItem("cet_access_token");
     }
 
+    const validationMessages =
+      typeof data === "object" && data?.errors
+        ? Object.values(data.errors).flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean)
+        : [];
     const message =
       typeof data === "object" && data?.message
         ? data.message
-        : "The request could not be completed.";
+        : validationMessages.length
+          ? validationMessages.join(" ")
+          : typeof data === "string" && data.trim()
+            ? data
+            : "The request could not be completed.";
 
     const error = new Error(message);
     error.status = response.status;
