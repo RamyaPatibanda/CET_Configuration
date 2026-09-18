@@ -80,7 +80,7 @@ public sealed class AllocationController : ControllerBase
                 cancellationToken);
 
             await _runHistory.SaveDecisionsAsync(run.AllocationRunId, context.Decisions.ToList());
-            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken, decisionCount: context.Decisions.Count);
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken, decisionCount: context.Decisions.Count, candidateCount: context.StageResults.Sum(stage => stage.CandidateCountAfter));
 
             return Ok(new AllocationRunResponse
             {
