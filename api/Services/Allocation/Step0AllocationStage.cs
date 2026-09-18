@@ -23,6 +23,7 @@ public sealed class Step0AllocationStage : IAllocationStage
         CancellationToken cancellationToken = default)
     {
         var processedCandidates = 0;
+        var allocatedCandidates = 0;
 
         await foreach (var candidateBatch in _candidateRepository.ReadEligibleBatchesAsync(
                            context.RuleGroups,
@@ -38,6 +39,12 @@ public sealed class Step0AllocationStage : IAllocationStage
                 candidateBatch,
                 context.RuleGroups,
                 cancellationToken);
+
+            // The legacy Step 0 procedure returns the number of active
+            // allocations produced by the Step 0 processing. In the
+            // application-layer implementation this is represented by the
+            // allocation rows returned from ExecuteStep0Async.
+            allocatedCandidates += result.Allocations.Count;
 
             foreach (var allocation in result.Allocations)
             {
@@ -68,9 +75,9 @@ public sealed class Step0AllocationStage : IAllocationStage
         {
             StageCode = StageCode,
             Sequence = 20,
-            CandidateCountBefore = 0,
-            CandidateCountAfter = processedCandidates,
-            DecisionsCreated = context.Decisions.Count,
+            CandidateCountBefore = processedCandidates,
+            CandidateCountAfter = allocatedCandidates,
+            DecisionsCreated = allocatedCandidates,
             Status = "Completed"
         });
     }
