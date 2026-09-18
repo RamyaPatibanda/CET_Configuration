@@ -3,12 +3,10 @@
   flex-direction: column;
   gap: 6px;
 }
-
 .common-form-control label {
   font-size: 14px;
   font-weight: 500;
 }
-
 .common-input {
   width: 100%;
   min-height: 42px;
@@ -19,22 +17,25 @@
   font-size: 14px;
   background: #fff;
 }
-
 .common-input:focus {
   outline: none;
   border-color: #557ba5;
   box-shadow: 0 0 0 3px rgba(85, 123, 165, 0.10);
 }
-
 .common-input:disabled {
   background: #f3f4f6;
   cursor: not-allowed;
 }
-
-.common-input-error { border-color: #dc2626; }
-.common-required { color: #dc2626; }
-.common-field-error { color: #dc2626; font-size: 12px; }
-
+.common-input-error {
+  border-color: #dc2626;
+}
+.common-required {
+  color: #dc2626;
+}
+.common-field-error {
+  color: #dc2626;
+  font-size: 12px;
+}
 .common-button {
   min-height: 38px;
   border: 0;
@@ -43,28 +44,121 @@
   font-size: 14px;
   cursor: pointer;
 }
-
-.common-button:disabled { opacity: 0.6; cursor: not-allowed; }
-.common-button-primary { background: linear-gradient(135deg, #557ba5, #7f91aa); color: #fff; box-shadow: 0 8px 18px rgba(85, 123, 165, 0.18); }
-.common-button-primary:hover:not(:disabled) { background: linear-gradient(135deg, #4d7198, #74879f); }
-.common-button-secondary { background: #e5e7eb; color: #111827; }
-.common-button-danger { background: #dc2626; color: #fff; }
-
-.common-checkbox { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
-
-.common-switch { display: inline-flex; align-items: center; gap: 9px; min-height: 32px; font-size: 13px; cursor: pointer; user-select: none; }
-.common-switch input { position: absolute; opacity: 0; pointer-events: none; }
-.common-switch-track { position: relative; width: 38px; height: 22px; flex: 0 0 38px; border-radius: 999px; background: #cbd2dc; transition: background 0.18s ease; }
-.common-switch-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(35, 48, 70, 0.22); transition: transform 0.18s ease; }
-.common-switch input:checked + .common-switch-track { background: #557ba5; }
-.common-switch input:checked + .common-switch-track .common-switch-thumb { transform: translateX(16px); }
-.common-switch input:focus-visible + .common-switch-track { outline: 2px solid rgba(85, 123, 165, 0.35); outline-offset: 2px; }
-.common-switch-disabled { opacity: 0.55; cursor: not-allowed; }
-
-.common-dialog-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); z-index: 1000; }
-.common-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: auto; background: #fff; border-radius: 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
-.common-dialog-header, .common-dialog-footer { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
-.common-dialog-footer { justify-content: flex-end; gap: 8px; border-bottom: 0; border-top: 1px solid #e5e7eb; }
-.common-dialog-header h2 { margin: 0; font-size: 18px; }
-.common-dialog-close { border: 0; background: transparent; font-size: 24px; cursor: pointer; }
-.common-dialog-body { padding: 12px 20px 20px; }
+.common-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.common-button-primary {
+  background: linear-gradient(135deg, #557ba5, #7f91aa);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(85, 123, 165, 0.18);
+}
+.common-button-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4d7198, #74879f);
+}
+.common-button-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+.common-button-danger {
+  background: #dc2626;
+  color: #fff;
+}
+.common-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.common-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.common-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.common-switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: 0 0 38px;
+  border-radius: 999px;
+  background: #cbd2dc;
+  transition: background 0.18s ease;
+}
+.common-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(35, 48, 70, 0.22);
+  transition: transform 0.18s ease;
+}
+.common-switch input:checked + .common-switch-track {
+  background: #557ba5;
+}
+.common-switch input:checked + .common-switch-track .common-switch-thumb {
+  transform: translateX(16px);
+}
+.common-switch input:focus-visible + .common-switch-track {
+  outline: 2px solid rgba(85, 123, 165, 0.35);
+  outline-offset: 2px;
+}
+.common-switch-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.common-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+}
+.common-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+.common-dialog-header, .common-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.common-dialog-footer {
+  justify-content: flex-end;
+  gap: 8px;
+  border-bottom: 0;
+  border-top: 1px solid #e5e7eb;
+}
+.common-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.common-dialog-close {
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+}
+.common-dialog-body {
+  padding: 12px 20px 20px;
+}
