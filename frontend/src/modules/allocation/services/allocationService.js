@@ -14,10 +14,6 @@ const allocationService = {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.DRAFT, request);
   },
 
-  async validate(request) {
-    return httpClient.post(API_ENDPOINTS.ALLOCATION.VALIDATE, request);
-  },
-
   async run(request) {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.RUN, request);
   },
