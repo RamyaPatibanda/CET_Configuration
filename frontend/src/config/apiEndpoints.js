@@ -21,6 +21,7 @@ const API_ENDPOINTS = {
   ALLOCATION: {
     STEPS: "/api/allocation/steps",
     SIMULATE: "/api/allocation/simulate",
+    HISTORY: "/api/allocation/history",
   },
 };
 
