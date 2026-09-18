@@ -33,34 +33,171 @@ public sealed class AllocationController : ControllerBase
         Ok(AllocationConfiguration.GetSteps());
 
     [HttpGet("history")]
-    public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(
+        CancellationToken cancellationToken)
     {
         return Ok(await _runHistory.GetRecentAsync());
     }
 
-    [HttpPost("simulate")]
-    public async Task<ActionResult<AllocationRunResponse>> Simulate(
+    [HttpPost("draft")]
+    public async Task<ActionResult<AllocationRunResponse>> SaveDraft(
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
+        var prepared = await PrepareAsync(request, requireData: false);
+        if (prepared.Error is not null)
+            return BadRequest(new { message = prepared.Error });
+
+        var run = prepared.Run!;
+        run.Status = AllocationRunStatus.Draft;
+        await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+        return Ok(new AllocationRunResponse { Run = run });
+    }
+
+    [HttpPost("validate")]
+    public async Task<ActionResult<AllocationRunResponse>> Validate(
+        [FromBody] AllocationRunRequest request,
+        CancellationToken cancellationToken)
+    {
+        var prepared = await PrepareAsync(request, requireData: false);
+        if (prepared.Error is not null)
+            return BadRequest(new { message = prepared.Error });
+
+        var run = prepared.Run!;
+        run.Status = AllocationRunStatus.Ready;
+        await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+        return Ok(new AllocationRunResponse { Run = run });
+    }
+
+    [HttpPost("run")]
+    public async Task<ActionResult<AllocationRunResponse>> Run(
+        [FromBody] AllocationRunRequest request,
+        CancellationToken cancellationToken)
+    {
+        var prepared = await PrepareAsync(request, requireData: true);
+        if (prepared.Error is not null)
+            return BadRequest(new { message = prepared.Error });
+
+        var run = prepared.Run!;
+        run.Status = AllocationRunStatus.Ready;
+
+        await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+
+        try
+        {
+            run.Status = AllocationRunStatus.Running;
+            run.StartedAtUtc = DateTime.UtcNow;
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+
+            var context = await new AllocationEngine(BuildStages(run.AllocationStep)).RunAsync(
+                run,
+                request.Candidates,
+                request.Seats,
+                prepared.RuleGroups!,
+                cancellationToken);
+
+            await _runHistory.SaveDecisionsAsync(run.AllocationRunId, context.Decisions.ToList());
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
+
+            return Ok(new AllocationRunResponse
+            {
+                Run = context.Run,
+                Decisions = context.Decisions.ToList(),
+                Stages = context.StageResults.ToList()
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            run.Status = AllocationRunStatus.Cancelled;
+            run.CompletedAtUtc = DateTime.UtcNow;
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, CancellationToken.None);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            run.Status = AllocationRunStatus.Failed;
+            run.CompletedAtUtc = DateTime.UtcNow;
+
+            try
+            {
+                await SaveHistoryAsync(
+                    run,
+                    request,
+                    prepared.RuleDetails!,
+                    CancellationToken.None,
+                    ex.Message);
+            }
+            catch (Exception historyException)
+            {
+                _logger.LogError(historyException, "Unable to persist failed allocation run {AllocationRunId}.", run.AllocationRunId);
+            }
+
+            _logger.LogError(
+                ex,
+                "Allocation run {AllocationRunId} failed for CAP round {CapRound}, step {AllocationStep}.",
+                run.AllocationRunId,
+                request.CapRound,
+                request.AllocationStep);
+
+            return StatusCode(500, new
+            {
+                message = "Allocation run failed.",
+                allocationRunId = run.AllocationRunId
+            });
+        }
+    }
+
+    // Kept for compatibility with the existing UI/client contract.
+    [HttpPost("simulate")]
+    public Task<ActionResult<AllocationRunResponse>> Simulate(
+        [FromBody] AllocationRunRequest request,
+        CancellationToken cancellationToken) =>
+        Run(request, cancellationToken);
+
+    [HttpPost("{runId:guid}/archive")]
+    public async Task<IActionResult> Archive(
+        Guid runId,
+        CancellationToken cancellationToken)
+    {
+        var history = (await _runHistory.GetRecentAsync(200))
+            .FirstOrDefault(item => item.AllocationRunId == runId);
+
+        if (history is null)
+            return NotFound(new { message = "Allocation run was not found." });
+
+        if (!Enum.TryParse<AllocationRunStatus>(history.Status, true, out var status) ||
+            status is AllocationRunStatus.Running)
+        {
+            return BadRequest(new { message = "A running allocation cannot be archived." });
+        }
+
+        history.Status = AllocationRunStatus.Archived;
+        await _runHistory.SaveAsync(history);
+        return NoContent();
+    }
+
+    private async Task<PreparedAllocation> PrepareAsync(
+        AllocationRunRequest request,
+        bool requireData)
+    {
         if (string.IsNullOrWhiteSpace(request.AllocationRunName))
-            return BadRequest(new { message = "Allocation run name is required." });
+            return PreparedAllocation.Fail("Allocation run name is required.");
 
         if (request.CapRound <= 0)
-            return BadRequest(new { message = "CAP round must be greater than zero." });
+            return PreparedAllocation.Fail("CAP round must be greater than zero.");
 
-        if (request.Candidates.Count == 0)
-            return BadRequest(new { message = "At least one candidate is required." });
+        if (requireData && request.Candidates.Count == 0)
+            return PreparedAllocation.Fail("At least one candidate is required.");
 
-        if (request.Seats.Count == 0)
-            return BadRequest(new { message = "At least one seat inventory record is required." });
+        if (requireData && request.Seats.Count == 0)
+            return PreparedAllocation.Fail("At least one seat inventory record is required.");
 
         var step = AllocationConfiguration.GetStep(request.AllocationStep);
         if (step is null)
-            return BadRequest(new { message = "The selected allocation step is not configured." });
+            return PreparedAllocation.Fail("The selected allocation step is not configured.");
 
         if (!step.Enabled)
-            return BadRequest(new { message = "The selected allocation step is not available yet." });
+            return PreparedAllocation.Fail("The selected allocation step is not available yet.");
 
         var ruleGroups = request.RuleGroups
             .Where(group => !string.IsNullOrWhiteSpace(group.Type))
@@ -73,7 +210,7 @@ public sealed class AllocationController : ControllerBase
             .ToList();
 
         if (ruleGroups.Count == 0)
-            return BadRequest(new { message = "Select at least one configured rule and assign it to a decision area." });
+            return PreparedAllocation.Fail("Select at least one configured rule and assign it to a decision area.");
 
         var invalidGroups = ruleGroups
             .Where(group => !AllocationConfiguration.IsDecisionAreaValid(step.Code, group.Type))
@@ -82,106 +219,85 @@ public sealed class AllocationController : ControllerBase
             .ToList();
 
         if (invalidGroups.Count > 0)
+            return PreparedAllocation.Fail(
+                $"Invalid decision area(s) for {step.Name}: {string.Join(", ", invalidGroups)}.");
+
+        var allRules = await _ruleConfiguration.GetRulesAsync();
+        var selectedRuleIds = ruleGroups.SelectMany(group => group.RuleIds).Distinct().ToList();
+        var selectedRules = allRules
+            .Where(rule => rule.IsActive && selectedRuleIds.Contains(rule.RuleId))
+            .OrderBy(rule => rule.Priority)
+            .ToList();
+
+        if (selectedRules.Count != selectedRuleIds.Count)
+            return PreparedAllocation.Fail("One or more selected rules are missing or inactive.");
+
+        var detailedRules = new List<RuleDefinition>();
+        foreach (var rule in selectedRules)
         {
-            return BadRequest(new
-            {
-                message = "One or more rule groups do not belong to the selected allocation step.",
-                groups = invalidGroups
-            });
+            var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
+            if (detailed is not null)
+                detailedRules.Add(detailed);
         }
 
-        AllocationRun? run = null;
+        var detailedById = detailedRules.ToDictionary(rule => rule.RuleId);
+        if (detailedById.Count != selectedRuleIds.Count)
+            return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
 
-        try
+        var run = new AllocationRun
         {
-            var allRules = await _ruleConfiguration.GetRulesAsync();
-            var selectedRuleIds = ruleGroups
-                .SelectMany(group => group.RuleIds)
-                .Distinct()
-                .ToList();
+            AllocationRunId = request.AllocationRunId ?? Guid.NewGuid(),
+            AllocationRunName = request.AllocationRunName.Trim(),
+            CapRound = request.CapRound,
+            AllocationStep = step.Code,
+            RuleSetVersionId = BuildRuleSetVersionId(step.Code, ruleGroups)
+        };
 
-            var selectedRules = allRules
-                .Where(rule => rule.IsActive && selectedRuleIds.Contains(rule.RuleId))
-                .OrderBy(rule => rule.Priority)
-                .ToList();
+        return new PreparedAllocation
+        {
+            Run = run,
+            RuleGroups = BuildRuleGroups(ruleGroups, detailedById),
+            RuleDetails = detailedById
+        };
+    }
 
-            if (selectedRules.Count != selectedRuleIds.Count)
-                return BadRequest(new { message = "One or more selected rules are missing or inactive." });
+    private async Task SaveHistoryAsync(
+        AllocationRun run,
+        AllocationRunRequest request,
+        IReadOnlyDictionary<int, RuleDefinition> rules,
+        CancellationToken cancellationToken,
+        string errorMessage = "")
+    {
+        cancellationToken.ThrowIfCancellationRequested();
 
-            var detailedRules = new List<RuleDefinition>();
-            foreach (var rule in selectedRules)
-            {
-                var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
-                if (detailed is not null)
-                    detailedRules.Add(detailed);
-            }
-
-            var detailedById = detailedRules.ToDictionary(rule => rule.RuleId);
-            if (detailedById.Count != selectedRuleIds.Count)
-                return BadRequest(new { message = "One or more selected rules could not be loaded." });
-
-            var configuredRuleGroups = BuildRuleGroups(ruleGroups, detailedById);
-
-            run = new AllocationRun
-            {
-                AllocationRunName = request.AllocationRunName.Trim(),
-                CapRound = request.CapRound,
-                AllocationStep = step.Code,
-                RuleSetVersionId = BuildRuleSetVersionId(step.Code, ruleGroups)
-            };
-
-            var stages = BuildStages(step.Code);
-            var engine = new AllocationEngine(stages);
-            var context = await engine.RunAsync(
-                run,
-                request.Candidates,
-                request.Seats,
-                configuredRuleGroups,
-                cancellationToken);
-
-            await _runHistory.SaveAsync(new AllocationRunHistory
-            {
-                AllocationRunId = run.AllocationRunId,
-                AllocationRunName = run.AllocationRunName,
-                CapRound = run.CapRound,
-                AllocationStep = run.AllocationStep,
-                Status = run.Status.ToString(),
-                RuleGroupsJson = JsonSerializer.Serialize(ruleGroups.Select(group => new
-                {
-                    type = group.Type,
-                    rules = group.RuleIds.Select(id => new
+        await _runHistory.SaveAsync(new AllocationRunHistory
+        {
+            AllocationRunId = run.AllocationRunId,
+            AllocationRunName = run.AllocationRunName,
+            CapRound = run.CapRound,
+            AllocationStep = run.AllocationStep,
+            Status = run.Status.ToString(),
+            RuleGroupsJson = JsonSerializer.Serialize(
+                request.RuleGroups
+                    .Where(group => group.RuleIds.Count > 0)
+                    .Select(group => new
                     {
-                        ruleId = id,
-                        ruleName = detailedById[id].RuleName
-                    })
-                })),
-                StartedAtUtc = run.StartedAtUtc,
-                CompletedAtUtc = run.CompletedAtUtc,
-                CandidateCount = request.Candidates.Count,
-                DecisionCount = context.Decisions.Count
-            });
-
-            return Ok(new AllocationRunResponse
-            {
-                Run = context.Run,
-                Decisions = context.Decisions.ToList(),
-                Stages = context.StageResults.ToList()
-            });
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Allocation simulation failed for CAP round {CapRound}, step {AllocationStep}.",
-                request.CapRound,
-                request.AllocationStep);
-
-            return StatusCode(500, new { message = "Allocation simulation failed." });
-        }
+                        type = group.Type,
+                        rules = group.RuleIds.Select(id => new
+                        {
+                            ruleId = id,
+                            ruleName = rules.TryGetValue(id, out var rule)
+                                ? rule.RuleName
+                                : string.Empty
+                        })
+                    })),
+            CreatedAtUtc = run.CreatedAtUtc,
+            StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
+            CompletedAtUtc = run.CompletedAtUtc,
+            CandidateCount = request.Candidates.Count,
+            DecisionCount = 0,
+            ErrorMessage = errorMessage
+        });
     }
 
     private static IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
@@ -214,12 +330,10 @@ public sealed class AllocationController : ControllerBase
 
         foreach (var group in groups)
         {
-            var allocationRules = group.RuleIds
+            result[group.Type] = group.RuleIds
                 .Where(rules.ContainsKey)
                 .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
                 .ToList();
-
-            result[group.Type] = allocationRules;
         }
 
         return result;
@@ -240,7 +354,7 @@ public sealed class AllocationController : ControllerBase
             StageCode = decisionArea,
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
-                .Select(condition => new api.Services.Allocation.RuleCondition(
+                .Select(condition => new RuleCondition(
                     condition.FieldDisplayName,
                     condition.Operator,
                     condition.Value))
@@ -255,7 +369,9 @@ public sealed class AllocationController : ControllerBase
             .ThenBy(c => c.ConditionOrder)
             .FirstOrDefault();
 
-        return first?.ConditionLogicalOperator is "OR" ? "OR" : "AND";
+        return first?.ConditionLogicalOperator?.Equals("OR", StringComparison.OrdinalIgnoreCase) == true
+            ? "OR"
+            : "AND";
     }
 
     private static string BuildRuleSetVersionId(
@@ -263,4 +379,14 @@ public sealed class AllocationController : ControllerBase
         IEnumerable<AllocationRuleGroupRequest> groups) =>
         $"{allocationStep}:{string.Join("|", groups.OrderBy(g => g.Type)
             .Select(g => $"{g.Type}={string.Join(",", g.RuleIds.OrderBy(id => id))}"))}";
+
+    private sealed class PreparedAllocation
+    {
+        public AllocationRun? Run { get; init; }
+        public IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>>? RuleGroups { get; init; }
+        public IReadOnlyDictionary<int, RuleDefinition>? RuleDetails { get; init; }
+        public string? Error { get; init; }
+
+        public static PreparedAllocation Fail(string message) => new() { Error = message };
+    }
 }
