@@ -257,12 +257,11 @@ namespace api.DataAccess.RuleConfiguration
                 FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
                 FieldDisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
                 FieldType = reader.GetString(reader.GetOrdinal("tFieldType")),
-                LogicalOperator = reader.GetString(reader.GetOrdinal("tLogicalOperator")),
+                ConditionLogicalOperator = reader.GetString(reader.GetOrdinal("tLogicalOperator")),
                 Operator = reader.GetString(reader.GetOrdinal("tOperator")),
                 Value = reader.GetString(reader.GetOrdinal("tValue")),
                 ConditionOrder = reader.GetInt32(reader.GetOrdinal("nConditionOrder")),
                 GroupOrder = reader.GetInt32(reader.GetOrdinal("nGroupOrder")),
-                GroupLogicalOperator = reader.GetString(reader.GetOrdinal("tGroupLogicalOperator"))
             };
         }
 
