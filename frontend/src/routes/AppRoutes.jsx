@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { FiClock, FiRefreshCw } from "react-icons/fi";
+import { FiClock, FiEdit2, FiRefreshCw } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import FieldConfiguration from "../modules/fieldConfiguration/pages/FieldConfiguration";
 import RuleConfiguration from "../modules/ruleConfiguration/pages/RuleConfiguration";
 import Allocation from "../modules/allocation/pages/Allocation";
@@ -17,6 +18,7 @@ const formatDate = (value) => {
 };
 
 function Overview() {
+  const navigate = useNavigate();
   const [runs, setRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [runError, setRunError] = useState("");
@@ -38,6 +40,22 @@ function Overview() {
     loadRuns();
   }, []);
 
+  const parseGroups = (run) => {
+    try {
+      return JSON.parse(run.ruleGroupsJson || "[]");
+    } catch {
+      return [];
+    }
+  };
+
+  const ruleSummary = (run) => {
+    const groups = parseGroups(run);
+    const rules = groups.flatMap((group) => group.rules || []);
+    return rules.length
+      ? rules.map((rule) => rule.ruleName).filter(Boolean).join(", ")
+      : "No rules";
+  };
+
   return (
     <div className="workspace-page">
       <div className="workspace-hero">
@@ -48,13 +66,12 @@ function Overview() {
         </div>
       </div>
 
-
       <section className="overview-runs">
         <div className="overview-runs-heading">
           <div>
             <span>Allocation history</span>
             <h2>Previous Allocation Runs</h2>
-            <p>Review what was selected for each run and its latest execution status.</p>
+            <p>Review saved runs and continue editing drafts before validation.</p>
           </div>
           <button type="button" className="overview-refresh" onClick={loadRuns} disabled={loadingRuns} title="Refresh allocation history">
             <FiRefreshCw size={15} className={loadingRuns ? "overview-spin" : ""} />
@@ -69,44 +86,64 @@ function Overview() {
         ) : runs.length === 0 ? (
           <div className="overview-runs-empty"><FiClock size={20} /><span>No allocation runs have been saved yet.</span></div>
         ) : (
-          <div className="overview-run-list">
-            {runs.map((run) => {
-              let groups = [];
-              try { groups = JSON.parse(run.ruleGroupsJson || "[]"); } catch { groups = []; }
-
-              return (
-                <article className="overview-run" key={run.allocationRunId}>
-                  <div className="overview-run-main">
-                    <div className="overview-run-title">
-                      <div>
-                        <h3>{run.allocationRunName}</h3>
-                        <span>{formatDate(run.createdAtUtc || run.startedAtUtc)}</span>
-                      </div>
-                      <span className={"overview-run-status " + (run.status || "").toLowerCase()}>{run.status}</span>
-                    </div>
-
-                    <div className="overview-run-meta">
-                      <div><span>Allocation Step</span><strong>{stepLabels[run.allocationStep] || run.allocationStep}</strong></div>
-                      <div><span>CAP Round</span><strong>{run.capRound}</strong></div>
-                      <div><span>Candidates</span><strong>{run.candidateCount}</strong></div>
-                      <div><span>Decisions</span><strong>{run.decisionCount}</strong></div>
-                    </div>
-
-                    <div className="overview-run-rules">
-                      <span className="overview-run-rules-label">Selected decision areas & rules</span>
-                      <div className="overview-run-rule-list">
-                        {groups.length ? groups.map((group) => (
-                          <div className="overview-run-rule-group" key={group.type}>
-                            <strong>{String(group.type).replaceAll("_", " ")}</strong>
-                            <span>{(group.rules || []).map((rule) => rule.ruleName).join(", ") || "No rules"}</span>
-                          </div>
-                        )) : <span>No rule selection details recorded.</span>}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="overview-table-wrapper">
+            <table className="overview-table">
+              <thead>
+                <tr>
+                  <th>Run Name</th>
+                  <th>Allocation Step</th>
+                  <th>CAP Round</th>
+                  <th>Status</th>
+                  <th>Rules</th>
+                  <th>Candidates</th>
+                  <th>Decisions</th>
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run) => {
+                  const status = String(run.status || "Draft");
+                  const isDraft = status.toLowerCase() === "draft";
+                  return (
+                    <tr key={run.allocationRunId}>
+                      <td>
+                        <strong className="overview-table-run-name">{run.allocationRunName}</strong>
+                        <span className="overview-table-id">{run.allocationRunId}</span>
+                      </td>
+                      <td>{stepLabels[run.allocationStep] || run.allocationStep}</td>
+                      <td>{run.capRound}</td>
+                      <td>
+                        <span className={"overview-run-status " + status.toLowerCase()}>{status}</span>
+                      </td>
+                      <td>
+                        <span className="overview-table-rules" title={ruleSummary(run)}>
+                          {ruleSummary(run)}
+                        </span>
+                      </td>
+                      <td>{run.candidateCount ?? 0}</td>
+                      <td>{run.decisionCount ?? 0}</td>
+                      <td>{formatDate(run.createdAtUtc || run.startedAtUtc)}</td>
+                      <td>
+                        {isDraft ? (
+                          <button
+                            type="button"
+                            className="overview-edit-button"
+                            onClick={() => navigate("/allocation?runId=" + encodeURIComponent(run.allocationRunId))}
+                            title="Edit draft"
+                          >
+                            <FiEdit2 size={14} />
+                            Edit
+                          </button>
+                        ) : (
+                          <span className="overview-readonly">View only</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
