@@ -44,7 +44,7 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
-        var prepared = await PrepareAsync(request, requireData: false);
+        var prepared = await PrepareAsync(request, requireData: false, allowIncompleteDraft: true);
         if (prepared.Error is not null)
             return BadRequest(new { message = prepared.Error });
 
@@ -178,7 +178,8 @@ public sealed class AllocationController : ControllerBase
 
     private async Task<PreparedAllocation> PrepareAsync(
         AllocationRunRequest request,
-        bool requireData)
+        bool requireData,
+        bool allowIncompleteDraft = false)
     {
         if (string.IsNullOrWhiteSpace(request.AllocationRunName))
             return PreparedAllocation.Fail("Allocation run name is required.");
@@ -209,7 +210,7 @@ public sealed class AllocationController : ControllerBase
             .Where(group => group.RuleIds.Count > 0)
             .ToList();
 
-        if (ruleGroups.Count == 0)
+        if (ruleGroups.Count == 0 && !allowIncompleteDraft)
             return PreparedAllocation.Fail("Select at least one configured rule and assign it to a decision area.");
 
         var invalidGroups = ruleGroups
