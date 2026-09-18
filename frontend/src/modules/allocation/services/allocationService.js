@@ -6,6 +6,10 @@ const allocationService = {
     return httpClient.get(API_ENDPOINTS.ALLOCATION.STEPS);
   },
 
+  async getHistory() {
+    return httpClient.get(API_ENDPOINTS.ALLOCATION.HISTORY);
+  },
+
   async simulate(request) {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.SIMULATE, request);
   },
