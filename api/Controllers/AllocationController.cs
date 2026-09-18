@@ -235,23 +235,30 @@ public sealed class AllocationController : ControllerBase
             .ToList();
 
         var detailedById = new Dictionary<int, RuleDefinition>();
-        if (!allowIncompleteDraft)
+        foreach (var ruleId in selectedRuleIds)
         {
-            foreach (var ruleId in selectedRuleIds)
+            var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
+            if (rule is null)
             {
-                var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
-                if (rule is null)
+                if (!allowIncompleteDraft)
                     return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
 
-                if (!rule.IsActive)
-                    return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
-
-                detailedById[rule.RuleId] = rule;
+                continue;
             }
 
-            if (detailedById.Count != selectedRuleIds.Count)
-                return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
+            if (!rule.IsActive)
+            {
+                if (!allowIncompleteDraft)
+                    return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
+
+                continue;
+            }
+
+            detailedById[rule.RuleId] = rule;
         }
+
+        if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
+            return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
         if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
             return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
 
