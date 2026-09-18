@@ -65,7 +65,12 @@ public sealed class Step0CandidateRepository
             lastCandidateId = last.CandidateId;
 
             if (eligible.Count > 0)
+            {
+                // Preferences are needed only after the configured candidate
+                // eligibility rules have accepted the candidate.
+                await LoadPreferencesAsync(eligible, cancellationToken);
                 yield return eligible;
+            }
         }
     }
 
@@ -158,12 +163,10 @@ public sealed class Step0CandidateRepository
             }
         }
 
-        await LoadPreferencesAsync(connection, result, cancellationToken);
         return result;
     }
 
-    private static async Task LoadPreferencesAsync(
-        SqlConnection connection,
+    private async Task LoadPreferencesAsync(
         IList<AllocationCandidate> candidates,
         CancellationToken cancellationToken)
     {
@@ -171,6 +174,9 @@ public sealed class Step0CandidateRepository
             return;
 
         var parameters = new List<string>(candidates.Count);
+        await using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
         await using var command = new SqlCommand
         {
             Connection = connection,
