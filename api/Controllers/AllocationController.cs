@@ -370,7 +370,10 @@ public sealed class AllocationController : ControllerBase
                 .Select(condition => new api.Services.Allocation.RuleCondition(
                     condition.FieldDisplayName,
                     condition.Operator,
-                    condition.Value))
+                    condition.Value,
+                    condition.ConditionLogicalOperator,
+                    condition.GroupOrder,
+                    condition.ConditionOrder))
                 .ToList()
         };
     }
