@@ -95,7 +95,7 @@ public sealed class AllocationController : ControllerBase
             var detailedRules = new List<RuleDefinition>();
             foreach (var rule in selectedRules)
             {
-                var detailed = await _ruleConfiguration.GetRuleByIdAsync(rule.RuleId);
+                var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
                 if (detailed is not null)
                     detailedRules.Add(detailed);
             }
