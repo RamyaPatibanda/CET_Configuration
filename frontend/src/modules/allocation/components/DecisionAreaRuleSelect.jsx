@@ -1,4 +1,5 @@
-import { FiCheck, FiChevronDown } from "react-icons/fi";
+import { useMemo, useState } from "react";
+import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 
 function DecisionAreaRuleSelect({
   area,
@@ -8,6 +9,13 @@ function DecisionAreaRuleSelect({
   setOpenRuleGroup,
   toggleRule,
 }) {
+  const [search, setSearch] = useState("");
+  const filteredRules = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return rules;
+    return rules.filter((rule) => [rule.ruleName, rule.description].some((value) => String(value ?? "").toLowerCase().includes(query)));
+  }, [rules, search]);
+
   const selectedRuleNames = group.ruleIds
     .map((id) => rules.find((rule) => rule.ruleId === id)?.ruleName)
     .filter(Boolean)
@@ -30,11 +38,11 @@ function DecisionAreaRuleSelect({
             "allocation-multiselect-trigger" +
             (group.ruleIds.length ? " has-selection" : "")
           }
-          onClick={() =>
-            setOpenRuleGroup(
-              openRuleGroup === area.code ? null : area.code
-            )
-          }
+          onClick={() => {
+            const nextOpen = openRuleGroup === area.code ? null : area.code;
+            setOpenRuleGroup(nextOpen);
+            if (nextOpen === area.code) setSearch("");
+          }}
         >
           <span>
             {selectedRuleNames || "Select rules from Rule Configuration"}
@@ -44,7 +52,9 @@ function DecisionAreaRuleSelect({
 
         {openRuleGroup === area.code && (
           <div className="allocation-multiselect-menu">
-            {rules.map((rule) => {
+            <div className="allocation-rule-search"><FiSearch size={14} /><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rules..." aria-label="Search rules" onClick={(event) => event.stopPropagation()} /></div>
+            <div className="allocation-rule-options">
+            {filteredRules.map((rule) => {
               const selected = group.ruleIds.includes(rule.ruleId);
 
               return (
@@ -77,6 +87,8 @@ function DecisionAreaRuleSelect({
                 </button>
               );
             })}
+            {!filteredRules.length && <div className="allocation-rule-no-results">No matching rules</div>}
+            </div>
           </div>
         )}
       </div>
