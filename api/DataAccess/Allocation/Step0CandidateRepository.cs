@@ -46,7 +46,7 @@ public sealed class Step0CandidateRepository
             cancellationToken.ThrowIfCancellationRequested();
 
             var candidates = await ReadBatchAsync(
-                lastMeritNo,
+                (int)lastMeritNo,
                 lastCandidateId,
                 effectiveBatchSize,
                 cancellationToken);
