@@ -310,14 +310,14 @@
 .allocation-multiselect-option:hover,.allocation-multiselect-option.selected {
   background:#eef2ff
 }
-.allocation-rule-check {
-  width:19px;
-  height:19px;
+ .allocation-rule-check {
+  width:14px;
+  height:14px;
   display:grid;
   place-items:center;
-  flex:0 0 19px;
+  flex:0 0 14px;
   border:1px solid #d1d5db;
-  border-radius:5px
+  border-radius:3px
 }
 .allocation-multiselect-option.selected .allocation-rule-check {
   background:#6366f1;
