@@ -17,15 +17,18 @@ public sealed class AllocationController : ControllerBase
     private readonly IRuleConfigurationBL _ruleConfiguration;
     private readonly ILogger<AllocationController> _logger;
     private readonly AllocationRunHistoryDAL _runHistory;
+    private readonly LegacyAllocationDAL _legacyAllocation;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
         ILogger<AllocationController> logger,
-        AllocationRunHistoryDAL runHistory)
+        AllocationRunHistoryDAL runHistory,
+        LegacyAllocationDAL legacyAllocation)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
         _runHistory = runHistory;
+        _legacyAllocation = legacyAllocation;
     }
 
     [HttpGet("steps")]
@@ -327,7 +330,7 @@ public sealed class AllocationController : ControllerBase
         });
     }
 
-    private static IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
+    private IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
     {
         var ruleEvaluator = new RuleEvaluator();
 
@@ -335,7 +338,7 @@ public sealed class AllocationController : ControllerBase
         {
             AllocationConfiguration.Step0 =>
             [
-                new Step0AllocationStage(ruleEvaluator)
+                new Step0AllocationStage(_legacyAllocation)
             ],
             AllocationConfiguration.Step1 =>
             [
