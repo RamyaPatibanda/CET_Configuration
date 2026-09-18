@@ -76,8 +76,8 @@ public sealed class AllocationController : ControllerBase
 
             var context = await new AllocationEngine(BuildStages(run.AllocationStep)).RunAsync(
                 run,
-                request.Candidates,
-                request.Seats,
+                Array.Empty<AllocationCandidate>(),
+                Array.Empty<SeatInventory>(),
                 prepared.RuleGroups!,
                 cancellationToken);
 
@@ -190,12 +190,6 @@ public sealed class AllocationController : ControllerBase
         if (request.CapRound <= 0)
             return PreparedAllocation.Fail("CAP round must be greater than zero.");
 
-        if (requireData && request.Candidates.Count == 0)
-            return PreparedAllocation.Fail("At least one candidate is required.");
-
-        if (requireData && request.Seats.Count == 0)
-            return PreparedAllocation.Fail("At least one seat inventory record is required.");
-
         var step = AllocationConfiguration.GetStep(request.AllocationStep);
         if (step is null)
             return PreparedAllocation.Fail("The selected allocation step is not configured.");
@@ -285,7 +279,8 @@ public sealed class AllocationController : ControllerBase
         IReadOnlyDictionary<int, RuleDefinition> rules,
         CancellationToken cancellationToken,
         string errorMessage = "",
-        int decisionCount = 0)
+        int decisionCount = 0,
+        int candidateCount = 0)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -313,7 +308,7 @@ public sealed class AllocationController : ControllerBase
             CreatedAtUtc = run.CreatedAtUtc,
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
             CompletedAtUtc = run.CompletedAtUtc,
-            CandidateCount = request.Candidates.Count,
+            CandidateCount = candidateCount,
             DecisionCount = decisionCount,
             ErrorMessage = errorMessage
         });
