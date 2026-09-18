@@ -25,7 +25,6 @@ const API_ENDPOINTS = {
   ALLOCATION: {
     STEPS: "/api/allocation/steps",
     DRAFT: "/api/allocation/draft",
-    VALIDATE: "/api/allocation/validate",
     RUN: "/api/allocation/run",
     SIMULATE: "/api/allocation/simulate",
     HISTORY: "/api/allocation/history",
