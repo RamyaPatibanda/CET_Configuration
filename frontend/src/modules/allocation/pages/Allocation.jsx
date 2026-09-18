@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheck, FiLock, FiPlay, FiRefreshCw } from "react-icons/fi";
+import { FiCheck, FiChevronDown, FiLock, FiPlay, FiRefreshCw } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import allocationService from "../services/allocationService";
 import ruleConfigurationService from "../../ruleConfiguration/services/ruleConfigurationService";
@@ -90,6 +90,8 @@ function Allocation() {
   const [steps, setSteps] = useState([]);
   const [rules, setRules] = useState([]);
   const [allocationStep, setAllocationStep] = useState("STEP_0");
+  const [runName, setRunName] = useState("");
+  const [openRuleGroup, setOpenRuleGroup] = useState(null);
   const [ruleGroups, setRuleGroups] = useState([]);
   const [capRound, setCapRound] = useState(1);
   const [running, setRunning] = useState(false);
@@ -163,6 +165,11 @@ function Allocation() {
   };
 
   const runAllocation = async () => {
+    if (!runName.trim()) {
+      setError("Enter an allocation run name.");
+      return;
+    }
+
     if (!selectedStep?.enabled) {
       setError("Select an available allocation step.");
       return;
@@ -178,6 +185,7 @@ function Allocation() {
       setError("");
 
       const response = await allocationService.simulate({
+        allocationRunName: runName.trim(),
         capRound: Number(capRound),
         allocationStep,
         ruleGroups: ruleGroups.filter((group) => group.ruleIds.length > 0),
@@ -222,67 +230,30 @@ function Allocation() {
         </div>
 
         <div className="allocation-form-grid">
-          <label>
+          <label className="allocation-form-field allocation-form-field-wide">
+            Run Name
+            <input type="text" value={runName} maxLength={120} placeholder="Enter a name for this allocation run"
+              onChange={(e) => { setRunName(e.target.value); setResult(null); }} />
+          </label>
+          <label className="allocation-form-field">
             CAP Round
-            <select
-              value={capRound}
-              onChange={(e) => {
-                setCapRound(e.target.value);
-                setResult(null);
-              }}
-            >
-              <option value="1">Round 1</option>
-              <option value="2">Round 2</option>
-              <option value="3">Round 3</option>
+            <select value={capRound} onChange={(e) => { setCapRound(e.target.value); setResult(null); }}>
+              <option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option>
             </select>
           </label>
-        </div>
-      </section>
-
-      <section className="allocation-section">
-        <div className="allocation-section-heading">
-          <div>
-            <span>Allocation operation</span>
-            <h2>Select Allocation Step</h2>
-          </div>
-          <span className="allocation-count">
-            {steps.filter((step) => step.enabled).length} available
-          </span>
-        </div>
-
-        <div className="allocation-step-selector">
-          {steps.map((step) => (
-            <button
-              type="button"
-              key={step.code}
-              className={
-                "allocation-step-card" +
-                (allocationStep === step.code ? " selected" : "") +
-                (!step.enabled ? " disabled" : "")
-              }
-              onClick={() => changeStep(step)}
-              disabled={!step.enabled}
-            >
-              <span className="allocation-step-radio">
-                {allocationStep === step.code && <FiCheck size={14} />}
-              </span>
-              <span className="allocation-step-copy">
-                <strong>{step.name}</strong>
-                <span>{step.description}</span>
-              </span>
-              <span
-                className={
-                  "allocation-step-status " +
-                  (step.enabled ? "available" : "coming-soon")
-                }
-              >
-                {step.enabled ? "Available" : "Coming Soon"}
-              </span>
-              {!step.enabled && (
-                <FiLock className="allocation-step-lock" size={15} />
-              )}
-            </button>
-          ))}
+          <label className="allocation-form-field">
+            Allocation Step
+            <select value={allocationStep} onChange={(e) => {
+              const step = steps.find((item) => item.code === e.target.value);
+              if (step) changeStep(step);
+            }}>
+              {steps.map((step) => (
+                <option key={step.code} value={step.code} disabled={!step.enabled}>
+                  {step.name}{!step.enabled ? " — Coming Soon" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
@@ -331,38 +302,34 @@ function Allocation() {
                       <span>{group.ruleIds.length} selected</span>
                     </div>
 
-                    <div className="allocation-rule-list">
-                      {rules.map((rule) => {
-                        const selected = group.ruleIds.includes(rule.ruleId);
-
-                        return (
-                          <button
-                            type="button"
-                            key={area.code + "-" + rule.ruleId}
-                            className={
-                              "allocation-rule-card" +
-                              (selected ? " selected" : "")
-                            }
-                            onClick={() => toggleRule(area.code, rule.ruleId)}
-                          >
-                            <span className="allocation-rule-check">
-                              {selected && <FiCheck size={14} />}
-                            </span>
-                            <span className="allocation-rule-content">
-                              <strong>{rule.ruleName}</strong>
-                              <span>
-                                {rule.description ||
-                                  (rule.conditionCount || 0) +
-                                    " condition" +
-                                    (rule.conditionCount === 1 ? "" : "s")}
-                              </span>
-                            </span>
-                            <span className="allocation-rule-priority">
-                              Priority {rule.priority}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="allocation-multiselect">
+                      <button type="button"
+                        className={"allocation-multiselect-trigger" + (group.ruleIds.length ? " has-selection" : "")}
+                        onClick={() => setOpenRuleGroup(openRuleGroup === area.code ? null : area.code)}>
+                        <span>{group.ruleIds.length
+                          ? group.ruleIds.map((id) => rules.find((rule) => rule.ruleId === id)?.ruleName).filter(Boolean).join(", ")
+                          : "Select rules from Rule Configuration"}</span>
+                        <FiChevronDown size={16} />
+                      </button>
+                      {openRuleGroup === area.code && (
+                        <div className="allocation-multiselect-menu">
+                          {rules.map((rule) => {
+                            const selected = group.ruleIds.includes(rule.ruleId);
+                            return (
+                              <button type="button" key={area.code + "-" + rule.ruleId}
+                                className={"allocation-multiselect-option" + (selected ? " selected" : "")}
+                                onClick={() => toggleRule(area.code, rule.ruleId)}>
+                                <span className="allocation-rule-check">{selected && <FiCheck size={13} />}</span>
+                                <span className="allocation-rule-content">
+                                  <strong>{rule.ruleName}</strong>
+                                  <span>{rule.description || (rule.conditionCount || 0) + " condition" + (rule.conditionCount === 1 ? "" : "s")}</span>
+                                </span>
+                                <span className="allocation-rule-priority">Priority {rule.priority}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -385,12 +352,12 @@ function Allocation() {
 
         <div className="allocation-execution-summary">
           <div>
-            <span>CAP Round</span>
-            <strong>{capRound}</strong>
+            <span>Run Name</span>
+            <strong>{runName || "—"}</strong>
           </div>
           <div>
-            <span>Allocation Step</span>
-            <strong>{selectedStep?.name || "—"}</strong>
+            <span>CAP Round</span>
+            <strong>{capRound}</strong>
           </div>
           <div>
             <span>Rules Assigned</span>
