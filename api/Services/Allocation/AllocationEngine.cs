@@ -13,16 +13,11 @@ public sealed class AllocationEngine
 
     public async Task<AllocationContext> RunAsync(
         AllocationRun run,
-        IEnumerable<AllocationCandidate> candidates,
-        IEnumerable<SeatInventory> seats,
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         CancellationToken cancellationToken = default)
     {
         var context = new AllocationContext
         {
-            Run = run,
-            Candidates = candidates.ToList(),
-            Seats = seats.ToList(),
             RuleGroups = ruleGroups
         };
 
