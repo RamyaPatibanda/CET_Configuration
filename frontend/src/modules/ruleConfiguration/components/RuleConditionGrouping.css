@@ -147,3 +147,21 @@
     justify-content: flex-start;
   }
 }
+
+.condition-group-brace {
+  display: inline-flex;
+  width: 24px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 400;
+}
+.condition-group-brace.blue { color: #5b86ad; }
+.condition-group-brace.violet { color: #816eae; }
+.condition-group-brace.teal { color: #4d918b; }
+.condition-group-brace.amber { color: #b38a51; }
+.condition-group-brace.rose { color: #ad7182; }
+.condition-group-brace.indigo { color: #6674a7; }
