@@ -751,8 +751,10 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
   align-items: center;
+  width: 100%;
+  margin-left: auto;
+  gap: 10px;
 }
 
 .allocation-action-error,
