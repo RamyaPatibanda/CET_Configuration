@@ -32,6 +32,9 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.AllocationRunName))
+            return BadRequest(new { message = "Allocation run name is required." });
+
         if (request.CapRound <= 0)
             return BadRequest(new { message = "CAP round must be greater than zero." });
 
@@ -108,6 +111,7 @@ public sealed class AllocationController : ControllerBase
 
             var run = new AllocationRun
             {
+                AllocationRunName = request.AllocationRunName.Trim(),
                 CapRound = request.CapRound,
                 AllocationStep = step.Code,
                 RuleSetVersionId = BuildRuleSetVersionId(step.Code, ruleGroups)
