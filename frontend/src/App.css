@@ -101,12 +101,13 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 }
 
-.sidebar-collapse-button{margin-left:auto;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 32px;border:1px solid rgba(143,156,178,.18);border-radius:10px;color:#5d6d84;background:rgba(255,255,255,.56);cursor:pointer;transition:.18s}
+.sidebar-collapse-button{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(143,156,178,.18);border-radius:9px;color:#5d6d84;background:rgba(255,255,255,.62);cursor:pointer;transition:.18s}
 .sidebar-collapse-button:hover{color:#315d8c;background:rgba(238,242,255,.9);border-color:rgba(99,102,241,.18)}
+.sidebar-top-toggle{position:absolute;top:12px;right:10px;z-index:2}
 .app-sidebar.collapsed{flex-basis:76px;width:76px;padding-left:10px;padding-right:10px}
-.app-sidebar.collapsed .sidebar-brand{justify-content:center;gap:4px;padding-left:0;padding-right:0}
+.app-sidebar.collapsed .sidebar-top-toggle{top:12px;right:50%;transform:translateX(50%);width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 5px 14px rgba(49,65,91,.12)}
+.app-sidebar.collapsed .sidebar-brand{justify-content:center;padding:28px 0 26px}
 .app-sidebar.collapsed .sidebar-logo{width:32px;height:32px;flex-basis:32px;border-radius:10px;font-size:14px}
-.app-sidebar.collapsed .sidebar-collapse-button{position:static;margin-left:0;width:24px;height:24px;flex:0 0 24px;border-radius:8px;box-shadow:0 4px 12px rgba(49,65,91,.10);background:rgba(255,255,255,.72)}
 .app-sidebar.collapsed .sidebar-nav{margin-top:2px}
 .app-sidebar.collapsed .sidebar-item{justify-content:center;padding-left:0;padding-right:0}
 .app-sidebar.collapsed .sidebar-bottom{justify-content:center}
