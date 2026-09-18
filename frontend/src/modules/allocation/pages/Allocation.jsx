@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiArchive, FiCheck, FiCopy, FiPlay, FiRefreshCw, FiSave } from "react-icons/fi";
-import Step0DecisionAreas, { STEP_0_DECISION_AREAS } from "../components/Step0DecisionAreas";
-import Step1DecisionAreas, { STEP_1_DECISION_AREAS } from "../components/Step1DecisionAreas";
+import Step0DecisionAreas, { STEP_0_STAGES } from "../components/Step0DecisionAreas";
+import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAreas";
 import Button from "../../../components/common/Button/Button";
 import allocationService from "../services/allocationService";
 import ruleConfigurationService from "../../ruleConfiguration/services/ruleConfigurationService";
@@ -46,14 +46,14 @@ const stageLabels = {
 };
 
 const DECISION_AREA_COMPONENTS = {
-  STEP_0: { Component: Step0DecisionAreas, areas: STEP_0_DECISION_AREAS },
-  STEP_1: { Component: Step1DecisionAreas, areas: STEP_1_DECISION_AREAS },
+  STEP_0: { Component: Step0DecisionAreas, stages: STEP_0_STAGES },
+  STEP_1: { Component: Step1DecisionAreas, stages: STEP_1_STAGES },
 };
 
 const getDecisionAreaConfig = (stepCode) => DECISION_AREA_COMPONENTS[stepCode] || null;
 
 const createRuleGroups = (stepCode) =>
-  (getDecisionAreaConfig(stepCode)?.areas || []).map((area) => ({ type: area.code, ruleIds: [] }));
+  (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
 const editableStatuses = new Set(["Draft", "Ready"]);
 const lockedStatuses = new Set(["Running", "Completed", "Failed", "Cancelled", "Archived"]);
@@ -309,13 +309,13 @@ function Allocation() {
       {selectedStep && (
         <section className="allocation-section">
           <div className="allocation-section-heading">
-            <div><span>Rules from Rule Configuration</span><h2>Decision Areas</h2></div>
+            <div><span>Stages for this allocation step</span><h2>Allocation Stages</h2></div>
             <span className="allocation-count">{selectedRuleCount} assigned</span>
           </div>
 
           <div className="allocation-rule-note">
             <FiCheck size={15} />
-            <span>Rules are reusable. Their purpose is determined by the explicit decision-area mapping for this run.</span>
+            <span>Rules are reusable. Assign them to the stage where they are evaluated for this allocation step.</span>
           </div>
 
           {!rules.length ? (
