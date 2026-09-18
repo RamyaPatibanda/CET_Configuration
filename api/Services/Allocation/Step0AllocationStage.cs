@@ -57,9 +57,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                         ? allocation.OriginalAllocatedType
                         : string.Empty,
                     StepId = allocation.StepId,
-                    DecisionArea = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
-                        ? AllocationConfiguration.SpecialReservationEligibility
-                        : AllocationConfiguration.SeatEligibility,
+                    DecisionArea = AllocationConfiguration.CandidateQualification,
                     RuleCode = ResolveRuleCode(context, allocation.OriginalAllocatedType),
                     Status = "Allocated"
                 });
@@ -81,9 +79,7 @@ public sealed class Step0AllocationStage : IAllocationStage
         AllocationContext context,
         string originalAllocatedType)
     {
-        var area = originalAllocatedType is "PH" or "Def" or "Orp"
-            ? AllocationConfiguration.SpecialReservationEligibility
-            : AllocationConfiguration.SeatEligibility;
+        var area = AllocationConfiguration.CandidateQualification;
 
         if (!context.RuleGroups.TryGetValue(area, out var rules))
             return string.Empty;
