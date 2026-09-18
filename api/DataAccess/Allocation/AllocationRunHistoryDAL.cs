@@ -93,6 +93,27 @@ public sealed class AllocationRunHistoryDAL
         }
     }
 
+    public async Task DeleteAsync(Guid runId)
+    {
+        try
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await using var command = new SqlCommand("sproc_DeleteAllocationRun", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aAllocationRunId", SqlDbType.UniqueIdentifier).Value = runId;
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while deleting allocation run {AllocationRunId}.", runId);
+            throw;
+        }
+    }
+
     public async Task<List<AllocationRunHistory>> GetRecentAsync(int take = 50)
     {
         try
