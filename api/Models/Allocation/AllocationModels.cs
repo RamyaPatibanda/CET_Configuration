@@ -67,11 +67,14 @@ public sealed class ExistingAllotment
     public int CategoryId { get; set; }
     public string AllocatedType { get; set; } = string.Empty;
     public string OriginalAllocatedType { get; set; } = string.Empty;
+    public string VacancyType { get; set; } = string.Empty;
+    public int ChoiceCode { get; set; }
 }
 
 public sealed class SeatInventory
 {
     public int CollegeId { get; set; }
+    public int ChoiceCode { get; set; }
     public int CategoryId { get; set; }
     public int QuotaId { get; set; }
     public int General { get; set; }
