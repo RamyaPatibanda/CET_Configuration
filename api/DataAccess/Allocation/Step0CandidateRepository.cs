@@ -38,15 +38,17 @@ public sealed class Step0CandidateRepository
         if (effectiveBatchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize));
 
+        // NULL represents the initial cursor. MeritNo can legitimately be 0,
+        // so 0 must not be used as the "start of pagination" sentinel.
         long? lastMeritNo = null;
-        long lastCandidateId = long.MinValue;
+        long lastCandidateId = 0;
 
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var candidates = await ReadBatchAsync(
-                (int)lastMeritNo,
+                lastMeritNo,
                 lastCandidateId,
                 effectiveBatchSize,
                 cancellationToken);
@@ -82,7 +84,7 @@ public sealed class Step0CandidateRepository
     }
 
     private async Task<List<AllocationCandidate>> ReadBatchAsync(
-        int lastMeritNo,
+        long? lastMeritNo,
         long lastCandidateId,
         int batchSize,
         CancellationToken cancellationToken)
@@ -137,7 +139,12 @@ public sealed class Step0CandidateRepository
         };
 
         command.Parameters.Add("@BatchSize", SqlDbType.Int).Value = batchSize;
-        command.Parameters.Add("@LastMeritNo", SqlDbType.Int).Value = lastMeritNo;
+
+        var meritParameter = command.Parameters.Add("@LastMeritNo", SqlDbType.BigInt);
+        meritParameter.Value = lastMeritNo.HasValue
+            ? lastMeritNo.Value
+            : DBNull.Value;
+
         command.Parameters.Add("@LastCandidateId", SqlDbType.BigInt).Value = lastCandidateId;
 
         var result = new List<AllocationCandidate>(batchSize);
@@ -170,6 +177,7 @@ public sealed class Step0CandidateRepository
         await LoadPreferencesAsync(connection, result, cancellationToken);
         return result;
     }
+
     private static async Task LoadPreferencesAsync(
         SqlConnection connection,
         IList<AllocationCandidate> candidates,
