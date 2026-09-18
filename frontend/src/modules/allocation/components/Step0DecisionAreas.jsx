@@ -1,6 +1,6 @@
 import DecisionAreaRuleSelect from "./DecisionAreaRuleSelect";
 
-const STEP_0_DECISION_AREAS = [
+const STEP_0_STAGES = [
   { code: "CANDIDATE_QUALIFICATION", name: "Candidate Qualification", description: "Determine candidates eligible to enter the Step 0 candidate pool." },
   { code: "SPECIAL_RESERVATION_ELIGIBILITY", name: "Special Reservation Eligibility", description: "Determine PH, Defence and Orphan special-reservation eligibility." },
   { code: "PREFERENCE_EVALUATION", name: "Preference Evaluation", description: "Determine eligible preferences to consider for the decision." },
@@ -11,8 +11,8 @@ const STEP_0_DECISION_AREAS = [
 
 function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup, toggleRule, disabled }) {
   return (
-    <div className="allocation-decision-areas">
-      {STEP_0_DECISION_AREAS.map((area) => {
+    <div className="allocation-stage-list">
+      {STEP_0_STAGES.map((area) => {
         const group = ruleGroups.find((item) => item.type === area.code) || { type: area.code, ruleIds: [] };
         return <DecisionAreaRuleSelect key={area.code} area={area} group={group} rules={rules}
           openRuleGroup={openRuleGroup} setOpenRuleGroup={setOpenRuleGroup} toggleRule={toggleRule} disabled={disabled} />;
@@ -21,5 +21,5 @@ function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup
   );
 }
 
-export { STEP_0_DECISION_AREAS };
+export { STEP_0_STAGES, STEP_0_STAGES as STEP_0_DECISION_AREAS };
 export default Step0DecisionAreas;
