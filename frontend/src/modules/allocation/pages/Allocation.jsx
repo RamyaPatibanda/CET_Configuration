@@ -8,37 +8,10 @@ import allocationService from "../services/allocationService";
 import ruleConfigurationService from "../../ruleConfiguration/services/ruleConfigurationService";
 import "../allocation.css";
 
-const SAMPLE_DATA = {
-  candidates: [
-    {
-      candidateId: 1001, categoryId: 2, previousCategoryId: -1, gender: "F",
-      isOms: "N", isNri: "N", isPh: "Y", isExServicemen: "N", isOrphan: "N",
-      isEligibleForOpen: "Y", meritNo: 1, exServicemenMeritNo: 0,
-      preferences: [
-        { preferenceNo: 1, collegeId: 101, choiceCode: 101 },
-        { preferenceNo: 2, collegeId: 102, choiceCode: 102 },
-      ],
-    },
-    {
-      candidateId: 1002, categoryId: 1, previousCategoryId: -1, gender: "M",
-      isOms: "N", isNri: "N", isPh: "N", isExServicemen: "N", isOrphan: "N",
-      isEligibleForOpen: "Y", meritNo: 2, exServicemenMeritNo: 0,
-      preferences: [
-        { preferenceNo: 1, collegeId: 101, choiceCode: 101 },
-        { preferenceNo: 2, collegeId: 102, choiceCode: 102 },
-      ],
-    },
-  ],
-  seats: [
-    { collegeId: 101, categoryId: 1, quotaId: 1, general: 1, female: 0, ph: 1, defence: 0, orphan: 0 },
-    { collegeId: 102, categoryId: 1, quotaId: 1, general: 2, female: 1, ph: 0, defence: 0, orphan: 0 },
-  ],
-};
-
 const getItems = (response) => Array.isArray(response) ? response : response?.data || [];
 
 const stageLabels = {
-  CANDIDATE_QUALIFICATION: "Candidate Qualification",
+  CANDIDATE_QUALIFICATION: "Candidate Eligibility",
   SPECIAL_RESERVATION: "Special Reservation",
   SEAT_ALLOCATION: "Main Allocation",
   CONVERSION: "Seat Conversion",
@@ -195,13 +168,12 @@ function Allocation() {
     markEdited();
   };
 
-  const buildRequest = (includeData = false) => ({
+  const buildRequest = () => ({
     allocationRunId: runId,
     allocationRunName: runName.trim(),
     capRound: Number(capRound),
     allocationStep,
     ruleGroups: ruleGroups.filter((group) => group.ruleIds.length > 0),
-    ...(includeData ? SAMPLE_DATA : {}),
   });
 
   const validateClient = () => {
@@ -253,13 +225,14 @@ function Allocation() {
   const runAllocation = async () => {
     const validationError = validateClient();
     if (validationError) return setError(validationError);
-        try {
+
+    try {
       setRunning(true);
       setError("");
       setMessage("");
       setStatus("Running");
 
-      const response = await allocationService.run(buildRequest(true));
+      const response = await allocationService.run(buildRequest());
       const data = response?.data || response;
       setResult(data);
       setRunId(data.run?.allocationRunId);
@@ -297,6 +270,11 @@ function Allocation() {
 
   const decisions = useMemo(() => result?.decisions || [], [result]);
   const DecisionAreas = getDecisionAreaConfig(allocationStep)?.Component;
+
+  const candidateCount = result?.stages?.reduce(
+    (count, stage) => count + (stage.candidateCountAfter || 0),
+    0
+  ) || 0;
 
   return (
     <div className="allocation-page">
@@ -419,7 +397,7 @@ function Allocation() {
                 <strong>Please complete the following:</strong>
                 <ul>
                   {error.split(". ").filter(Boolean).map((item, index) => (
-                    <li key={index}>{item.replace(/\\.$/, "")}</li>
+                    <li key={index}>{item.replace(/\.$/, "")}</li>
                   ))}
                 </ul>
               </div>
@@ -446,9 +424,9 @@ function Allocation() {
           </div>
 
           <div className="allocation-summary-grid">
-            <div><span>Candidates Processed</span><strong>{SAMPLE_DATA.candidates.length}</strong></div>
+            <div><span>Candidates Processed</span><strong>{candidateCount}</strong></div>
             <div><span>Decisions Made</span><strong>{decisions.length}</strong></div>
-            <div><span>Not Allocated</span><strong>{Math.max(0, SAMPLE_DATA.candidates.length - decisions.length)}</strong></div>
+            <div><span>Not Allocated</span><strong>{Math.max(0, candidateCount - decisions.length)}</strong></div>
           </div>
 
           <div className="allocation-stage-results">
