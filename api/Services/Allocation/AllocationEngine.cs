@@ -18,6 +18,7 @@ public sealed class AllocationEngine
     {
         var context = new AllocationContext
         {
+            Run = run,
             RuleGroups = ruleGroups
         };
 
