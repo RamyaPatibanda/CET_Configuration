@@ -13,10 +13,9 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
     );
   }, [rules, search]);
 
-  const selectedRuleNames = group.ruleIds
-    .map((id) => rules.find((rule) => rule.ruleId === id)?.ruleName)
-    .filter(Boolean)
-    .join(", ");
+  const selectedRules = group.ruleIds
+    .map((id) => rules.find((rule) => rule.ruleId === id))
+    .filter(Boolean);
 
   return (
     <div className={`allocation-decision-area${disabled ? " is-disabled" : ""}`}>
@@ -32,9 +31,22 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
             setOpenRuleGroup(nextOpen);
             if (nextOpen === area.code) setSearch("");
           }}>
-          <span>{selectedRuleNames || "Select rules from Rule Configuration"}</span>
+          <span>{group.ruleIds.length
+            ? group.ruleIds.length + " rule" + (group.ruleIds.length === 1 ? "" : "s") + " selected"
+            : "Select rules from Rule Configuration"}</span>
           <FiChevronDown size={16} />
         </button>
+
+        {group.ruleIds.length > 0 && (
+          <div className="allocation-selected-rules" aria-label="Selected rules are evaluated using OR">
+            {selectedRules.map((rule, index) => (
+              <div className="allocation-selected-rule" key={area.code + "-selected-" + rule.ruleId}>
+                {index > 0 && <span className="allocation-rule-or">OR</span>}
+                <span className="allocation-selected-rule-name">{rule.ruleName}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {openRuleGroup === area.code && !disabled && (
           <div className="allocation-multiselect-menu">

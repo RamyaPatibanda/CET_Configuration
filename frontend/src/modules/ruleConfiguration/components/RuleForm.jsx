@@ -207,7 +207,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 const bracePosition = getBracePosition(row); const groupColor = getGroupColor(row); const isSelected = selectedRows.includes(row.id);
                 return <tr key={row.id} draggable onDragStart={() => setDraggedRow(row.id)} onDragOver={(event) => event.preventDefault()} onDrop={() => moveRow(row.id)} className={isSelected ? "condition-row-selected" : ""}>
                   <td><input type="checkbox" checked={isSelected} onChange={() => toggleSelected(row.id)} aria-label="Select condition" /></td>
-                  <td><span className={`condition-group-brace ${groupColor} ${bracePosition}`} aria-hidden="true" /></td>
+                  <td><span className={`condition-group-brace ${groupColor} ${bracePosition}`} aria-hidden="true">{bracePosition !== "single" ? (bracePosition === "start" ? "⎧" : bracePosition === "middle" ? "⎪" : "⎩") : ""}</span></td>
                   <td><FiMenu size={16} /></td>
                   <td><SearchableSelect value={row.fieldId} options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))} placeholder={loadingFields ? "Loading fields..." : "Select field"} disabled={loadingFields} onChange={(value) => changeField(row.id, value)} /></td>
                   <td><Select value={row.operator} options={operators} onChange={(event) => updateRow(row.id, "operator", event.target.value)} /></td>

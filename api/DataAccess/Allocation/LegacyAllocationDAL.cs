@@ -260,11 +260,8 @@ public sealed class LegacyAllocationDAL
             !candidate.IsNri.Equals("N", StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (!candidate.IsPh.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
-            !candidate.IsExServicemen.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
-            !candidate.IsOrphan.Equals("Y", StringComparison.OrdinalIgnoreCase))
-            return false;
-
+        // PH / Defence / Orphan eligibility is configured as a reusable rule.
+        // Do not hard-code that OR expression in the allocation engine.
         return MatchesArea(
             ruleGroups,
             AllocationConfiguration.CandidateQualification,
