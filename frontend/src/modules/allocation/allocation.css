@@ -155,3 +155,108 @@
 .allocation-form-grid input::placeholder {
   color: #7f8797;
 }
+
+/* Allocation readability + two-column decision areas */
+.allocation-page {
+  color: #f8fafc;
+  font-size: 13px;
+}
+.allocation-page,
+.allocation-page input,
+.allocation-page select,
+.allocation-page button {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+}
+.allocation-hero h1 {
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 700;
+}
+.allocation-hero p,
+.allocation-section-heading h2,
+.allocation-decision-heading h3,
+.allocation-execution-summary strong,
+.allocation-result-step strong {
+  color: #f8fafc;
+}
+.allocation-section-heading span:first-child {
+  color: #c7d2fe;
+  font-weight: 700;
+}
+.allocation-form-field {
+  color: #dbe4f0;
+  font-weight: 600;
+}
+.allocation-form-grid input,
+.allocation-form-grid select {
+  color: #ffffff;
+  background: rgba(15, 18, 28, .72);
+  border-color: rgba(203, 213, 225, .22);
+}
+.allocation-form-grid input::placeholder {
+  color: #a1aabd;
+  opacity: 1;
+}
+.allocation-form-grid select option {
+  background: #171a24 !important;
+  color: #ffffff !important;
+}
+.allocation-rule-note {
+  color: #d6deeb;
+}
+.allocation-decision-areas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.allocation-decision-area {
+  min-width: 0;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.045);
+  border-color: rgba(203,213,225,.13);
+}
+.allocation-decision-heading h3 {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.allocation-decision-heading p {
+  color: #b8c2d2;
+}
+.allocation-decision-heading > span {
+  color: #dbe4f0;
+  background: rgba(255,255,255,.09);
+}
+.allocation-multiselect-trigger {
+  color: #ffffff;
+  background: rgba(10, 13, 22, .62);
+  border-color: rgba(203,213,225,.2);
+}
+.allocation-multiselect-trigger > span {
+  color: #cbd5e1;
+}
+.allocation-multiselect-trigger.has-selection > span {
+  color: #ffffff;
+}
+.allocation-multiselect-menu {
+  background: #1b1f2a;
+  color: #ffffff;
+  border-color: rgba(203,213,225,.22);
+}
+.allocation-multiselect-option,
+.allocation-multiselect-option .allocation-rule-content strong {
+  color: #f8fafc;
+}
+.allocation-multiselect-option .allocation-rule-content span,
+.allocation-multiselect-option .allocation-rule-priority {
+  color: #b8c2d2;
+}
+.allocation-count,
+.allocation-status {
+  color: #e2e8f0;
+}
+@media(max-width:900px) {
+  .allocation-decision-areas {
+    grid-template-columns: 1fr;
+  }
+}
