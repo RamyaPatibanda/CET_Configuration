@@ -13,6 +13,7 @@ public sealed class AllocationRun
 {
     public Guid AllocationRunId { get; set; } = Guid.NewGuid();
     public string RuleSetVersionId { get; set; } = string.Empty;
+    public string AllocationStep { get; set; } = AllocationConfiguration.Step0;
     public int CapRound { get; set; }
     public AllocationRunStatus Status { get; set; } = AllocationRunStatus.Draft;
     public DateTime StartedAtUtc { get; set; }
