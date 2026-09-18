@@ -21,6 +21,16 @@ function Sidebar() {
 
   return (
     <aside className={`app-sidebar${collapsed ? " collapsed" : ""}`}>
+      <button
+        type="button"
+        className="sidebar-collapse-button sidebar-top-toggle"
+        onClick={() => setCollapsed((value) => !value)}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={17} />}
+      </button>
+
       <div className="sidebar-brand">
         <div className="sidebar-logo">C</div>
         {!collapsed && (
@@ -29,15 +39,6 @@ function Sidebar() {
             <span>Configuration</span>
           </div>
         )}
-        <button
-          type="button"
-          className="sidebar-collapse-button"
-          onClick={() => setCollapsed((value) => !value)}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={17} />}
-        </button>
       </div>
 
       {!collapsed && <div className="sidebar-section-label">WORKSPACE</div>}
