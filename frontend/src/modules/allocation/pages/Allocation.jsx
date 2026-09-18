@@ -207,13 +207,23 @@ function Allocation() {
   const validateClient = () => {
     if (!runName.trim()) return "Enter an allocation run name.";
     if (!selectedStep?.enabled) return "Select an available allocation step.";
+
+    const missingAreas = ruleGroups
+      .filter((group) => group.ruleIds.length === 0)
+      .map((group) => {
+        const area = getDecisionAreaConfig(allocationStep)?.stages.find((item) => item.code === group.type);
+        return area?.name || group.type.replaceAll("_", " ");
+      });
+
+    if (missingAreas.length > 0) {
+      return `Configure at least one rule for: ${missingAreas.join(", ")}.`;
+    }
+
     if (!selectedRuleCount) return "Assign at least one configured rule to a decision area.";
     return "";
   };
 
   const saveDraft = async () => {
-    // Drafts are intentionally allowed to be incomplete. Only basic run
-    // information is required; full rule validation happens on Validate.
     if (!runName.trim()) {
       return setError("Enter an allocation run name.");
     }
