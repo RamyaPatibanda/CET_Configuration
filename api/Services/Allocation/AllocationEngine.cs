@@ -15,13 +15,15 @@ public sealed class AllocationEngine
         AllocationRun run,
         IEnumerable<AllocationCandidate> candidates,
         IEnumerable<SeatInventory> seats,
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         CancellationToken cancellationToken = default)
     {
         var context = new AllocationContext
         {
             Run = run,
             Candidates = candidates.ToList(),
-            Seats = seats.ToList()
+            Seats = seats.ToList(),
+            RuleGroups = ruleGroups
         };
 
         run.Status = AllocationRunStatus.Running;
@@ -35,6 +37,7 @@ public sealed class AllocationEngine
 
                 var beforeCandidates = context.Candidates.Count;
                 var beforeDecisions = context.Decisions.Count;
+
                 await stage.ExecuteAsync(context, cancellationToken);
 
                 context.StageResults.Add(new AllocationStageResult
