@@ -88,8 +88,7 @@ namespace api.BusinessLogic.RuleConfiguration
                 if (condition.FieldId <= 0) throw new ArgumentException("Each condition must have a valid field.", nameof(conditions));
                 if (string.IsNullOrWhiteSpace(condition.Operator)) throw new ArgumentException("Each condition must have an operator.", nameof(conditions));
                 if (string.IsNullOrWhiteSpace(condition.Value)) throw new ArgumentException("Each condition must have a value.", nameof(conditions));
-                if (condition.LogicalOperator is not ("AND" or "OR")) throw new ArgumentException("Condition logical operator must be AND or OR.", nameof(conditions));
-                if (condition.GroupLogicalOperator is not ("AND" or "OR")) throw new ArgumentException("Group logical operator must be AND or OR.", nameof(conditions));
+                if (condition.ConditionLogicalOperator is not ("AND" or "OR")) throw new ArgumentException("Condition logical operator must be AND or OR.", nameof(conditions));
                 if (condition.GroupOrder < 1 || condition.ConditionOrder < 1) throw new ArgumentException("Condition and group order must be greater than zero.", nameof(conditions));
             }
         }
