@@ -76,10 +76,30 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     loadFields();
   }, [open, rule, nextRuleId]);
 
-  const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
-  const addRow = () => { setRows((current) => [...current, createCondition()]); setError(""); };
+  const update = (name, value) => {
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+  const addRow = () => {
+    setRows((current) => [
+      ...current,
+      createCondition(),
+    ]);
+    setError("");
+  };
   const removeRow = (rowId) => { setRows((current) => current.filter((row) => row.id !== rowId)); setSelectedRows((current) => current.filter((id) => id !== rowId)); };
-  const updateRow = (rowId, name, value) => { setRows((current) => current.map((row) => row.id === rowId ? { ...row, [name]: value } : row)); setError(""); };
+  const updateRow = (rowId, name, value) => {
+    setRows((current) =>
+      current.map((row) =>
+        row.id === rowId
+          ? { ...row, [name]: value }
+          : row
+      )
+    );
+    setError("");
+  };
 
   const changeField = (rowId, value) => {
     const field = fields.find((item) => String(item.fieldId) === String(value));
@@ -167,11 +187,11 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       const currentGroupKey = row.groupId || `ungrouped-${row.id}`;
       if (currentGroupKey !== previousGroupKey) { groupOrder += 1; previousGroupKey = currentGroupKey; }
       const groupRows = groupedRows.get(row.groupId || `ungrouped-${row.id}`) || [row];
-      const rowIndex = groupRows.findIndex((item) => item.id === row.id);
       const isGrouped = Boolean(row.groupId) && groupRows.length > 1;
       conditions.push({
         fieldId: Number(row.fieldId),
-        logicalOperator: isGrouped && rowIndex === groupRows.length - 1 ? "AND" : row.logicalOperator || "AND",
+        logicalOperator: (row.logicalOperator || "AND").toUpperCase(),
+        conditionLogicalOperator: (row.logicalOperator || "AND").toUpperCase(),
         operator: row.operator,
         value: row.value,
         conditionOrder: index + 1,
@@ -204,7 +224,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               {rows.map((row) => {
                 const field = fields.find((item) => String(item.fieldId) === String(row.fieldId));
                 const operators = optionsForType(field?.fieldType);
-                const bracePosition = getBracePosition(row); const groupColor = getGroupColor(row); const isSelected = selectedRows.includes(row.id);
+                const bracePosition = getBracePosition(row);
+                const groupColor = getGroupColor(row);
+                const isSelected = selectedRows.includes(row.id);
                 return <tr key={row.id} draggable onDragStart={() => setDraggedRow(row.id)} onDragOver={(event) => event.preventDefault()} onDrop={() => moveRow(row.id)} className={isSelected ? "condition-row-selected" : ""}>
                   <td><input type="checkbox" checked={isSelected} onChange={() => toggleSelected(row.id)} aria-label="Select condition" /></td>
                   <td><span className={`condition-group-brace ${groupColor} ${bracePosition}`} aria-hidden="true">{bracePosition !== "single" ? (bracePosition === "start" ? "⎧" : bracePosition === "middle" ? "⎪" : "⎩") : ""}</span></td>
