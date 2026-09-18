@@ -233,6 +233,24 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.sproc_DeleteAllocationRun
+    @aAllocationRunId UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+
+    DELETE FROM dbo.tblAllocationRunDecision
+    WHERE aAllocationRunId = @aAllocationRunId;
+
+    DELETE FROM dbo.tblAllocationRunHistory
+    WHERE aAllocationRunId = @aAllocationRunId;
+
+    COMMIT;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sproc_GetAllocationRunHistory
     @nTake INT = 50
 AS
