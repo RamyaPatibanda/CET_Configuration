@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SqlClient;
 using api.Models.Allocation;
 using api.Utils;
+using api.Services.Allocation;
 
 namespace api.DataAccess.Allocation;
 

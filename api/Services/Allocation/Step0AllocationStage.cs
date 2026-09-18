@@ -19,7 +19,7 @@ public sealed class Step0AllocationStage : IAllocationStage
         CancellationToken cancellationToken = default)
     {
         var result = await _legacyAllocation.ExecuteStep0Async(
-            context.Candidates,
+            context.Candidates.ToList(),
             context.RuleGroups,
             cancellationToken);
 

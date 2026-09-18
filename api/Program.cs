@@ -9,6 +9,7 @@ using api.DataAccess.RuleConfiguration;
 using api.DataAccess.Allocation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using api.Services.Allocation;
 
 var builder = WebApplication.CreateBuilder(args);
 
