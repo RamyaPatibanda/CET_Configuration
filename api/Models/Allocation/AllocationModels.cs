@@ -50,6 +50,7 @@ public sealed class AllocationCandidate
     public int ExServicemenMeritNo { get; set; }
     public List<CollegePreference> Preferences { get; set; } = [];
     public ExistingAllotment? ExistingAllotment { get; set; }
+    public bool IsInTempPhDef { get; set; }
     public int EffectiveCategoryId => PreviousCategoryId < 0 ? CategoryId : PreviousCategoryId;
 }
 
