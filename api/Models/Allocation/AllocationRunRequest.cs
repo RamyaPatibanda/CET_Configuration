@@ -2,6 +2,7 @@ namespace api.Models.Allocation;
 
 public sealed class AllocationRunRequest
 {
+    public Guid? AllocationRunId { get; set; }
     public string AllocationRunName { get; set; } = string.Empty;
     public int CapRound { get; set; }
     public string AllocationStep { get; set; } = AllocationConfiguration.Step0;
