@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiEdit2, FiMenu, FiPlus, FiTrash2, FiUsers,FiCheckSquare } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
+import Select from "../../../components/common/Select/Select"
 import SearchableSelect from "../../../components/common/SearchableSelect/SearchableSelect";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
