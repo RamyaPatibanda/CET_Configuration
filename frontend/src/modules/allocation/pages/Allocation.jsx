@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FiArchive, FiCheck, FiCopy, FiPlay, FiRefreshCw, FiSave } from "react-icons/fi";
 import Step0DecisionAreas, { STEP_0_STAGES } from "../components/Step0DecisionAreas";
 import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAreas";
@@ -72,6 +73,8 @@ function Allocation() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [searchParams] = useSearchParams();
+  const editRunId = searchParams.get("runId");
 
   const selectedStep = useMemo(
     () => steps.find((step) => step.code === allocationStep) || null,
@@ -90,9 +93,10 @@ function Allocation() {
     const load = async () => {
       try {
         setError("");
-        const [stepResponse, ruleResponse] = await Promise.all([
+        const [stepResponse, ruleResponse, historyResponse] = await Promise.all([
           allocationService.getSteps(),
           ruleConfigurationService.getRules(true),
+          editRunId ? allocationService.getHistory() : Promise.resolve([]),
         ]);
 
         const stepItems = getItems(stepResponse);
@@ -100,10 +104,49 @@ function Allocation() {
           .filter((rule) => rule.isActive)
           .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
 
-        const firstAvailableStep = stepItems.find((step) => step.enabled) || stepItems[0];
+        const historyItems = getItems(historyResponse);
+        const existingRun = editRunId
+          ? historyItems.find((run) => String(run.allocationRunId).toLowerCase() === String(editRunId).toLowerCase())
+          : null;
+
         setSteps(stepItems);
         setRules(ruleItems);
 
+        if (existingRun) {
+          let savedGroups = [];
+          try {
+            savedGroups = JSON.parse(existingRun.ruleGroupsJson || "[]");
+          } catch {
+            savedGroups = [];
+          }
+
+          const savedStep = stepItems.find((step) => step.code === existingRun.allocationStep);
+          const groups = createRuleGroups(existingRun.allocationStep).map((group) => {
+            const savedGroup = savedGroups.find(
+              (item) => String(item.type).toUpperCase() === String(group.type).toUpperCase()
+            );
+            return {
+              ...group,
+              ruleIds: (savedGroup?.rules || [])
+                .map((rule) => Number(rule.ruleId))
+                .filter((ruleId) => ruleItems.some((rule) => rule.ruleId === ruleId)),
+            };
+          });
+
+          setRunId(existingRun.allocationRunId);
+          setRunName(existingRun.allocationRunName || "");
+          setCapRound(existingRun.capRound || 1);
+          setAllocationStep(savedStep?.code || existingRun.allocationStep);
+          setRuleGroups(groups);
+          setStatus(existingRun.status || "Draft");
+          setResult(null);
+          setMessage(existingRun.status === "Draft"
+            ? "Draft loaded in edit mode. Update the configuration and validate when ready."
+            : "Allocation run loaded with status " + existingRun.status + ".");
+          return;
+        }
+
+        const firstAvailableStep = stepItems.find((step) => step.enabled) || stepItems[0];
         if (firstAvailableStep) {
           setAllocationStep(firstAvailableStep.code);
           setRuleGroups(createRuleGroups(firstAvailableStep.code));
@@ -114,7 +157,7 @@ function Allocation() {
     };
 
     load();
-  }, []);
+  }, [editRunId]);
 
   const markEdited = () => {
     if (status === "Ready") setStatus("Draft");
@@ -315,13 +358,13 @@ function Allocation() {
       {selectedStep && (
         <section className="allocation-section">
           <div className="allocation-section-heading">
-            <div><span>Stages for this allocation step</span><h2>Allocation Stages</h2></div>
+            <div><span>Decision areas for this allocation step</span><h2>Decision Areas</h2></div>
             <span className="allocation-count">{selectedRuleCount} assigned</span>
           </div>
 
           <div className="allocation-rule-note">
             <FiCheck size={15} />
-            <span>Rules are reusable. Assign them to the stage where they are evaluated for this allocation step.</span>
+            <span>Rules are reusable. Assign them to the decision area where they are evaluated for this allocation step.</span>
           </div>
 
           {!rules.length ? (
