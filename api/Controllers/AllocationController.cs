@@ -319,7 +319,9 @@ public sealed class AllocationController : ControllerBase
         {
             AllocationConfiguration.Step0 =>
             [
-                new Step0AllocationStage(_legacyAllocation)
+                new Step0AllocationStage(_legacyAllocation, new Step0CandidateRepository(
+                    HttpContext.RequestServices.GetRequiredService<IConfiguration>(),
+                    HttpContext.RequestServices.GetRequiredService<IRuleEvaluator>()))
             ],
             AllocationConfiguration.Step1 =>
             [
