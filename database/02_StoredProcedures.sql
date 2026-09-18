@@ -71,8 +71,7 @@ BEGIN
 
     SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldType,
            rc.tLogicalOperator,rc.tOperator,rc.tValue,rc.nConditionOrder,
-           COALESCE(rg.nGroupOrder,1) AS nGroupOrder,
-           COALESCE(rg.tLogicalOperator,'AND') AS tGroupLogicalOperator
+           COALESCE(rg.nGroupOrder,1) AS nGroupOrder
     FROM dbo.tblRuleCondition rc
     INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=rc.aFieldId
     LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId=rc.aRuleConditionGroupId
@@ -99,16 +98,16 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE tRuleName=@tRuleName) THROW 50002,'A rule with the specified Rule Name already exists.',1;
         IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority=@nPriority) THROW 50003,'A rule with the specified Priority already exists.',1;
         IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson)) THROW 50004,'At least one rule condition is required.',1;
-        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')) FieldId,JSON_VALUE(j.value,'$.LogicalOperator') LogicalOperator,JSON_VALUE(j.value,'$.Operator') Operator,JSON_VALUE(j.value,'$.Value') Value,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,JSON_VALUE(j.value,'$.GroupLogicalOperator') GroupLogicalOperator) d LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=d.FieldId WHERE fc.aFieldId IS NULL OR fc.bIsActive=0 OR d.LogicalOperator NOT IN ('AND','OR') OR d.GroupLogicalOperator NOT IN ('AND','OR') OR NULLIF(LTRIM(RTRIM(d.Operator)),'') IS NULL OR NULLIF(LTRIM(RTRIM(d.Value)),'') IS NULL OR d.ConditionOrder IS NULL OR d.ConditionOrder<=0 OR d.GroupOrder IS NULL OR d.GroupOrder<=0) THROW 50005,'One or more rule conditions are invalid or reference an inactive field.',1;
+        IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')) FieldId,JSON_VALUE(j.value,'$.ConditionLogicalOperator') ConditionLogicalOperator,JSON_VALUE(j.value,'$.Operator') Operator,JSON_VALUE(j.value,'$.Value') Value,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,JSON_VALUE(j.value,'$.GroupLogicalOperator') GroupLogicalOperator) d LEFT JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=d.FieldId WHERE fc.aFieldId IS NULL OR fc.bIsActive=0 OR d.ConditionLogicalOperator NOT IN ('AND','OR') OR NULLIF(LTRIM(RTRIM(d.Operator)),'') IS NULL OR NULLIF(LTRIM(RTRIM(d.Value)),'') IS NULL OR d.ConditionOrder IS NULL OR d.ConditionOrder<=0 OR d.GroupOrder IS NULL OR d.GroupOrder<=0) THROW 50005,'One or more rule conditions are invalid or reference an inactive field.',1;
         IF EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson) j OUTER APPLY (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) ConditionOrder) d GROUP BY d.GroupOrder,d.ConditionOrder HAVING COUNT(*)>1) THROW 50006,'Condition order must be unique within each group.',1;
         IF EXISTS (SELECT 1 FROM (SELECT DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) AS GroupOrder FROM OPENJSON(@tConditionsJson) j) d WHERE GroupOrder IS NULL OR GroupOrder<=0) THROW 50007,'Condition group order must be a positive number.',1;
         IF (SELECT COUNT(DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) <> (SELECT MAX(TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) THROW 50017,'Condition group order must be sequential.',1;
 
         INSERT INTO dbo.tblRule(aRuleId,tRuleName,tDescription,nPriority,bIsActive) VALUES(@aRuleId,@tRuleName,@tDescription,@nPriority,@bIsActive);
         INSERT INTO dbo.tblRuleConditionGroup(aRuleId,nGroupOrder,tLogicalOperator)
-        SELECT @aRuleId,d.GroupOrder,MAX(d.GroupLogicalOperator) FROM (SELECT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder,COALESCE(JSON_VALUE(j.value,'$.GroupLogicalOperator'),'AND') GroupLogicalOperator FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
+        SELECT @aRuleId,d.GroupOrder,'AND' FROM (SELECT DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
         INSERT INTO dbo.tblRuleCondition(aRuleId,aRuleConditionGroupId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
-        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.LogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
+        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.ConditionLogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
         COMMIT; SELECT @aRuleId AS aRuleId;
     END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
