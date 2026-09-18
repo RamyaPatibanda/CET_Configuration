@@ -253,3 +253,55 @@ BEGIN
     ORDER BY dtStartedAtUtc DESC;
 END;
 GO
+
+
+IF OBJECT_ID(N'dbo.sproc_GetUsers', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetUsers;
+GO
+CREATE PROCEDURE dbo.sproc_GetUsers
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT aUserId, tUsername, tDisplayName, bIsAdmin, bIsActive, dtCreatedDate
+    FROM dbo.tblUsers
+    ORDER BY tUsername;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_CreateUser', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateUser;
+GO
+CREATE PROCEDURE dbo.sproc_CreateUser
+    @tUsername NVARCHAR(100),
+    @tPassword NVARCHAR(500),
+    @tDisplayName NVARCHAR(200),
+    @bIsAdmin BIT,
+    @bIsActive BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF EXISTS (SELECT 1 FROM dbo.tblUsers WHERE tUsername = @tUsername)
+        THROW 50100, 'A user with the specified username already exists.', 1;
+
+    INSERT INTO dbo.tblUsers
+    (
+        tUsername,
+        tPassword,
+        tDisplayName,
+        bIsAdmin,
+        bIsActive,
+        dtCreatedDate
+    )
+    VALUES
+    (
+        @tUsername,
+        @tPassword,
+        @tDisplayName,
+        @bIsAdmin,
+        @bIsActive,
+        GETDATE()
+    );
+
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS aUserId;
+END;
+GO
