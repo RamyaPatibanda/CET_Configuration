@@ -108,6 +108,9 @@ public sealed class Step0CandidateRepository
                     OR MeritNo > @LastMeritNo
                     OR (MeritNo = @LastMeritNo AND CandidateID > @LastCandidateId)
                 )
+                AND IsOMS = 'N'
+                AND IsNRI = 'N'
+                AND (FinalIsPh = 'Y' OR FinalIsExServicemen = 'Y' OR FinalIsOrphan = 'Y')
                 AND NOT EXISTS
                 (
                     SELECT 1
