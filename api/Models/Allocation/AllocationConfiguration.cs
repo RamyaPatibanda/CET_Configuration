@@ -38,12 +38,30 @@ public static class AllocationConfiguration
             Enabled = true,
             DecisionAreas =
             [
-                new() { Code = CandidateQualification, Name = "Candidate Qualification", Description = "Determine candidates eligible to enter the Step 0 candidate pool." },
-                new() { Code = SpecialReservationEligibility, Name = "Special Reservation Eligibility", Description = "Determine PH, Defence and Orphan special-reservation eligibility." },
-                new() { Code = PreferenceEvaluation, Name = "Preference Evaluation", Description = "Determine eligible preferences to consider for the decision." },
-                new() { Code = SeatEligibility, Name = "Seat Eligibility", Description = "Determine which seats can be considered for the candidate." },
-                new() { Code = Betterment, Name = "Betterment", Description = "Determine whether an existing allocation can be replaced." },
-                new() { Code = Conversion, Name = "Special Vacancy / Conversion", Description = "Rules governing special-reservation vacancy or conversion decisions." }
+                new()
+                {
+                    Code = CandidateQualification,
+                    Name = "Candidate Eligibility",
+                    Description = "Determine the candidates that enter the Step 0 processing pool."
+                },
+                new()
+                {
+                    Code = SeatEligibility,
+                    Name = "Seat Eligibility",
+                    Description = "Determine which seats can be considered for the candidate."
+                },
+                new()
+                {
+                    Code = Betterment,
+                    Name = "Betterment",
+                    Description = "Determine whether an existing allocation can be replaced."
+                },
+                new()
+                {
+                    Code = Conversion,
+                    Name = "Special Vacancy / Conversion",
+                    Description = "Rules governing special-reservation vacancy or conversion decisions."
+                }
             ]
         },
         new()
