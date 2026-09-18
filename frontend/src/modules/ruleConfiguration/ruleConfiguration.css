@@ -5,6 +5,8 @@
   gap: 18px;
 }
 
+.add-rule-button { width:42px; min-width:42px; height:42px; min-height:42px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+
 .rule-page-header {
   display: flex;
   align-items: flex-end;
