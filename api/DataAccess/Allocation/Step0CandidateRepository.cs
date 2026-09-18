@@ -139,28 +139,29 @@ public sealed class Step0CandidateRepository
 
         var result = new List<AllocationCandidate>(batchSize);
 
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
         {
-            result.Add(new AllocationCandidate
+            while (await reader.ReadAsync(cancellationToken))
             {
-                CandidateId = reader.GetInt64(reader.GetOrdinal("CandidateID")),
-                CategoryId = Convert.ToInt32(reader["CategoryID"]),
-                PreviousCategoryId = Convert.ToInt32(reader["PreviousCategoryID"]),
-                Gender = Convert.ToString(reader["Gender"]) ?? string.Empty,
-                IsPh = Convert.ToString(reader["FinalIsPh"]) ?? "N",
-                IsExServicemen = Convert.ToString(reader["FinalIsExServicemen"]) ?? "N",
-                IsOrphan = Convert.ToString(reader["FinalIsOrphan"]) ?? "N",
-                MeritNo = Convert.ToInt32(reader["MeritNo"]),
-                ExServicemenMeritNo = reader["ExServicemenMeritNo"] == DBNull.Value
-                    ? 0
-                    : Convert.ToInt32(reader["ExServicemenMeritNo"]),
-                IsEligibleForOpen = Convert.ToString(reader["IsEligibleForOpen"]) ?? "N",
-                IsOms = Convert.ToString(reader["IsOMS"]) ?? "N",
-                IsNri = Convert.ToString(reader["IsNRI"]) ?? "N",
-                IsInTempPhDef = false
-            });
+                result.Add(new AllocationCandidate
+                {
+                    CandidateId = reader.GetInt64(reader.GetOrdinal("CandidateID")),
+                    CategoryId = Convert.ToInt32(reader["CategoryID"]),
+                    PreviousCategoryId = Convert.ToInt32(reader["PreviousCategoryID"]),
+                    Gender = Convert.ToString(reader["Gender"]) ?? string.Empty,
+                    IsPh = Convert.ToString(reader["FinalIsPh"]) ?? "N",
+                    IsExServicemen = Convert.ToString(reader["FinalIsExServicemen"]) ?? "N",
+                    IsOrphan = Convert.ToString(reader["FinalIsOrphan"]) ?? "N",
+                    MeritNo = Convert.ToInt32(reader["MeritNo"]),
+                    ExServicemenMeritNo = reader["ExServicemenMeritNo"] == DBNull.Value
+                        ? 0
+                        : Convert.ToInt32(reader["ExServicemenMeritNo"]),
+                    IsEligibleForOpen = Convert.ToString(reader["IsEligibleForOpen"]) ?? "N",
+                    IsOms = Convert.ToString(reader["IsOMS"]) ?? "N",
+                    IsNri = Convert.ToString(reader["IsNRI"]) ?? "N",
+                    IsInTempPhDef = false
+                });
+            }
         }
 
         await LoadPreferencesAsync(connection, result, cancellationToken);
