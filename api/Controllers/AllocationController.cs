@@ -154,6 +154,24 @@ public sealed class AllocationController : ControllerBase
         CancellationToken cancellationToken) =>
         Run(request, cancellationToken);
 
+    [HttpDelete("{runId:guid}")]
+    public async Task<IActionResult> Delete(
+        Guid runId,
+        CancellationToken cancellationToken)
+    {
+        var history = (await _runHistory.GetRecentAsync(200))
+            .FirstOrDefault(item => item.AllocationRunId == runId);
+
+        if (history is null)
+            return NotFound(new { message = "Allocation run was not found." });
+
+        if (string.Equals(history.Status, AllocationRunStatus.Running.ToString(), StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { message = "A running allocation cannot be deleted." });
+
+        await _runHistory.DeleteAsync(runId);
+        return NoContent();
+    }
+
     [HttpPost("{runId:guid}/archive")]
     public async Task<IActionResult> Archive(
         Guid runId,
