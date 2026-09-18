@@ -59,6 +59,14 @@ const createRuleGroups = (stepCode) =>
 const editableStatuses = new Set(["Draft", "Ready"]);
 const lockedStatuses = new Set(["Running", "Completed", "Failed", "Cancelled", "Archived"]);
 
+const normalizeStatus = (value, fallback = "Draft") => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") {
+    return ["Draft", "Ready", "Running", "Completed", "Failed", "Cancelled", "Archived"][value] || fallback;
+  }
+  return fallback;
+};
+
 function Allocation() {
   const [steps, setSteps] = useState([]);
   const [rules, setRules] = useState([]);
@@ -220,7 +228,7 @@ function Allocation() {
       const response = await allocationService.saveDraft(buildRequest());
       const data = response?.data || response;
       setRunId(data.run?.allocationRunId);
-      setStatus(data.run?.status || "Draft");
+      setStatus(normalizeStatus(data.run?.status, "Draft"));
       setMessage("Draft saved. You can continue editing this allocation run.");
     } catch (e) {
       setError(e.message || "Unable to save allocation draft.");
@@ -240,7 +248,7 @@ function Allocation() {
       const response = await allocationService.validate(buildRequest());
       const data = response?.data || response;
       setRunId(data.run?.allocationRunId);
-      setStatus(data.run?.status || "Ready");
+      setStatus(normalizeStatus(data.run?.status, "Ready"));
       setMessage("Configuration validated. The run is Ready to execute.");
     } catch (e) {
       setError(e.message || "Unable to validate allocation configuration.");
@@ -267,7 +275,7 @@ function Allocation() {
       const data = response?.data || response;
       setResult(data);
       setRunId(data.run?.allocationRunId);
-      setStatus(data.run?.status || "Completed");
+      setStatus(normalizeStatus(data.run?.status, "Completed"));
       setMessage("Allocation completed and the allocation decisions were saved.");
     } catch (e) {
       setStatus("Failed");
