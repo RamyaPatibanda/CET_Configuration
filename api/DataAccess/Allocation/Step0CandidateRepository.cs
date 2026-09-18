@@ -13,14 +13,17 @@ namespace api.DataAccess.Allocation;
 /// </summary>
 public sealed class Step0CandidateRepository
 {
-    private const int DefaultBatchSize = 1000;
-
     private readonly string _connectionString;
     private readonly IRuleEvaluator _ruleEvaluator;
+    private readonly int _batchSize;
 
     public Step0CandidateRepository(IConfiguration configuration, IRuleEvaluator ruleEvaluator)
     {
         _ruleEvaluator = ruleEvaluator;
+        _batchSize = configuration.GetValue<int?>("Allocation:CandidateBatchSize") ?? 1000;
+        if (_batchSize <= 0)
+            throw new InvalidOperationException("Allocation:CandidateBatchSize must be greater than zero.");
+
         _connectionString = new ConnectionUtils().GetConnectionString(
             configuration["ConnectionStrings:CrmDbConnection"]
             ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
@@ -28,10 +31,11 @@ public sealed class Step0CandidateRepository
 
     public async IAsyncEnumerable<IReadOnlyList<AllocationCandidate>> ReadEligibleBatchesAsync(
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
-        int batchSize = DefaultBatchSize,
+        int? batchSize = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (batchSize <= 0)
+        var effectiveBatchSize = batchSize ?? _batchSize;
+        if (effectiveBatchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize));
 
         var lastMeritNo = int.MinValue;
@@ -44,7 +48,7 @@ public sealed class Step0CandidateRepository
             var candidates = await ReadBatchAsync(
                 lastMeritNo,
                 lastCandidateId,
-                batchSize,
+                effectiveBatchSize,
                 cancellationToken);
 
             if (candidates.Count == 0)
