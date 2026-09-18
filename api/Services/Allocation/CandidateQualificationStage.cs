@@ -6,9 +6,9 @@ public sealed class CandidateQualificationStage : IAllocationStage
 {
     private readonly IRuleEvaluator _ruleEvaluator;
 
-    public CandidateQualificationStage(IRuleEvaluator ruleEvaluator)
+    public CandidateQualificationStage()
     {
-        _ruleEvaluator = ruleEvaluator;
+        _ruleEvaluator = new RuleEvaluator();
     }
 
     public string StageCode => "CANDIDATE_QUALIFICATION";
