@@ -1,3 +1,5 @@
+using api.Services.Allocation;
+using api.Models.Allocation;
 public interface IAllocationStage
 {
     string StageCode { get; }

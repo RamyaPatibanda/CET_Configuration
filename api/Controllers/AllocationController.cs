@@ -125,8 +125,8 @@ public sealed class AllocationController : ControllerBase
             return Ok(new AllocationRunResponse
             {
                 Run = context.Run,
-                Decisions = context.Decisions,
-                Stages = context.StageResults
+                Decisions = context.Decisions.ToList(),
+                Stages = context.StageResults.ToList()
             });
         }
         catch (OperationCanceledException)
@@ -201,7 +201,7 @@ public sealed class AllocationController : ControllerBase
             StageCode = decisionArea,
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
-                .Select(condition => new RuleCondition(
+                .Select(condition => new api.Services.Allocation.RuleCondition(
                     condition.FieldDisplayName,
                     condition.Operator,
                     condition.Value))
