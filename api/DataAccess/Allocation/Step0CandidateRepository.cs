@@ -38,7 +38,7 @@ public sealed class Step0CandidateRepository
         if (effectiveBatchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize));
 
-        long lastMeritNo = long.MinValue;
+        long? lastMeritNo = null;
         long lastCandidateId = long.MinValue;
 
         while (true)
@@ -104,7 +104,7 @@ public sealed class Step0CandidateRepository
             FROM dbo.Allocation_MeritList
             WHERE
                 (
-                    @LastMeritNo = -9223372036854775808
+                    @LastMeritNo IS NULL
                     OR MeritNo > @LastMeritNo
                     OR (MeritNo = @LastMeritNo AND CandidateID > @LastCandidateId)
                 )
