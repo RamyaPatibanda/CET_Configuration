@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FiEdit2, FiMenu, FiPlus, FiTrash2 } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { FiEdit2, FiMenu, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Switch from "../../../components/common/Switch/Switch";
@@ -16,6 +16,9 @@ function RuleConfiguration() {
   const [selectedRule, setSelectedRule] = useState(null);
   const [deleteRule, setDeleteRule] = useState(null);
   const [draggedRuleId, setDraggedRuleId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadRules = async () => {
     try {
@@ -138,6 +141,16 @@ function RuleConfiguration() {
     }
   };
 
+  const filteredRules = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return rules;
+    return rules.filter((rule) => [rule.ruleName, rule.description].some((value) => String(value ?? "").toLowerCase().includes(query)));
+  }, [rules, search]);
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRules = filteredRules.slice((safePage - 1) * pageSize, safePage * pageSize);
+  useEffect(() => { setPage(1); }, [search, pageSize]);
+
   const handleDelete = async () => {
     if (!deleteRule) return;
 
@@ -176,6 +189,8 @@ function RuleConfiguration() {
 
       {error && <div className="rule-page-error">{error}</div>}
 
+      <div className="rule-list-toolbar"><div className="rule-search-box"><FiSearch size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rules..." aria-label="Search rules" /></div><div className="rule-page-size"><span>Rows</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select></div></div>
+
       {loading ? (
         <div className="rule-list-message">Loading rules…</div>
       ) : !rules.length ? (
@@ -198,7 +213,7 @@ function RuleConfiguration() {
               </tr>
             </thead>
             <tbody>
-              {rules.map((rule) => {
+              {pagedRules.map((rule) => {
                 const conditionCount = Number(rule.conditionCount ?? rule.ConditionCount ?? 0);
 
                 return (
@@ -250,6 +265,7 @@ function RuleConfiguration() {
           </table>
         </div>
       )}
+      {!loading && filteredRules.length > 0 && <div className="rule-pagination"><span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredRules.length)} of {filteredRules.length}</span><div><button type="button" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>Previous</button><span>Page {safePage} of {totalPages}</span><button type="button" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>Next</button></div></div>}
 
       <RuleForm
         open={formOpen}
