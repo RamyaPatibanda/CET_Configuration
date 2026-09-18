@@ -15,7 +15,7 @@ namespace api.Utils
             _encryptDecrypt = ServiceLocator.Default.GetInstance(typeof(IEncryptDecrypt)) as IEncryptDecrypt;
         }
 
-        private string getEncryptedValue(string decryptedStr)
+        public string GetEncryptedValue(string decryptedStr)
         {
             string encryptedStr = "";
             encryptedStr = _encryptDecrypt.Encrypt(decryptedStr, new byte[] { 0, 44, 32, 43, 40, 50, 51 });
