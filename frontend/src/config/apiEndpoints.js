@@ -2,6 +2,10 @@ const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/api/auth/login",
   },
+  USER_MANAGEMENT: {
+    LIST: "/api/users",
+    CREATE: "/api/users",
+  },
   FIELD_CONFIGURATION: {
     LIST: "/api/field-configuration",
     CREATE: "/api/field-configuration/create",
