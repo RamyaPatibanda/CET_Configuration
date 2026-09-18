@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiPlus, FiSearch } from "react-icons/fi";
-import { FiPlus } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import fieldConfigurationService from "../services/fieldConfigurationService";

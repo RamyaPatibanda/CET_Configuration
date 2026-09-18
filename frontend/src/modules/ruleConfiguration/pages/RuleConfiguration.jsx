@@ -179,13 +179,13 @@ function RuleConfiguration() {
         </Button>
       </div>
 
-      <div className="rule-order-note">
+      {/* <div className="rule-order-note">
         <div className="rule-order-note-icon">↕</div>
         <div>
           <strong>Rule order controls priority</strong>
           <span>Drag a rule to change its execution order. Active status can be changed directly here.</span>
         </div>
-      </div>
+      </div> */}
 
       {error && <div className="rule-page-error">{error}</div>}
 
