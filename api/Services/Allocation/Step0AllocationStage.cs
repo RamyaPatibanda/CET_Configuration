@@ -70,10 +70,8 @@ public sealed class Step0AllocationStage : IAllocationStage
                 var vacancy = GetSpecialVacancy(candidate, seat);
                 var specialAllocation = TryAllocateSpecial(
                     candidate,
-                    preference,
                     seat,
-                    vacancy,
-                    conversionRules);
+                    vacancy);
 
                 if (specialAllocation is not null)
                 {
@@ -141,12 +139,10 @@ public sealed class Step0AllocationStage : IAllocationStage
 
     private static (string Type, string VacancyType)? TryAllocateSpecial(
         AllocationCandidate candidate,
-        CollegePreference preference,
         SeatInventory seat,
-        int vacancy,
-        IReadOnlyCollection<AllocationRule> conversionRules)
+        int vacancy)
     {
-        if (vacancy <= 0 || !MatchesConversion(conversionRules, candidate))
+        if (vacancy <= 0)
             return null;
 
         if (IsYes(candidate.IsPh) && seat.Ph > 0)
@@ -160,11 +156,6 @@ public sealed class Step0AllocationStage : IAllocationStage
 
         return null;
     }
-
-    private static bool MatchesConversion(
-        IReadOnlyCollection<AllocationRule> rules,
-        AllocationCandidate candidate) =>
-        rules.Count == 0 || rules.Any(rule => rule.Conditions.Count == 0 || true);
 
     private static int GetSpecialVacancy(
         AllocationCandidate candidate,
