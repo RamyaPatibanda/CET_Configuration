@@ -85,12 +85,6 @@ public sealed class LegacyAllocationDAL
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    if (!MatchesArea(ruleGroups, AllocationConfiguration.PreferenceEvaluation, candidate))
-                        continue;
-
-                    if (!MatchesArea(ruleGroups, AllocationConfiguration.SeatEligibility, candidate))
-                        continue;
-
                     var vacancyRows = await GetVacancyRowsAsync(
                         connection,
                         transaction,
@@ -265,11 +259,7 @@ public sealed class LegacyAllocationDAL
         return MatchesArea(
             ruleGroups,
             AllocationConfiguration.CandidateQualification,
-            candidate) &&
-               MatchesArea(
-                   ruleGroups,
-                   AllocationConfiguration.SpecialReservationEligibility,
-                   candidate);
+            candidate);
     }
 
     private bool MatchesArea(
