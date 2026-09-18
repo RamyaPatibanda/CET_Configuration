@@ -57,21 +57,6 @@ public sealed class AllocationController : ControllerBase
         return Ok(new AllocationRunResponse { Run = run });
     }
 
-    [HttpPost("validate")]
-    public async Task<ActionResult<AllocationRunResponse>> Validate(
-        [FromBody] AllocationRunRequest request,
-        CancellationToken cancellationToken)
-    {
-        var prepared = await PrepareAsync(request, requireData: false);
-        if (prepared.Error is not null)
-            return BadRequest(new { message = prepared.Error });
-
-        var run = prepared.Run!;
-        run.Status = AllocationRunStatus.Ready;
-        await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
-        return Ok(new AllocationRunResponse { Run = run });
-    }
-
     [HttpPost("run")]
     public async Task<ActionResult<AllocationRunResponse>> Run(
         [FromBody] AllocationRunRequest request,
@@ -82,13 +67,12 @@ public sealed class AllocationController : ControllerBase
             return BadRequest(new { message = prepared.Error });
 
         var run = prepared.Run!;
-        run.Status = AllocationRunStatus.Ready;
-
-        await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
 
         try
         {
             run.Status = AllocationRunStatus.Running;
+            run.StartedAtUtc = DateTime.UtcNow;
+            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
             run.StartedAtUtc = DateTime.UtcNow;
             await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken);
 
@@ -234,10 +218,6 @@ public sealed class AllocationController : ControllerBase
         if (ruleGroups.Count == 0 && !allowIncompleteDraft)
             return PreparedAllocation.Fail("Select at least one configured rule and assign it to a decision area.");
 
-        // A draft is intentionally a lightweight checkpoint. It must be possible
-        // to save while the configuration is still incomplete or while an older
-        // rule reference needs to be replaced during editing. Full rule and
-        // decision-area validation happens when the user clicks Validate.
         if (!allowIncompleteDraft)
         {
             var invalidGroups = ruleGroups
@@ -251,25 +231,29 @@ public sealed class AllocationController : ControllerBase
                     $"Invalid decision area(s) for {step.Name}: {string.Join(", ", invalidGroups)}.");
         }
 
-        var allRules = await _ruleConfiguration.GetRulesAsync();
-        var selectedRuleIds = ruleGroups.SelectMany(group => group.RuleIds).Distinct().ToList();
-        var selectedRules = allRules
-            .Where(rule => rule.IsActive && selectedRuleIds.Contains(rule.RuleId))
-            .OrderBy(rule => rule.Priority)
+        var selectedRuleIds = ruleGroups
+            .SelectMany(group => group.RuleIds)
+            .Distinct()
             .ToList();
 
-        if (!allowIncompleteDraft && selectedRules.Count != selectedRuleIds.Count)
-            return PreparedAllocation.Fail("One or more selected rules are missing or inactive.");
-
-        var detailedRules = new List<RuleDefinition>();
-        foreach (var rule in selectedRules)
+        var detailedById = new Dictionary<int, RuleDefinition>();
+        if (!allowIncompleteDraft)
         {
-            var detailed = await _ruleConfiguration.GetRuleAsync(rule.RuleId);
-            if (detailed is not null)
-                detailedRules.Add(detailed);
-        }
+            foreach (var ruleId in selectedRuleIds)
+            {
+                var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
+                if (rule is null)
+                    return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
 
-        var detailedById = detailedRules.ToDictionary(rule => rule.RuleId);
+                if (!rule.IsActive)
+                    return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
+
+                detailedById[rule.RuleId] = rule;
+            }
+
+            if (detailedById.Count != selectedRuleIds.Count)
+                return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
+        }
         if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
             return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
 
