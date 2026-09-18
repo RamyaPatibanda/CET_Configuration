@@ -29,6 +29,10 @@ const allocationService = {
   async archive(runId) {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.ARCHIVE(runId));
   },
+
+  async delete(runId) {
+    return httpClient.delete(API_ENDPOINTS.ALLOCATION.BY_ID(runId));
+  },
 };
 
 export default allocationService;
