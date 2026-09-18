@@ -78,6 +78,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                     AddDecision(context, candidate, preference, seat, specialAllocation.Value.Type,
                         specialAllocation.Value.VacancyType, bettermentRules);
                     ConsumeSpecialVacancy(seat, specialAllocation.Value.VacancyType);
+                    ConsumeNormalSeat(seat, specialAllocation.Value.Type);
                     allocated = true;
                     break;
                 }
@@ -145,16 +146,30 @@ public sealed class Step0AllocationStage : IAllocationStage
         if (vacancy <= 0)
             return null;
 
-        if (IsYes(candidate.IsPh) && seat.Ph > 0)
-            return ("PH", "PH");
+        if (candidate.EffectiveCategoryId == 1 &&
+            !IsYes(candidate.IsEligibleForOpen))
+            return null;
 
-        if (IsYes(candidate.IsExServicemen) && seat.Defence > 0)
-            return ("Def", "Def");
+        var vacancyType =
+            IsYes(candidate.IsPh) && seat.Ph > 0 ? "PH" :
+            IsYes(candidate.IsExServicemen) && seat.Defence > 0 ? "Def" :
+            IsYes(candidate.IsOrphan) && seat.Orphan > 0 ? "Orp" :
+            string.Empty;
 
-        if (IsYes(candidate.IsOrphan) && seat.Orphan > 0)
-            return ("Orp", "Orp");
+        if (vacancyType.Length == 0)
+            return null;
 
-        return null;
+        var allocatedType =
+            candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase) &&
+            seat.Female > 0
+                ? "Fem"
+                : seat.General > 0
+                    ? "Gen"
+                    : string.Empty;
+
+        return allocatedType.Length == 0
+            ? null
+            : (allocatedType, vacancyType);
     }
 
     private static int GetSpecialVacancy(
