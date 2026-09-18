@@ -91,3 +91,14 @@
   flex-wrap:wrap;
   gap:9px;
 }
+
+/* Step-specific stage presentation */
+.allocation-stage-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.allocation-stage-card{min-width:0;padding:15px;border:1px solid #e5e7eb;border-radius:16px;background:rgba(255,255,255,.8);box-shadow:0 8px 24px rgba(43,57,83,.04)}
+.allocation-stage-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:10px}
+.allocation-stage-title{min-width:0}
+.allocation-stage-title>span{display:inline-flex;margin-bottom:5px;font-size:8px;text-transform:uppercase;letter-spacing:.11em;font-weight:800;color:#6366f1}
+.allocation-stage-title h3{margin:0;font-size:13px;color:#111827;font-weight:700}
+.allocation-stage-title p{margin:4px 0 0;color:#6b7280;font-size:10px;line-height:1.45}
+.allocation-stage-heading>span{padding:4px 8px;border-radius:999px;background:#f3f4f6;color:#374151;font-size:9px;white-space:nowrap}
+@media(max-width:900px){.allocation-stage-list{grid-template-columns:1fr}}
