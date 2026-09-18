@@ -13,8 +13,6 @@ namespace api.DataAccess.Allocation;
 /// </summary>
 public sealed class LegacyAllocationDAL
 {
-    private static readonly SemaphoreSlim Step0Gate = new(1, 1);
-
     private readonly string _connectionString;
     private readonly ILogger<LegacyAllocationDAL> _logger;
     private readonly IRuleEvaluator _ruleEvaluator;
@@ -36,22 +34,12 @@ public sealed class LegacyAllocationDAL
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         CancellationToken cancellationToken = default)
     {
-        // The legacy algorithm uses shared Allocation_temp and Allocation_tempPHDef
-        // tables, so Step 0 must not execute concurrently in the same API process.
-        await Step0Gate.WaitAsync(cancellationToken);
-
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            await ExecuteNonQueryAsync(
-                connection,
-                transaction,
-                "TRUNCATE TABLE dbo.Allocation_temp;",
-                cancellationToken);
-
             var allocations = new List<LegacyAllocationRow>();
             var candidateRows = candidates
                 .Where(c => IsSpecialReservationCandidate(c, ruleGroups))
@@ -216,11 +204,6 @@ public sealed class LegacyAllocationDAL
                         break;
                 }
 
-                await InsertTempCandidateAsync(
-                    connection,
-                    transaction,
-                    candidate.CandidateId,
-                    cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -239,12 +222,7 @@ public sealed class LegacyAllocationDAL
 
             _logger.LogError(ex, "Application-layer Step 0 allocation failed.");
             throw;
-        }
-        finally
-        {
-            Step0Gate.Release();
-        }
-    }
+        }    }
 
     private bool IsSpecialReservationCandidate(
         AllocationCandidate candidate,
@@ -619,145 +597,6 @@ public sealed class LegacyAllocationDAL
             ("@ChoiceCode", SqlDbType.BigInt, choiceCode),
             ("@CategoryId", SqlDbType.TinyInt, categoryId),
             ("@QuotaId", SqlDbType.TinyInt, quotaId));
-    }
-
-    private static async Task InsertTempCandidateAsync(
-        SqlConnection connection,
-        SqlTransaction transaction,
-        long candidateId,
-        CancellationToken cancellationToken)
-    {
-        await ExecuteNonQueryAsync(
-            connection,
-            transaction,
-            "INSERT INTO dbo.Allocation_temp (CandidateId) VALUES (@CandidateId);",
-            cancellationToken,
-            ("@CandidateId", SqlDbType.BigInt, candidateId));
-    }
-
-    private async Task ExecuteDefConversionAsync(
-        SqlConnection connection,
-        SqlTransaction transaction,
-        long choiceCode,
-        IReadOnlyList<AllocationCandidate> candidates,
-        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
-        CancellationToken cancellationToken)
-    {
-        var conversionCandidates = candidates
-            .Where(c => c.IsOms.Equals("N", StringComparison.OrdinalIgnoreCase))
-            .Where(c => c.IsNri.Equals("N", StringComparison.OrdinalIgnoreCase))
-            .Where(c => c.IsExServicemen.Equals("Y", StringComparison.OrdinalIgnoreCase))
-            .Where(c => c.Preferences.Any(p => p.ChoiceCode == choiceCode))
-            .Where(c => !MatchesTempPhDef(c.CandidateId, connection, transaction, cancellationToken).GetAwaiter().GetResult())
-            .Where(c => MatchesArea(ruleGroups, AllocationConfiguration.Conversion, c))
-            .OrderBy(c => c.ExServicemenMeritNo)
-            .ToList();
-
-        foreach (var candidate in conversionCandidates)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var existing = await GetActiveAllocationAsync(
-                connection, transaction, candidate.CandidateId, cancellationToken);
-
-            var preferenceLimit = existing?.PreferenceNo ?? 0;
-
-            foreach (var preference in candidate.Preferences
-                         .Where(p => p.ChoiceCode == choiceCode)
-                         .Where(p => p.PreferenceNo < (preferenceLimit == 0 ? 999 : preferenceLimit))
-                         .OrderBy(p => p.PreferenceNo))
-            {
-                var vacancies = await GetVacancyRowsAsync(
-                    connection, transaction, preference.ChoiceCode,
-                    candidate.EffectiveCategoryId, cancellationToken);
-
-                foreach (var vacancyRow in vacancies)
-                {
-                    var normalVacancy = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase)
-                        ? vacancyRow.Fem
-                        : vacancyRow.Gen;
-
-                    var defVacancy = normalVacancy == 0
-                        ? await GetSpecialVacancyAsync(
-                            connection, transaction, preference.ChoiceCode, "Def", cancellationToken)
-                        : 0;
-
-                    var vacancyForAllocation = normalVacancy > 0 ? normalVacancy : defVacancy;
-                    var allocatedType = ResolveAllocatedType(candidate, vacancyRow, vacancyForAllocation);
-                    if (string.IsNullOrEmpty(allocatedType))
-                        continue;
-
-                    if (existing is not null &&
-                        !MatchesArea(ruleGroups, AllocationConfiguration.Betterment, candidate))
-                        continue;
-
-                    if (existing is not null)
-                    {
-                        await RestoreAllocationAsync(connection, transaction, existing, cancellationToken);
-                        await DeactivateAllocationAsync(connection, transaction, existing.AllocationId, cancellationToken);
-                    }
-
-                    var seqId = ResolveSeqId(allocatedType, candidate.EffectiveCategoryId);
-                    await InsertAllocationAsync(
-                        connection,
-                        transaction,
-                        candidate,
-                        preference,
-                        "Def",
-                        vacancyRow,
-                        allocatedType,
-                        seqId,
-                        cancellationToken);
-
-                    await ConsumeSpecialVacancyAsync(
-                        connection, transaction, preference.ChoiceCode, "Def", cancellationToken);
-
-                    await ConsumeSeatVacancyAsync(
-                        connection, transaction,
-                        preference.ChoiceCode,
-                        vacancyRow.CategoryId,
-                        vacancyRow.QuotaId,
-                        allocatedType,
-                        cancellationToken);
-
-                    break;
-                }
-
-                if (await HasActiveAllocationForChoiceAsync(
-                        connection, transaction, candidate.CandidateId, choiceCode, cancellationToken))
-                    break;
-            }
-        }
-    }
-
-    private static async Task<bool> MatchesTempPhDef(
-        long candidateId,
-        SqlConnection connection,
-        SqlTransaction transaction,
-        CancellationToken cancellationToken)
-        => await IsInTempPhDefAsync(connection, transaction, candidateId, cancellationToken);
-
-    private static async Task<bool> HasActiveAllocationForChoiceAsync(
-        SqlConnection connection,
-        SqlTransaction transaction,
-        long candidateId,
-        long choiceCode,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT CASE WHEN EXISTS
-            (
-                SELECT 1 FROM dbo.Allocation_Colleges
-                WHERE CandidateId = @CandidateId
-                  AND ChoiceCode = @ChoiceCode
-                  AND Flag = 1
-            ) THEN 1 ELSE 0 END;
-            """;
-
-        return await ExecuteScalarIntAsync(
-            connection, transaction, sql, cancellationToken,
-            ("@CandidateId", SqlDbType.BigInt, candidateId),
-            ("@ChoiceCode", SqlDbType.BigInt, choiceCode)) == 1;
     }
 
     private static LegacyAllocationRow ReadAllocation(SqlDataReader reader) => new()
