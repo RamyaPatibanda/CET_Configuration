@@ -278,7 +278,7 @@
 .allocation-multiselect-trigger.has-selection>span {
   color:#111827
 }
-.allocation-multiselect-menu {
+ .allocation-multiselect-menu {
   position:absolute;
   z-index:20;
   left:0;
