@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheck, FiChevronDown, FiLock, FiPlay, FiRefreshCw } from "react-icons/fi";
+import { FiCheck, FiPlay, FiRefreshCw } from "react-icons/fi";
+import Step0DecisionAreas, { STEP_0_DECISION_AREAS } from "../components/Step0DecisionAreas";
+import Step1DecisionAreas, { STEP_1_DECISION_AREAS } from "../components/Step1DecisionAreas";
 import Button from "../../../components/common/Button/Button";
 import allocationService from "../services/allocationService";
 import ruleConfigurationService from "../../ruleConfiguration/services/ruleConfigurationService";
@@ -80,8 +82,22 @@ const stageLabels = {
   RECONCILIATION: "Reconciliation",
 };
 
-const createRuleGroups = (step) =>
-  (step?.decisionAreas || []).map((area) => ({
+const DECISION_AREA_COMPONENTS = {
+  STEP_0: {
+    Component: Step0DecisionAreas,
+    areas: STEP_0_DECISION_AREAS,
+  },
+  STEP_1: {
+    Component: Step1DecisionAreas,
+    areas: STEP_1_DECISION_AREAS,
+  },
+};
+
+const getDecisionAreaConfig = (stepCode) =>
+  DECISION_AREA_COMPONENTS[stepCode] || null;
+
+const createRuleGroups = (stepCode) =>
+  (getDecisionAreaConfig(stepCode)?.areas || []).map((area) => ({
     type: area.code,
     ruleIds: [],
   }));
@@ -130,7 +146,7 @@ function Allocation() {
 
         if (firstAvailableStep) {
           setAllocationStep(firstAvailableStep.code);
-          setRuleGroups(createRuleGroups(firstAvailableStep));
+          setRuleGroups(createRuleGroups(firstAvailableStep.code));
         }
       } catch (e) {
         setError(e.message || "Unable to load allocation configuration.");
@@ -144,7 +160,7 @@ function Allocation() {
     if (!step.enabled) return;
 
     setAllocationStep(step.code);
-    setRuleGroups(createRuleGroups(step));
+    setRuleGroups(createRuleGroups(step.code));
     setResult(null);
     setError("");
   };
@@ -284,57 +300,18 @@ function Allocation() {
               Configuration before running allocation.
             </div>
           ) : (
-            <div className="allocation-decision-areas">
-              {selectedStep.decisionAreas.map((area) => {
-                const group =
-                  ruleGroups.find((item) => item.type === area.code) || {
-                    type: area.code,
-                    ruleIds: [],
-                  };
-
-                return (
-                  <div className="allocation-decision-area" key={area.code}>
-                    <div className="allocation-decision-heading">
-                      <div>
-                        <h3>{area.name}</h3>
-                        <p>{area.description}</p>
-                      </div>
-                      <span>{group.ruleIds.length} selected</span>
-                    </div>
-
-                    <div className="allocation-multiselect">
-                      <button type="button"
-                        className={"allocation-multiselect-trigger" + (group.ruleIds.length ? " has-selection" : "")}
-                        onClick={() => setOpenRuleGroup(openRuleGroup === area.code ? null : area.code)}>
-                        <span>{group.ruleIds.length
-                          ? group.ruleIds.map((id) => rules.find((rule) => rule.ruleId === id)?.ruleName).filter(Boolean).join(", ")
-                          : "Select rules from Rule Configuration"}</span>
-                        <FiChevronDown size={16} />
-                      </button>
-                      {openRuleGroup === area.code && (
-                        <div className="allocation-multiselect-menu">
-                          {rules.map((rule) => {
-                            const selected = group.ruleIds.includes(rule.ruleId);
-                            return (
-                              <button type="button" key={area.code + "-" + rule.ruleId}
-                                className={"allocation-multiselect-option" + (selected ? " selected" : "")}
-                                onClick={() => toggleRule(area.code, rule.ruleId)}>
-                                <span className="allocation-rule-check">{selected && <FiCheck size={13} />}</span>
-                                <span className="allocation-rule-content">
-                                  <strong>{rule.ruleName}</strong>
-                                  <span>{rule.description || (rule.conditionCount || 0) + " condition" + (rule.conditionCount === 1 ? "" : "s")}</span>
-                                </span>
-                                <span className="allocation-rule-priority">Priority {rule.priority}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            (() => {
+              const DecisionAreas = getDecisionAreaConfig(allocationStep)?.Component;
+              return DecisionAreas ? (
+                <DecisionAreas
+                  rules={rules}
+                  ruleGroups={ruleGroups}
+                  openRuleGroup={openRuleGroup}
+                  setOpenRuleGroup={setOpenRuleGroup}
+                  toggleRule={toggleRule}
+                />
+              ) : null;
+            })()
           )}
         </section>
       )}
