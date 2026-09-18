@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiEdit2, FiMenu, FiPlus, FiTrash2, FiUsers,FiCheckSquare } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
-import Select from "../../../components/common/Select/Select";
+import SearchableSelect from "../../../components/common/SearchableSelect/SearchableSelect";
 import TextBox from "../../../components/common/TextBox/TextBox";
 import ruleConfigurationService from "../services/ruleConfigurationService";
 import "./RuleConditionGrouping.css";
@@ -208,7 +208,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                   <td><input type="checkbox" checked={isSelected} onChange={() => toggleSelected(row.id)} aria-label="Select condition" /></td>
                   <td><span className={`condition-group-brace ${groupColor} ${bracePosition}`} aria-hidden="true" /></td>
                   <td><FiMenu size={16} /></td>
-                  <td><Select value={row.fieldId} options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))} placeholder={loadingFields ? "Loading fields..." : "Select field"} onChange={(event) => changeField(row.id, event.target.value)} /></td>
+                  <td><SearchableSelect value={row.fieldId} options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))} placeholder={loadingFields ? "Loading fields..." : "Select field"} disabled={loadingFields} onChange={(value) => changeField(row.id, value)} /></td>
                   <td><Select value={row.operator} options={operators} onChange={(event) => updateRow(row.id, "operator", event.target.value)} /></td>
                   <td><TextBox value={row.value} placeholder="Enter value" onChange={(event) => updateRow(row.id, "value", event.target.value)} /></td>
                   <td><Select value={row.logicalOperator} options={LOGICAL_OPTIONS} onChange={(event) => updateRow(row.id, "logicalOperator", event.target.value)} /></td>
