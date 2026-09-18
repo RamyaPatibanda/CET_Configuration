@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { FiPlus, FiSearch } from "react-icons/fi";
 import { FiPlus } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
@@ -15,6 +16,9 @@ function FieldConfiguration() {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
   const [deleteField, setDeleteField] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadFields = async () => {
     try {
@@ -98,6 +102,15 @@ function FieldConfiguration() {
     }
   };
 
+  const filteredFields = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return fields;
+    return fields.filter((field) => [field.tableName, field.fieldName, field.displayName, field.fieldType].some((value) => String(value ?? "").toLowerCase().includes(query)));
+  }, [fields, search]);
+  const totalPages = Math.max(1, Math.ceil(filteredFields.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedFields = filteredFields.slice((safePage - 1) * pageSize, safePage * pageSize);
+  useEffect(() => { setPage(1); }, [search, pageSize]);
   const nextFieldId = fields.length ? Math.max(...fields.map((field) => field.fieldId ?? 0)) + 1 : 1;
 
   return (
@@ -109,8 +122,9 @@ function FieldConfiguration() {
         </Button>
       </div>
       {error && <div className="field-page-error">{error}</div>}
+      <div className="field-list-toolbar"><div className="field-search-box"><FiSearch size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search fields..." aria-label="Search fields" /></div><div className="field-page-size"><span>Rows</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select></div></div>
       <FieldList
-        fields={fields}
+        fields={pagedFields}
         loading={loading}
         onEdit={openEdit}
         onDelete={setDeleteField}
@@ -118,6 +132,7 @@ function FieldConfiguration() {
         onToggleRequired={(field, value) => updateFieldStatus(field, "isRequired", value)}
         onToggleActive={(field, value) => updateFieldStatus(field, "isActive", value)}
       />
+      {filteredFields.length > 0 && <div className="field-pagination"><span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredFields.length)} of {filteredFields.length}</span><div><button type="button" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>Previous</button><span>Page {safePage} of {totalPages}</span><button type="button" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>Next</button></div></div>}
       <FieldForm
         open={formOpen}
         field={selectedField}
