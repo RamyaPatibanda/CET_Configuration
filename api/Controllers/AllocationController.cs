@@ -171,7 +171,7 @@ public sealed class AllocationController : ControllerBase
             return BadRequest(new { message = "A running allocation cannot be archived." });
         }
 
-        history.Status = AllocationRunStatus.Archived;
+        history.Status = AllocationRunStatus.Archived.ToString();
         await _runHistory.SaveAsync(history);
         return NoContent();
     }
@@ -355,7 +355,7 @@ public sealed class AllocationController : ControllerBase
             StageCode = decisionArea,
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
-                .Select(condition => new RuleCondition(
+                .Select(condition => new api.Services.Allocation.RuleCondition(
                     condition.FieldDisplayName,
                     condition.Operator,
                     condition.Value))
