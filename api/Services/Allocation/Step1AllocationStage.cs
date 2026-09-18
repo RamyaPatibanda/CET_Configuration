@@ -50,6 +50,7 @@ public sealed class Step1AllocationStage : IAllocationStage
                     AllocatedType = baseType,
                     OriginalAllocatedType = baseType,
                     StepId = 1,
+                    DecisionArea = AllocationConfiguration.PreferenceEvaluation,
                     RuleCode = "STEP1_MERIT_PREFERENCE",
                     Status = "Allocated"
                 });
