@@ -3,12 +3,6 @@ using api.Models.Allocation;
 
 namespace api.Services.Allocation;
 
-/// <summary>
-/// Executes Step 0 using the existing legacy allocation tables and the
-/// authoritative Allocation_Seats_Step0 stored procedure. The stored
-/// procedure also invokes Allocation_Seats_Def_Convert when required.
-/// No replacement allocation tables are created by the modern API.
-/// </summary>
 public sealed class Step0AllocationStage : IAllocationStage
 {
     private readonly LegacyAllocationDAL _legacyAllocation;
@@ -24,7 +18,10 @@ public sealed class Step0AllocationStage : IAllocationStage
         AllocationContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = await _legacyAllocation.ExecuteStep0Async(cancellationToken);
+        var result = await _legacyAllocation.ExecuteStep0Async(
+            context.Candidates,
+            context.RuleGroups,
+            cancellationToken);
 
         foreach (var allocation in result.Allocations)
         {
@@ -44,7 +41,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                 AllocationRunId = context.Run.AllocationRunId,
                 CandidateId = allocation.CandidateId,
                 CollegeId = collegeId,
-                ChoiceCode = checked((int)allocation.ChoiceCode),
+                ChoiceCode = allocation.ChoiceCode,
                 PreferenceNo = allocation.PreferenceNo,
                 CategoryId = allocation.AllocatedCategoryId,
                 AllocatedType = allocation.AllocatedType,
@@ -56,9 +53,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                 DecisionArea = allocation.OriginalAllocatedType is "PH" or "Def" or "Orp"
                     ? AllocationConfiguration.SpecialReservationEligibility
                     : AllocationConfiguration.SeatEligibility,
-                RuleCode = ResolveRuleCode(
-                    context,
-                    allocation.OriginalAllocatedType),
+                RuleCode = ResolveRuleCode(context, allocation.OriginalAllocatedType),
                 Status = "Allocated"
             });
 
@@ -67,7 +62,7 @@ public sealed class Step0AllocationStage : IAllocationStage
                 candidate.ExistingAllotment = new ExistingAllotment
                 {
                     CollegeId = collegeId,
-                    ChoiceCode = checked((int)allocation.ChoiceCode),
+                    ChoiceCode = allocation.ChoiceCode,
                     PreferenceNo = allocation.PreferenceNo,
                     CategoryId = allocation.AllocatedCategoryId,
                     AllocatedType = allocation.AllocatedType,
