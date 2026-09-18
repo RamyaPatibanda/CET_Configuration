@@ -8,7 +8,8 @@ public sealed class AllocationRunHistory
     public string AllocationStep { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string RuleGroupsJson { get; set; } = "[]";
-    public DateTime StartedAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime? StartedAtUtc { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
     public int CandidateCount { get; set; }
     public int DecisionCount { get; set; }
