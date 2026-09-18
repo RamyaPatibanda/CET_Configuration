@@ -258,3 +258,27 @@ BEGIN
     WHERE rc.aRuleConditionGroupId IS NULL;
 END;
 GO
+
+
+IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblAllocationRunHistory
+    (
+        aAllocationRunId UNIQUEIDENTIFIER NOT NULL,
+        tAllocationRunName NVARCHAR(200) NOT NULL,
+        nCapRound INT NOT NULL,
+        tAllocationStep NVARCHAR(50) NOT NULL,
+        tStatus NVARCHAR(30) NOT NULL,
+        tRuleGroupsJson NVARCHAR(MAX) NOT NULL,
+        dtStartedAtUtc DATETIME2 NOT NULL,
+        dtCompletedAtUtc DATETIME2 NULL,
+        nCandidateCount INT NOT NULL CONSTRAINT DF_tblAllocationRunHistory_nCandidateCount DEFAULT (0),
+        nDecisionCount INT NOT NULL CONSTRAINT DF_tblAllocationRunHistory_nDecisionCount DEFAULT (0),
+        tErrorMessage NVARCHAR(2000) NOT NULL CONSTRAINT DF_tblAllocationRunHistory_tErrorMessage DEFAULT (N''),
+        CONSTRAINT PK_tblAllocationRunHistory PRIMARY KEY (aAllocationRunId)
+    );
+
+    CREATE INDEX IX_tblAllocationRunHistory_dtStartedAtUtc
+        ON dbo.tblAllocationRunHistory (dtStartedAtUtc DESC);
+END;
+GO
