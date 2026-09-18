@@ -101,11 +101,13 @@ public sealed class LegacyAllocationDAL
 
                     foreach (var vacancyRow in vacancyRows)
                     {
-                        var vacancy = 0;
+                        var vacancy = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase)
+                            ? vacancyRow.Fem
+                            : vacancyRow.Gen;
                         var vacancyType = string.Empty;
 
-                        // This follows the legacy procedure: special vacancy is
-                        // considered only when the normal Gen/Fem vacancy is zero.
+                        // This follows the legacy procedure: PH/Def/Orphan
+                        // vacancy is considered only when no normal seat is available.
                         if (candidate.IsPh.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
                             vacancy == 0)
                         {
@@ -286,14 +288,14 @@ public sealed class LegacyAllocationDAL
     private static string ResolveAllocatedType(
         AllocationCandidate candidate,
         VacancyRow vacancyRow,
-        int specialVacancy)
+        int vacancy)
     {
         if (candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase) &&
             vacancyRow.Fem > 0 &&
-            specialVacancy > 0)
+            vacancy > 0)
             return "Fem";
 
-        if (vacancyRow.Gen > 0 && specialVacancy > 0)
+        if (vacancyRow.Gen > 0 && vacancy > 0)
             return "Gen";
 
         return string.Empty;
@@ -683,10 +685,17 @@ public sealed class LegacyAllocationDAL
 
                 foreach (var vacancyRow in vacancies)
                 {
-                    var defVacancy = await GetSpecialVacancyAsync(
-                        connection, transaction, preference.ChoiceCode, "Def", cancellationToken);
+                    var normalVacancy = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase)
+                        ? vacancyRow.Fem
+                        : vacancyRow.Gen;
 
-                    var allocatedType = ResolveAllocatedType(candidate, vacancyRow, defVacancy);
+                    var defVacancy = normalVacancy == 0
+                        ? await GetSpecialVacancyAsync(
+                            connection, transaction, preference.ChoiceCode, "Def", cancellationToken)
+                        : 0;
+
+                    var vacancyForAllocation = normalVacancy > 0 ? normalVacancy : defVacancy;
+                    var allocatedType = ResolveAllocatedType(candidate, vacancyRow, vacancyForAllocation);
                     if (string.IsNullOrEmpty(allocatedType))
                         continue;
 
