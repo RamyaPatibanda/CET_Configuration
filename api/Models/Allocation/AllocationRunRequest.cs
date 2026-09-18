@@ -7,8 +7,6 @@ public sealed class AllocationRunRequest
     public int CapRound { get; set; }
     public string AllocationStep { get; set; } = AllocationConfiguration.Step0;
     public List<AllocationRuleGroupRequest> RuleGroups { get; set; } = [];
-    public List<AllocationCandidate> Candidates { get; set; } = [];
-    public List<SeatInventory> Seats { get; set; } = [];
 }
 
 public sealed class AllocationRunResponse
