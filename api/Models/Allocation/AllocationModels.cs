@@ -94,6 +94,8 @@ public sealed class AllocationDecision
     public int CategoryId { get; set; }
     public string AllocatedType { get; set; } = string.Empty;
     public string OriginalAllocatedType { get; set; } = string.Empty;
+    public string VacancyType { get; set; } = string.Empty;
+    public int ChoiceCode { get; set; }
     public int StepId { get; set; }
     public string DecisionArea { get; set; } = string.Empty;
     public string RuleCode { get; set; } = string.Empty;
