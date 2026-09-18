@@ -7,9 +7,10 @@ import {
   FiList,
   FiPlayCircle,
   FiSliders,
+  FiUser,
 } from "react-icons/fi";
 
-function Sidebar() {
+function Sidebar({ isAdmin = false }) {
   const [collapsed, setCollapsed] = useState(false);
 
   const items = [
@@ -17,6 +18,7 @@ function Sidebar() {
     { path: "/fields", label: "Field Configuration", icon: FiSliders },
     { path: "/rules", label: "Rule Configuration", icon: FiList },
     { path: "/allocation", label: "Allocation Run", icon: FiPlayCircle },
+    ...(isAdmin ? [{ path: "/users", label: "User Management", icon: FiUser }] : []),
   ];
 
   return (
