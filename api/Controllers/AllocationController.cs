@@ -387,7 +387,8 @@ public sealed class AllocationController : ControllerBase
 
     private static AllocationRule ToAllocationRule(
         RuleDefinition rule,
-        string decisionArea)
+        string decisionArea,
+        AllocationDecisionConfiguration? configuration = null)
     {
         var orderedConditions = rule.Conditions
             .OrderBy(condition => condition.GroupOrder)
@@ -398,6 +399,9 @@ public sealed class AllocationController : ControllerBase
         {
             Code = rule.RuleName,
             StageCode = decisionArea,
+            DisplayOrder = configuration?.DisplayOrder ?? 0,
+            AllocatedType = configuration?.AllocatedType ?? string.Empty,
+            VacancyType = configuration?.VacancyType ?? string.Empty,
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
                 .Select(condition => new api.Services.Allocation.RuleCondition(
