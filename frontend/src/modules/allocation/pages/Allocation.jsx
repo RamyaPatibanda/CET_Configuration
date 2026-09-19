@@ -267,6 +267,7 @@ function Allocation() {
       setRunning(true);
       setError("");
       setMessage("");
+      await saveAllocationDecisionConfiguration();
       const response = await allocationService.saveDraft(buildRequest());
       const data = response?.data || response;
       setRunId(data.run?.allocationRunId);
@@ -288,6 +289,7 @@ function Allocation() {
       setError("");
       setMessage("");
       setStatus("Running");
+      await saveAllocationDecisionConfiguration();
 
       const response = await allocationService.run(buildRequest());
       const data = response?.data || response;
