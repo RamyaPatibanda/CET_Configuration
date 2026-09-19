@@ -256,6 +256,7 @@ namespace api.DataAccess.RuleConfiguration
                 RuleId = reader.GetInt32(reader.GetOrdinal("aRuleId")),
                 FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
                 FieldDisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                 FieldType = reader.GetString(reader.GetOrdinal("tFieldType")),
                 ConditionLogicalOperator = reader.GetString(reader.GetOrdinal("tLogicalOperator")),
                 Operator = reader.GetString(reader.GetOrdinal("tOperator")),
