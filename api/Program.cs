@@ -32,6 +32,7 @@ builder.Services.AddScoped<AllocationRunHistoryDAL>();
 builder.Services.AddScoped<IRuleEvaluator, RuleEvaluator>();
 builder.Services.AddScoped<LegacyAllocationDAL>();
 builder.Services.AddScoped<Step0CandidateRepository>();
+builder.Services.AddScoped<AllocationDecisionConfigurationDAL>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
