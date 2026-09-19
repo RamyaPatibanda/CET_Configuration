@@ -69,7 +69,7 @@ BEGIN
            r.dtCreatedDate,r.dtModifiedDate
     FROM dbo.tblRule r WHERE r.aRuleId=@aRuleId;
 
-    SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldType,
+    SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldName,fc.tFieldType,
            rc.tLogicalOperator,rc.tOperator,rc.tValue,rc.nConditionOrder,
            COALESCE(rg.nGroupOrder,1) AS nGroupOrder
     FROM dbo.tblRuleCondition rc
