@@ -87,36 +87,21 @@ public sealed class LegacyAllocationDAL
                         var vacancy = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase)
                             ? vacancyRow.Fem
                             : vacancyRow.Gen;
-                        var vacancyType = string.Empty;
 
-                        // This follows the legacy procedure: PH/Def/Orphan
-                        // vacancy is considered only when no normal seat is available.
-                        if (candidate.IsPh.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
-                            vacancy == 0)
-                        {
-                            vacancy = await GetSpecialVacancyAsync(
-                                connection, transaction, preference.ChoiceCode, "PH", cancellationToken);
-                            if (vacancy > 0)
-                                vacancyType = "PH";
-                        }
+                        // Resolve special-reservation vacancy only when the normal
+                        // vacancy for the current preference is exhausted.
+                        var specialVacancy = await ResolveSpecialVacancyAsync(
+                            connection,
+                            transaction,
+                            preference.ChoiceCode,
+                            candidate,
+                            vacancy,
+                            cancellationToken);
 
-                        if (candidate.IsExServicemen.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
-                            vacancy == 0)
-                        {
-                            vacancy = await GetSpecialVacancyAsync(
-                                connection, transaction, preference.ChoiceCode, "Def", cancellationToken);
-                            if (vacancy > 0)
-                                vacancyType = "Def";
-                        }
+                        if (specialVacancy is not null)
+                            vacancy = specialVacancy.Value.Vacancy;
 
-                        if (candidate.IsOrphan.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
-                            vacancy == 0)
-                        {
-                            vacancy = await GetSpecialVacancyAsync(
-                                connection, transaction, preference.ChoiceCode, "Orp", cancellationToken);
-                            if (vacancy > 0)
-                                vacancyType = "Orp";
-                        }
+                        var vacancyType = specialVacancy?.VacancyType ?? string.Empty;
 
                         var allocatedType = ResolveAllocatedType(candidate, vacancyRow, vacancy);
                         if (string.IsNullOrEmpty(allocatedType))
@@ -386,6 +371,46 @@ public sealed class LegacyAllocationDAL
         }
 
         return result;
+    }
+
+    private static async Task<(string VacancyType, int Vacancy)?> ResolveSpecialVacancyAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        long choiceCode,
+        AllocationCandidate candidate,
+        int currentVacancy,
+        CancellationToken cancellationToken)
+    {
+        if (currentVacancy != 0)
+            return null;
+
+        // Preserve the legacy precedence within the current preference:
+        // PH, then Defence, then Orphan. PreferenceNo itself is controlled by
+        // Allocation_CollegePref and is handled by the caller.
+        var reservationTypes = new[]
+        {
+            (IsApplicable: candidate.IsPh.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "PH"),
+            (IsApplicable: candidate.IsExServicemen.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "Def"),
+            (IsApplicable: candidate.IsOrphan.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "Orp")
+        };
+
+        foreach (var reservationType in reservationTypes)
+        {
+            if (!reservationType.IsApplicable)
+                continue;
+
+            var vacancy = await GetSpecialVacancyAsync(
+                connection,
+                transaction,
+                choiceCode,
+                reservationType.Type,
+                cancellationToken);
+
+            if (vacancy > 0)
+                return (reservationType.Type, vacancy);
+        }
+
+        return null;
     }
 
     private static async Task<int> GetSpecialVacancyAsync(
