@@ -19,19 +19,22 @@ public sealed class AllocationController : ControllerBase
     private readonly AllocationRunHistoryDAL _runHistory;
     private readonly LegacyAllocationDAL _legacyAllocation;
     private readonly Step0CandidateRepository _step0CandidateRepository;
+    private readonly AllocationDecisionConfigurationDAL _allocationDecisionConfiguration;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
         ILogger<AllocationController> logger,
         AllocationRunHistoryDAL runHistory,
         LegacyAllocationDAL legacyAllocation,
-        Step0CandidateRepository step0CandidateRepository)
+        Step0CandidateRepository step0CandidateRepository,
+        AllocationDecisionConfigurationDAL allocationDecisionConfiguration)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
         _runHistory = runHistory;
         _legacyAllocation = legacyAllocation;
         _step0CandidateRepository = step0CandidateRepository;
+        _allocationDecisionConfiguration = allocationDecisionConfiguration;
     }
 
     [HttpGet("steps")]
@@ -266,7 +269,7 @@ public sealed class AllocationController : ControllerBase
         return new PreparedAllocation
         {
             Run = run,
-            RuleGroups = BuildRuleGroups(ruleGroups, detailedById),
+            RuleGroups = await BuildRuleGroupsAsync(step.Code, ruleGroups, detailedById, cancellationToken),
             RuleDetails = detailedById
         };
     }
@@ -330,21 +333,34 @@ public sealed class AllocationController : ControllerBase
         };
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> BuildRuleGroups(
+    private async Task<IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>>> BuildRuleGroupsAsync(
+        string stepCode,
         IEnumerable<AllocationRuleGroupRequest> groups,
-        IReadOnlyDictionary<int, RuleDefinition> rules)
+        IReadOnlyDictionary<int, RuleDefinition> rules,
+        CancellationToken cancellationToken)
     {
-        var result = new Dictionary<string, IReadOnlyList<AllocationRule>>(
-            StringComparer.OrdinalIgnoreCase);
-
+        var result = new Dictionary<string, IReadOnlyList<AllocationRule>>(StringComparer.OrdinalIgnoreCase);
         foreach (var group in groups)
         {
+            var configs = group.Type.Equals(AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase)
+                ? await _allocationDecisionConfiguration.GetByRuleIdsAsync(stepCode, group.Type, group.RuleIds, cancellationToken)
+                : [];
+
+            if (group.Type.Equals(AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase))
+            {
+                var missing = group.RuleIds.Where(id => configs.All(c => c.RuleId != id)).ToList();
+                if (missing.Count > 0)
+                    throw new InvalidOperationException($"Seat Allocation rules require an allocation result configuration. Missing rule(s): {string.Join(", ", missing)}.");
+            }
+
             result[group.Type] = group.RuleIds
                 .Where(rules.ContainsKey)
-                .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
+                .Select(ruleId => ToAllocationRule(
+                    rules[ruleId], group.Type,
+                    configs.FirstOrDefault(c => c.RuleId == ruleId)))
+                .OrderBy(rule => rule.DisplayOrder == 0 ? int.MaxValue : rule.DisplayOrder)
                 .ToList();
         }
-
         return result;
     }
 
