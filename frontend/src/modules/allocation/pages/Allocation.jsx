@@ -245,6 +245,12 @@ function Allocation() {
     if (!selectedRuleCount) {
       return "Validation failed. Please assign at least one rule to a decision area.";
     }
+    if (allocationStep === "STEP_0") {
+      const seatRuleIds = selectedGroups.get("SEAT_ALLOCATION")?.ruleIds || [];
+      if (seatRuleIds.length && (allocationDecisions.length !== seatRuleIds.length || allocationDecisions.some((item) => !item.allocatedType))) {
+        return "Validation failed. Configure an allocation result for every Seat Allocation rule.";
+      }
+    }
 
     return "";
   };
@@ -399,6 +405,9 @@ function Allocation() {
               setOpenRuleGroup={setOpenRuleGroup}
               toggleRule={toggleRule}
               disabled={!canEdit}
+              allocationDecisions={allocationDecisions}
+              updateAllocationDecision={updateAllocationDecision}
+              moveAllocationDecision={moveAllocationDecision}
             />
           )}
         </section>
