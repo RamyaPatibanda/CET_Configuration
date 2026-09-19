@@ -284,6 +284,34 @@ END;
 GO
 
 
+/* Configurable allocation decisions. Conditions remain in tblRule/tblRuleCondition. */
+IF OBJECT_ID(N'dbo.tblAllocationDecision', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblAllocationDecision
+    (
+        aAllocationDecisionId INT IDENTITY(1,1) NOT NULL,
+        tStepCode NVARCHAR(50) NOT NULL,
+        tDecisionAreaCode NVARCHAR(100) NOT NULL,
+        aRuleId INT NOT NULL,
+        nDisplayOrder INT NOT NULL,
+        tAllocatedType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationDecision_tAllocatedType DEFAULT (N''),
+        tVacancyType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationDecision_tVacancyType DEFAULT (N''),
+        tResultJson NVARCHAR(MAX) NULL,
+        bIsActive BIT NOT NULL CONSTRAINT DF_tblAllocationDecision_bIsActive DEFAULT (1),
+        dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblAllocationDecision_dtCreatedDate DEFAULT (GETDATE()),
+        dtModifiedDate DATETIME NULL,
+        CONSTRAINT PK_tblAllocationDecision PRIMARY KEY (aAllocationDecisionId),
+        CONSTRAINT FK_tblAllocationDecision_tblRule FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule(aRuleId),
+        CONSTRAINT CK_tblAllocationDecision_nDisplayOrder CHECK (nDisplayOrder > 0),
+        CONSTRAINT UQ_tblAllocationDecision_Rule UNIQUE (tStepCode, tDecisionAreaCode, aRuleId),
+        CONSTRAINT UQ_tblAllocationDecision_Order UNIQUE (tStepCode, tDecisionAreaCode, nDisplayOrder)
+    );
+
+    CREATE INDEX IX_tblAllocationDecision_Area
+        ON dbo.tblAllocationDecision(tStepCode, tDecisionAreaCode, nDisplayOrder);
+END;
+GO
+
 /* Allocation run lifecycle and persisted allocation results. */
 IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NOT NULL
 BEGIN
