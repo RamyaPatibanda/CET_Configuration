@@ -204,12 +204,8 @@ public sealed class LegacyAllocationDAL
         AllocationCandidate candidate,
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups)
     {
-        if (!candidate.IsOms.Equals("N", StringComparison.OrdinalIgnoreCase) ||
-            !candidate.IsNri.Equals("N", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        // PH / Defence / Orphan eligibility is configured as a reusable rule.
-        // Do not hard-code that OR expression in the allocation engine.
+        // All Step 0 candidate eligibility comes from the configured rule.
+        // Do not hard-code IsOMS, IsNRI, PH, Defence, or Orphan conditions here.
         return MatchesArea(
             ruleGroups,
             AllocationConfiguration.CandidateQualification,
