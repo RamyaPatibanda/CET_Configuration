@@ -103,15 +103,12 @@ public sealed class LegacyAllocationDAL
 
                         var vacancyType = specialVacancy?.VacancyType ?? string.Empty;
 
-                        var allocatedType = ResolveAllocatedType(candidate, vacancyRow, vacancy);
-                        if (string.IsNullOrEmpty(allocatedType))
+                        var allocationRule = ResolveAllocationRule(ruleGroups, candidate, vacancyRow, vacancy, vacancyType);
+                        if (allocationRule is null)
                             continue;
 
-                        var eligible = candidate.EffectiveCategoryId > 1 ||
-                                       (candidate.EffectiveCategoryId == 1 &&
-                                        candidate.IsEligibleForOpen.Equals("Y", StringComparison.OrdinalIgnoreCase));
-
-                        if (!eligible)
+                        var allocatedType = allocationRule.AllocatedType;
+                        if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
                             continue;
 
                         if (existing is not null)
@@ -122,9 +119,7 @@ public sealed class LegacyAllocationDAL
                                 connection, transaction, existing.AllocationId, cancellationToken);
                         }
 
-                        var seqId = ResolveSeqId(
-                            allocatedType,
-                            candidate.EffectiveCategoryId);
+                        var seqId = allocationRule.DisplayOrder;
 
                         var inserted = await InsertAllocationAsync(
                             connection,
@@ -208,26 +203,31 @@ public sealed class LegacyAllocationDAL
         return rules.Any(rule => _ruleEvaluator.Matches(rule, candidate));
     }
 
-    private static string ResolveAllocatedType(
+    private AllocationRule? ResolveAllocationRule(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         AllocationCandidate candidate,
         VacancyRow vacancyRow,
-        int vacancy)
+        int vacancy,
+        string vacancyType)
     {
-        if (candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase) &&
-            vacancyRow.Fem > 0 &&
-            vacancy > 0)
-            return "Fem";
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.SeatAllocation, out var rules) || rules.Count == 0)
+            return null;
 
-        if (vacancyRow.Gen > 0 && vacancy > 0)
-            return "Gen";
-
-        return string.Empty;
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Gender"] = candidate.Gender, ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
+            ["PreviousCategoryID"] = candidate.PreviousCategoryId.ToString(),
+            ["IsEligibleForOpen"] = candidate.IsEligibleForOpen,
+            ["FinalIsPh"] = candidate.IsPh, ["FinalIsExServicemen"] = candidate.IsExServicemen,
+            ["FinalIsOrphan"] = candidate.IsOrphan, ["Gen"] = vacancyRow.Gen.ToString(),
+            ["Fem"] = vacancyRow.Fem.ToString(), ["Vacancy"] = vacancy.ToString(),
+            ["VacancyType"] = vacancyType, ["QuotaID"] = vacancyRow.QuotaId.ToString(),
+            ["MinorityId"] = vacancyRow.MinorityId?.ToString(),
+            ["IsSpecialReservation"] = (!string.IsNullOrWhiteSpace(vacancyType)).ToString()
+        };
+        return rules.OrderBy(r => r.DisplayOrder)
+            .FirstOrDefault(rule => _ruleEvaluator.Matches(rule, values) && !string.IsNullOrWhiteSpace(rule.AllocatedType));
     }
-
-    private static int ResolveSeqId(string allocatedType, int categoryId) =>
-        allocatedType == "Gen"
-            ? categoryId == 1 ? 1 : 3
-            : categoryId == 1 ? 2 : 4;
 
     private static async Task<LegacyAllocationRow?> GetActiveAllocationAsync(
         SqlConnection connection,
