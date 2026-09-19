@@ -64,8 +64,8 @@ public sealed class Step0AllocationStage : IAllocationStage
                         ? allocation.OriginalAllocatedType
                         : string.Empty,
                     StepId = allocation.StepId,
-                    DecisionArea = AllocationConfiguration.CandidateQualification,
-                    RuleCode = ResolveRuleCode(context, allocation.OriginalAllocatedType),
+                    DecisionArea = AllocationConfiguration.SeatAllocation,
+                    RuleCode = allocation.RuleCode,
                     Status = "Allocated"
                 });
             }
