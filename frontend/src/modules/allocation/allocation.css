@@ -856,3 +856,13 @@
   font-weight: 800;
   letter-spacing: .04em;
 }
+
+
+/* Step 0 configurable allocation decisions */
+.allocation-selected-rule { gap: 10px; align-items: center; }
+.allocation-drag-handle { flex: 0 0 auto; cursor: grab; opacity: .65; }
+.allocation-result-controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.allocation-result-controls select { min-width: 125px; }
+.allocation-remove-rule { border: 0; background: transparent; cursor: pointer; padding: 6px; opacity: .7; }
+.allocation-remove-rule:hover { opacity: 1; }
+@media (max-width: 900px) { .allocation-result-controls { margin-left: 0; width: 100%; } .allocation-selected-rule { flex-wrap: wrap; } }
