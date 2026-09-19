@@ -82,15 +82,4 @@ public sealed class Step0AllocationStage : IAllocationStage
         });
     }
 
-    private static string ResolveRuleCode(
-        AllocationContext context,
-        string originalAllocatedType)
-    {
-        var area = AllocationConfiguration.CandidateQualification;
-
-        if (!context.RuleGroups.TryGetValue(area, out var rules))
-            return string.Empty;
-
-        return rules.FirstOrDefault()?.Code ?? string.Empty;
-    }
 }
