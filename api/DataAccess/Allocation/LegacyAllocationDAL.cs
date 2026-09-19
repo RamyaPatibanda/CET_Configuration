@@ -84,9 +84,7 @@ public sealed class LegacyAllocationDAL
 
                     foreach (var vacancyRow in vacancyRows)
                     {
-                        var vacancy = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase)
-                            ? vacancyRow.Fem
-                            : vacancyRow.Gen;
+                        var vacancy = Math.Max(vacancyRow.Gen, vacancyRow.Fem);
 
                         // Resolve special-reservation vacancy only when the normal
                         // vacancy for the current preference is exhausted.
@@ -108,6 +106,11 @@ public sealed class LegacyAllocationDAL
                             continue;
 
                         var allocatedType = allocationRule.AllocatedType;
+                        vacancy = allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase)
+                            ? vacancyRow.Fem
+                            : allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase)
+                                ? vacancyRow.Gen
+                                : 0;
                         if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
                             continue;
 
