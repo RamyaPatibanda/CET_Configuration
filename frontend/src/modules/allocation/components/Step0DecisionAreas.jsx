@@ -21,6 +21,9 @@ function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup
             setOpenRuleGroup={setOpenRuleGroup}
             toggleRule={toggleRule}
             disabled={disabled}
+            allocationDecisions={allocationDecisions}
+            updateAllocationDecision={updateAllocationDecision}
+            moveAllocationDecision={moveAllocationDecision}
           />
         );
       })}
