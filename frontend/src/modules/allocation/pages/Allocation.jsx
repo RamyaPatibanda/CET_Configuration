@@ -93,11 +93,6 @@ function Allocation() {
 
         setSteps(stepItems);
         setRules(ruleItems);
-        if (firstAvailableStep?.code === "STEP_0") {
-          const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
-          const decisionItems = getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
-          setAllocationDecisions(decisionItems);
-        }
 
         if (existingRun) {
           let savedGroups = [];
@@ -143,6 +138,12 @@ function Allocation() {
         if (firstAvailableStep) {
           setAllocationStep(firstAvailableStep.code);
           setRuleGroups(createRuleGroups(firstAvailableStep.code));
+          if (firstAvailableStep.code === "STEP_0") {
+            try {
+              const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
+              setAllocationDecisions(getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
+            } catch { setAllocationDecisions([]); }
+          }
         }
       } catch (e) {
         setError(e.message || "Unable to load allocation configuration.");
@@ -162,6 +163,13 @@ function Allocation() {
     if (!step.enabled || !canEdit) return;
     setAllocationStep(step.code);
     setRuleGroups(createRuleGroups(step.code));
+    if (step.code === "STEP_0") {
+      allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION")
+        .then((response) => setAllocationDecisions(getItems(response).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))))
+        .catch(() => setAllocationDecisions([]));
+    } else {
+      setAllocationDecisions([]);
+    }
     markEdited();
   };
 
