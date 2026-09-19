@@ -28,6 +28,8 @@ const API_ENDPOINTS = {
     RUN: "/api/allocation/run",
     SIMULATE: "/api/allocation/simulate",
     HISTORY: "/api/allocation/history",
+    DECISIONS: (stepCode, areaCode) => `/api/allocation/decisions?stepCode=${encodeURIComponent(stepCode)}&areaCode=${encodeURIComponent(areaCode)}`,
+    SAVE_DECISIONS: "/api/allocation/decisions",
     ARCHIVE: (runId) => `/api/allocation/${runId}/archive`,
     BY_ID: (runId) => `/api/allocation/${runId}`,
   },
