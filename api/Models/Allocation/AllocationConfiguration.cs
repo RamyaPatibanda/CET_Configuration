@@ -22,6 +22,7 @@ public static class AllocationConfiguration
     public const string Step1 = "STEP_1";
 
     public const string CandidateQualification = "CANDIDATE_QUALIFICATION";
+    public const string SeatAllocation = "SEAT_ALLOCATION";
     public const string SpecialReservationEligibility = "SPECIAL_RESERVATION_ELIGIBILITY";
     public const string PreferenceEvaluation = "PREFERENCE_EVALUATION";
     public const string SeatEligibility = "SEAT_ELIGIBILITY";
@@ -43,6 +44,12 @@ public static class AllocationConfiguration
                     Code = CandidateQualification,
                     Name = "Candidate Eligibility",
                     Description = "Determine the candidates that enter the Step 0 processing pool."
+                },
+                new()
+                {
+                    Code = SeatAllocation,
+                    Name = "Seat Allocation",
+                    Description = "Evaluate ordered allocation rules and apply their configured allocation result."
                 }
             ]
         },
