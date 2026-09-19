@@ -131,6 +131,7 @@ public sealed class LegacyAllocationDAL
                             allocatedType,
                             seqId,
                             cancellationToken);
+                        inserted.RuleCode = allocationRule.Code;
 
                         if (!string.IsNullOrEmpty(vacancyType))
                         {
@@ -690,6 +691,7 @@ public sealed class LegacyAllocationRow
     public int AllocatedCategoryId { get; init; }
     public int StudentCategoryId { get; init; }
     public string OriginalAllocatedType { get; init; } = string.Empty;
+    public string RuleCode { get; set; } = string.Empty;
     public int AllocatedMinorityId { get; init; }
     public int StudentMinorityId { get; init; }
     public int SeqId { get; init; }
