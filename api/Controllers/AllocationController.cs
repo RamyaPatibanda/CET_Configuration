@@ -41,6 +41,27 @@ public sealed class AllocationController : ControllerBase
     public ActionResult<IReadOnlyList<AllocationStepDefinition>> GetSteps() =>
         Ok(AllocationConfiguration.GetSteps());
 
+    [HttpGet("decisions")]
+    public async Task<ActionResult<IReadOnlyList<AllocationDecisionConfiguration>>> GetDecisionConfigurations(
+        [FromQuery] string stepCode, [FromQuery] string areaCode, CancellationToken cancellationToken)
+    {
+        if (!AllocationConfiguration.IsDecisionAreaValid(stepCode, areaCode))
+            return BadRequest(new { message = "Invalid allocation decision area." });
+        return Ok(await _allocationDecisionConfiguration.GetAsync(stepCode, areaCode, cancellationToken));
+    }
+
+    [HttpPost("decisions")]
+    public async Task<IActionResult> SaveDecisionConfigurations(
+        [FromBody] SaveAllocationDecisionRequest request, CancellationToken cancellationToken)
+    {
+        if (!AllocationConfiguration.IsDecisionAreaValid(request.StepCode, request.DecisionAreaCode))
+            return BadRequest(new { message = "Invalid allocation decision area." });
+        if (request.Decisions.Any(x => x.RuleId <= 0 || x.DisplayOrder <= 0 || string.IsNullOrWhiteSpace(x.AllocatedType)))
+            return BadRequest(new { message = "Each allocation decision requires a rule, display order and allocation result." });
+        await _allocationDecisionConfiguration.SaveAsync(request, cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(
         CancellationToken cancellationToken)
