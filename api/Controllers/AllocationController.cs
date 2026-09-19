@@ -287,10 +287,20 @@ public sealed class AllocationController : ControllerBase
             RuleSetVersionId = BuildRuleSetVersionId(step.Code, ruleGroups)
         };
 
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> builtRuleGroups;
+        try
+        {
+            builtRuleGroups = await BuildRuleGroupsAsync(step.Code, ruleGroups, detailedById, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return PreparedAllocation.Fail(ex.Message);
+        }
+
         return new PreparedAllocation
         {
             Run = run,
-            RuleGroups = await BuildRuleGroupsAsync(step.Code, ruleGroups, detailedById, cancellationToken),
+            RuleGroups = builtRuleGroups,
             RuleDetails = detailedById
         };
     }
