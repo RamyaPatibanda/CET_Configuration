@@ -405,7 +405,7 @@ public sealed class AllocationController : ControllerBase
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
                 .Select(condition => new api.Services.Allocation.RuleCondition(
-                    condition.FieldDisplayName,
+                    condition.FieldName,
                     condition.Operator,
                     condition.Value,
                     condition.ConditionLogicalOperator,
