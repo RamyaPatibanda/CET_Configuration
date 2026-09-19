@@ -54,6 +54,7 @@ function Allocation() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [allocationDecisions, setAllocationDecisions] = useState([]);
   const [searchParams] = useSearchParams();
   const editRunId = searchParams.get("runId");
 
@@ -92,6 +93,11 @@ function Allocation() {
 
         setSteps(stepItems);
         setRules(ruleItems);
+        if (firstAvailableStep?.code === "STEP_0") {
+          const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
+          const decisionItems = getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+          setAllocationDecisions(decisionItems);
+        }
 
         if (existingRun) {
           let savedGroups = [];
@@ -119,6 +125,12 @@ function Allocation() {
           setCapRound(existingRun.capRound || 1);
           setAllocationStep(savedStep?.code || existingRun.allocationStep);
           setRuleGroups(groups);
+          if (savedStep?.code === "STEP_0") {
+            try {
+              const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
+              setAllocationDecisions(getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
+            } catch { setAllocationDecisions([]); }
+          }
           setStatus(normalizeStatus(existingRun.status, "Draft"));
           setResult(null);
           setMessage(existingRun.status === "Draft"
@@ -155,17 +167,48 @@ function Allocation() {
 
   const toggleRule = (groupType, ruleId) => {
     if (!canEdit) return;
-
-    setRuleGroups((current) =>
-      current.map((group) => {
-        if (group.type !== groupType) return group;
-        const ruleIds = group.ruleIds.includes(ruleId)
-          ? group.ruleIds.filter((id) => id !== ruleId)
-          : [...group.ruleIds, ruleId];
-        return { ...group, ruleIds };
-      })
-    );
+    setRuleGroups((current) => current.map((group) => {
+      if (group.type !== groupType) return group;
+      const selected = group.ruleIds.includes(ruleId);
+      const ruleIds = selected ? group.ruleIds.filter((id) => id !== ruleId) : [...group.ruleIds, ruleId];
+      return { ...group, ruleIds };
+    }));
+    if (groupType === "SEAT_ALLOCATION") {
+      setAllocationDecisions((current) => {
+        if (current.some((item) => item.ruleId === ruleId))
+          return current.filter((item) => item.ruleId !== ruleId).map((item, index) => ({ ...item, displayOrder: index + 1 }));
+        return [...current, { ruleId, displayOrder: current.length + 1, allocatedType: "", vacancyType: "", resultJson: "" }];
+      });
+    }
     markEdited();
+  };
+
+  const updateAllocationDecision = (ruleId, property, value) => {
+    if (!canEdit) return;
+    setAllocationDecisions((current) => current.map((item) => item.ruleId === ruleId ? { ...item, [property]: value } : item));
+    markEdited();
+  };
+
+  const moveAllocationDecision = (from, to) => {
+    if (!canEdit || from < 0 || to < 0 || from >= allocationDecisions.length || to >= allocationDecisions.length) return;
+    setAllocationDecisions((current) => {
+      const next = [...current]; const [moved] = next.splice(from, 1); next.splice(to, 0, moved);
+      return next.map((item, index) => ({ ...item, displayOrder: index + 1 }));
+    });
+    markEdited();
+  };
+
+  const saveAllocationDecisionConfiguration = async () => {
+    if (allocationStep !== "STEP_0") return;
+    const selected = ruleGroups.find((group) => group.type === "SEAT_ALLOCATION")?.ruleIds || [];
+    if (!selected.length) return;
+    if (allocationDecisions.length !== selected.length || allocationDecisions.some((item) => !item.allocatedType)) {
+      throw new Error("Configure an allocation result for every Seat Allocation rule.");
+    }
+    await allocationService.saveDecisionConfigurations({
+      stepCode: "STEP_0", decisionAreaCode: "SEAT_ALLOCATION",
+      decisions: allocationDecisions.map((item, index) => ({ ...item, displayOrder: index + 1 }))
+    });
   };
 
   const buildRequest = () => ({
