@@ -15,12 +15,16 @@ public sealed class AllocationRule
     public string Code { get; set; } = string.Empty;
     public string StageCode { get; set; } = string.Empty;
     public string LogicalOperator { get; set; } = "AND";
+    public string AllocatedType { get; set; } = string.Empty;
+    public string VacancyType { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
     public List<RuleCondition> Conditions { get; set; } = [];
 }
 
 public interface IRuleEvaluator
 {
     bool Matches(AllocationRule rule, AllocationCandidate candidate);
+    bool Matches(AllocationRule rule, IReadOnlyDictionary<string, string?> values);
 }
 
 public sealed class RuleEvaluator : IRuleEvaluator
@@ -38,19 +42,26 @@ public sealed class RuleEvaluator : IRuleEvaluator
         // Conditions inside a group use the logical operator defined by the
         // first condition in that group. Groups are combined with AND.
         // This represents: A AND B AND (C OR D OR E).
-        return groups.All(group => EvaluateGroup(group.ToList(), candidate));
+        return groups.All(group => EvaluateGroup(group.ToList(), BuildCandidateValues(candidate)));
+    }
+
+    public bool Matches(AllocationRule rule, IReadOnlyDictionary<string, string?> values)
+    {
+        if (rule.Conditions.Count == 0) return false;
+        var groups = rule.Conditions.GroupBy(c => c.GroupOrder).OrderBy(g => g.Key).ToList();
+        return groups.All(group => EvaluateGroup(group.ToList(), values));
     }
 
     private static bool EvaluateGroup(
         IReadOnlyList<RuleCondition> conditions,
-        AllocationCandidate candidate)
+        IReadOnlyDictionary<string, string?> values)
     {
         if (conditions.Count == 0)
             return false;
 
         var results = conditions
             .OrderBy(condition => condition.ConditionOrder)
-            .Select(condition => Evaluate(condition, candidate))
+            .Select(condition => Evaluate(condition, values))
             .ToList();
 
         var logicalOperator = conditions
@@ -63,9 +74,9 @@ public sealed class RuleEvaluator : IRuleEvaluator
             : results.All(result => result);
     }
 
-    private static bool Evaluate(RuleCondition condition, AllocationCandidate candidate)
+    private static bool Evaluate(RuleCondition condition, IReadOnlyDictionary<string, string?> values)
     {
-        var actual = GetFieldValue(condition.Field, candidate);
+        values.TryGetValue(condition.Field, out var actual);
         return condition.Operator.ToUpperInvariant() switch
         {
             "EQUALS" or "=" => string.Equals(actual, condition.Value, StringComparison.OrdinalIgnoreCase),
@@ -78,19 +89,13 @@ public sealed class RuleEvaluator : IRuleEvaluator
         };
     }
 
-    private static string? GetFieldValue(string field, AllocationCandidate c) => field switch
+    private static Dictionary<string, string?> BuildCandidateValues(AllocationCandidate c) => new(StringComparer.OrdinalIgnoreCase)
     {
-        "IsOMS" => c.IsOms,
-        "IsNRI" => c.IsNri,
-        "FinalIsPh" => c.IsPh,
-        "FinalIsExServicemen" => c.IsExServicemen,
-        "FinalIsOrphan" => c.IsOrphan,
-        "IsEligibleForOpen" => c.IsEligibleForOpen,
-        "Gender" => c.Gender,
-        "CategoryID" => c.EffectiveCategoryId.ToString(),
-        "MeritNo" => c.MeritNo.ToString(),
-        "ExServicemenMeritNo" => c.ExServicemenMeritNo.ToString(),
-        _ => null
+        ["IsOMS"] = c.IsOms, ["IsNRI"] = c.IsNri, ["FinalIsPh"] = c.IsPh,
+        ["FinalIsExServicemen"] = c.IsExServicemen, ["FinalIsOrphan"] = c.IsOrphan,
+        ["IsEligibleForOpen"] = c.IsEligibleForOpen, ["Gender"] = c.Gender,
+        ["CategoryID"] = c.EffectiveCategoryId.ToString(), ["PreviousCategoryID"] = c.PreviousCategoryId.ToString(),
+        ["MeritNo"] = c.MeritNo.ToString(), ["ExServicemenMeritNo"] = c.ExServicemenMeritNo.ToString()
     };
 
     private static bool CompareNumbers(
