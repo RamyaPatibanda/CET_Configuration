@@ -1,17 +1,15 @@
-{
-  "decisionAreas": [
-    {
-      "value": "CANDIDATE_QUALIFICATION",
-      "label": "Candidate Eligibility",
-      "results": []
-    },
-    {
-      "value": "SEAT_ALLOCATION",
-      "label": "Seat Allocation",
-      "results": [
-        { "value": "Fem", "label": "Female seat (Fem)" },
-        { "value": "Gen", "label": "General seat (Gen)" }
-      ]
-    }
-  ]
-}
+[
+  {
+    "value": "CANDIDATE_QUALIFICATION",
+    "label": "Candidate Eligibility",
+    "results": []
+  },
+  {
+    "value": "SEAT_ALLOCATION",
+    "label": "Seat Allocation",
+    "results": [
+      { "value": "Fem", "label": "Female seat (Fem)" },
+      { "value": "Gen", "label": "General seat (Gen)" }
+    ]
+  }
+]
