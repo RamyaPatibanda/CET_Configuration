@@ -14,14 +14,6 @@ const allocationService = {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.DRAFT, request);
   },
 
-  async getDecisionConfigurations(stepCode, areaCode) {
-    return httpClient.get(API_ENDPOINTS.ALLOCATION.DECISIONS(stepCode, areaCode));
-  },
-
-  async saveDecisionConfigurations(request) {
-    return httpClient.post(API_ENDPOINTS.ALLOCATION.SAVE_DECISIONS, request);
-  },
-
   async run(request) {
     return httpClient.post(API_ENDPOINTS.ALLOCATION.RUN, request);
   },
