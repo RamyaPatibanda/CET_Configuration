@@ -353,3 +353,83 @@ BEGIN
         ON dbo.tblAllocationRunDecision(aAllocationRunId, nCandidateId);
 END;
 GO
+
+
+/* Configurable IF/THEN decision rows.
+   These conditions are intentionally separate from tblRuleCondition because
+   operands may come from allocation context/calculated values such as Gender,
+   Fem and Vacancy rather than tblFieldConfiguration. */
+IF OBJECT_ID(N'dbo.tblRuleDecision', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblRuleDecision
+    (
+        aRuleDecisionId INT IDENTITY(1,1) NOT NULL,
+        aRuleId INT NOT NULL,
+        tDecisionName NVARCHAR(200) NOT NULL,
+        nDecisionOrder INT NOT NULL,
+        bIsActive BIT NOT NULL CONSTRAINT DF_tblRuleDecision_bIsActive DEFAULT (1),
+        dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblRuleDecision_dtCreatedDate DEFAULT (GETDATE()),
+        dtModifiedDate DATETIME NULL,
+        CONSTRAINT PK_tblRuleDecision PRIMARY KEY (aRuleDecisionId),
+        CONSTRAINT FK_tblRuleDecision_tblRule FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule(aRuleId),
+        CONSTRAINT CK_tblRuleDecision_nDecisionOrder CHECK (nDecisionOrder > 0),
+        CONSTRAINT UQ_tblRuleDecision_Rule_Order UNIQUE (aRuleId, nDecisionOrder)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.tblRuleDecisionCondition', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblRuleDecisionCondition
+    (
+        aRuleDecisionConditionId INT IDENTITY(1,1) NOT NULL,
+        aRuleDecisionId INT NOT NULL,
+        tOperandType NVARCHAR(30) NOT NULL,
+        tOperandKey NVARCHAR(200) NOT NULL,
+        tLogicalOperator NVARCHAR(10) NOT NULL CONSTRAINT DF_tblRuleDecisionCondition_tLogicalOperator DEFAULT ('AND'),
+        tOperator NVARCHAR(50) NOT NULL,
+        tValue NVARCHAR(1000) NOT NULL,
+        nConditionOrder INT NOT NULL,
+        dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblRuleDecisionCondition_dtCreatedDate DEFAULT (GETDATE()),
+        CONSTRAINT PK_tblRuleDecisionCondition PRIMARY KEY (aRuleDecisionConditionId),
+        CONSTRAINT FK_tblRuleDecisionCondition_tblRuleDecision FOREIGN KEY (aRuleDecisionId)
+            REFERENCES dbo.tblRuleDecision(aRuleDecisionId) ON DELETE CASCADE,
+        CONSTRAINT CK_tblRuleDecisionCondition_tOperandType CHECK (tOperandType IN ('FIELD', 'CONTEXT')),
+        CONSTRAINT CK_tblRuleDecisionCondition_tLogicalOperator CHECK (tLogicalOperator IN ('AND', 'OR')),
+        CONSTRAINT CK_tblRuleDecisionCondition_nConditionOrder CHECK (nConditionOrder > 0),
+        CONSTRAINT UQ_tblRuleDecisionCondition_Decision_Order UNIQUE (aRuleDecisionId, nConditionOrder)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.tblRuleDecisionResult', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblRuleDecisionResult
+    (
+        aRuleDecisionResultId INT IDENTITY(1,1) NOT NULL,
+        aRuleDecisionId INT NOT NULL,
+        tResultKey NVARCHAR(200) NOT NULL,
+        tResultValue NVARCHAR(1000) NOT NULL,
+        tValueKind NVARCHAR(30) NOT NULL CONSTRAINT DF_tblRuleDecisionResult_tValueKind DEFAULT ('text'),
+        nResultOrder INT NOT NULL CONSTRAINT DF_tblRuleDecisionResult_nResultOrder DEFAULT (1),
+        dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblRuleDecisionResult_dtCreatedDate DEFAULT (GETDATE()),
+        CONSTRAINT PK_tblRuleDecisionResult PRIMARY KEY (aRuleDecisionResultId),
+        CONSTRAINT FK_tblRuleDecisionResult_tblRuleDecision FOREIGN KEY (aRuleDecisionId)
+            REFERENCES dbo.tblRuleDecision(aRuleDecisionId) ON DELETE CASCADE,
+        CONSTRAINT CK_tblRuleDecisionResult_nResultOrder CHECK (nResultOrder > 0),
+        CONSTRAINT UQ_tblRuleDecisionResult_Decision_Order UNIQUE (aRuleDecisionId, nResultOrder)
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_tblRuleDecisionCondition_Operand'
+      AND object_id = OBJECT_ID(N'dbo.tblRuleDecisionCondition')
+)
+BEGIN
+    CREATE INDEX IX_tblRuleDecisionCondition_Operand
+        ON dbo.tblRuleDecisionCondition(tOperandType, tOperandKey);
+END;
+GO
