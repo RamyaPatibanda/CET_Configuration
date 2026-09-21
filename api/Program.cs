@@ -1,4 +1,5 @@
 using System.Text;
+using api.Configuration;
 using api.BusinessLogic.Auth;
 using api.BusinessLogic.FieldConfiguration;
 using api.BusinessLogic.RuleConfiguration;
@@ -27,6 +28,7 @@ builder.Services.AddScoped<IFieldConfigurationDAL, FieldConfigurationDAL>();
 builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
 
 builder.Services.AddScoped<IRuleConfigurationDAL, RuleConfigurationDAL>();
+builder.Services.AddScoped<IRuleDecisionConfiguration, RuleDecisionConfiguration>();
 builder.Services.AddScoped<IRuleConfigurationBL, RuleConfigurationBL>();
 builder.Services.AddScoped<AllocationRunHistoryDAL>();
 builder.Services.AddScoped<IRuleEvaluator, RuleEvaluator>();
