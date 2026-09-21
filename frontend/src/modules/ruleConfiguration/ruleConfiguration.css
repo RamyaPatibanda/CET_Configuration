@@ -625,3 +625,38 @@
   height:100%;
   overflow:hidden
 }
+
+
+.rule-outcome-section {
+  margin: 22px 0 18px;
+  padding: 18px;
+  border: 1px solid rgba(120, 145, 175, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.rule-outcome-header {
+  margin-bottom: 14px;
+}
+
+.rule-outcome-header h3 {
+  margin: 4px 0 4px;
+}
+
+.rule-outcome-header p {
+  margin: 0;
+  color: #5f6b7a;
+  font-size: 13px;
+}
+
+.rule-outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .rule-outcome-grid {
+    grid-template-columns: 1fr;
+  }
+}
