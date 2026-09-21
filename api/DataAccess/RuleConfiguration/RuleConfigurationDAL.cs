@@ -27,7 +27,7 @@ namespace api.DataAccess.RuleConfiguration
             {
                 var rules = new List<RuleDefinition>();
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand("sproc_GetRules", connection);
+                await using var command = CreateCommand("sproc_GetRulesV2", connection);
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
 
@@ -51,7 +51,7 @@ namespace api.DataAccess.RuleConfiguration
             {
                 RuleDefinition? rule = null;
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand("sproc_GetRule", connection);
+                await using var command = CreateCommand("sproc_GetRuleV2", connection);
                 command.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
                 await connection.OpenAsync();
                 await using var reader = await command.ExecuteReaderAsync();
@@ -88,8 +88,10 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand("sproc_CreateRule", connection);
+                await using var command = CreateCommand("sproc_CreateRuleV2", connection);
                 AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
+                command.Parameters.Add("@tDecisionAreaCode", SqlDbType.NVarChar, 100).Value = request.DecisionAreaCode ?? string.Empty;
+                command.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = SerializeOutcome(request.Outcome);
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync());
@@ -106,7 +108,7 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
-                await using var command = CreateCommand("sproc_UpdateRule", connection);
+                await using var command = CreateCommand("sproc_UpdateRuleV2", connection);
                 AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
@@ -225,6 +227,11 @@ namespace api.DataAccess.RuleConfiguration
             command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = active;
         }
 
+        private static string SerializeOutcome(RuleOutcome outcome)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(outcome ?? new RuleOutcome());
+        }
+
         private static string SerializeConditions(List<RuleConditionRequest> conditions)
         {
             return System.Text.Json.JsonSerializer.Serialize(
@@ -243,6 +250,8 @@ namespace api.DataAccess.RuleConfiguration
                 Priority = reader.GetInt32(reader.GetOrdinal("nPriority")),
                 IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
                 ConditionCount = reader.GetInt32(reader.GetOrdinal("nConditionCount")),
+                DecisionAreaCode = reader.GetString(reader.GetOrdinal("tDecisionAreaCode")),
+                OutcomeJson = reader.IsDBNull(reader.GetOrdinal("tOutcomeJson")) ? "{}" : reader.GetString(reader.GetOrdinal("tOutcomeJson")),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate")
             };
