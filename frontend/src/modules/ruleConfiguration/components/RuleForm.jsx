@@ -16,14 +16,7 @@ const EMPTY_RULE = {
   isActive: true,
   decisionAreaCode: "CANDIDATE_QUALIFICATION",
   outcome: {
-    allocatedType: "",
-    vacancyType: "",
-    seatCategory: "",
-    reservationType: "",
-    candidateStatus: "",
-    preferenceMode: "",
-    allowBetterment: null,
-    additionalValues: {},
+    values: [],
   },
   conditions: [],
 };
@@ -58,11 +51,26 @@ const LOGICAL_OPTIONS = [
 
 const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
 
-const normalizeOutcome = (value) => ({
-  ...EMPTY_RULE.outcome,
-  ...(value || {}),
-  additionalValues: value?.additionalValues || {},
-});
+const normalizeOutcome = (value) => {
+  if (Array.isArray(value?.values)) {
+    return { values: value.values.map((item) => ({
+      supportingValue: item.supportingValue || "",
+      value: item.value ?? "",
+      valueKind: item.valueKind || "text",
+    })) };
+  }
+
+  const legacyKeys = ["allocatedType", "vacancyType", "seatCategory", "reservationType", "candidateStatus", "preferenceMode", "allowBetterment"];
+  return {
+    values: legacyKeys
+      .filter((key) => value?.[key] !== undefined && value?.[key] !== null && value[key] !== "")
+      .map((key) => ({
+        supportingValue: key,
+        value: String(value[key]),
+        valueKind: typeof value[key] === "boolean" ? "boolean" : "text",
+      })),
+  };
+};
 
 const optionsForType = (type) => OPERATORS[type] || OPERATORS.Text;
 
@@ -174,13 +182,32 @@ function RuleForm({
     }));
   };
 
-  const updateOutcome = (name, value) => {
+  const updateOutcome = (index, name, value) => {
+    setForm((current) => {
+      const values = [...(current.outcome?.values || [])];
+      values[index] = { ...values[index], [name]: value };
+      return { ...current, outcome: { values } };
+    });
+  };
+
+  const addOutcome = () => {
+    const definition = decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results?.[0];
     setForm((current) => ({
       ...current,
       outcome: {
-        ...normalizeOutcome(current.outcome),
-        [name]: value,
+        values: [...(current.outcome?.values || []), {
+          supportingValue: definition?.supportingValue || "",
+          value: "",
+          valueKind: definition?.valueKind || "text",
+        }],
       },
+    }));
+  };
+
+  const removeOutcome = (index) => {
+    setForm((current) => ({
+      ...current,
+      outcome: { values: (current.outcome?.values || []).filter((_, i) => i !== index) },
     }));
   };
 
@@ -755,19 +782,65 @@ function RuleForm({
                 <span>If the configured conditions match, the candidate qualifies.</span>
               </div>
             )}
-            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
-              <div className="rule-value-field">
-                <label htmlFor="rule-allocation-result">Allocation result</label>
-                <Select value={form.outcome?.allocatedType || ""}
-                  options={[
-                    { value: "", label: "Select allocation result" },
-                    ...(decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results || []),
-                  ]}
-                  onChange={(event) => updateOutcome("allocatedType", event.target.value)} />
-                <span className="rule-value-help">Assign this value when the conditions match.</span>
+            {form.decisionAreaCode !== "CANDIDATE_QUALIFICATION" && (
+              <div className="rule-outcome-values">
+                {(form.outcome?.values || []).map((item, index) => {
+                  const definitions = decisionOptions.find((option) => option.value === form.decisionAreaCode)?.results || [];
+                  const definition = definitions.find((option) => option.supportingValue === item.supportingValue);
+                  const valueOptions = definition?.values || [];
+                  return (
+                    <div className="rule-outcome-row" key={`${item.supportingValue}-${index}`}>
+                      <div className="rule-value-field">
+                        <label>Supporting value</label>
+                        <Select value={item.supportingValue}
+                          options={definitions.map((option) => ({ value: option.supportingValue, label: option.label }))}
+                          onChange={(event) => {
+                            const selected = definitions.find((option) => option.supportingValue === event.target.value);
+                            setForm((current) => {
+                              const values = [...(current.outcome?.values || [])];
+                              values[index] = { supportingValue: event.target.value, value: "", valueKind: selected?.valueKind || "text" };
+                              return { ...current, outcome: { values } };
+                            });
+                          }} />
+                      </div>
+                      <div className="rule-value-field">
+                        <label>Value</label>
+                        {valueOptions.length > 0 ? (
+                          <Select value={item.value}
+                            options={[{ value: "", label: "Select value" }, ...valueOptions]}
+                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
+                        ) : item.valueKind === "boolean" ? (
+                          <Select value={item.value}
+                            options={[{ value: "", label: "Select value" }, { value: "true", label: "Yes" }, { value: "false", label: "No" }]}
+                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
+                        ) : (
+                          <TextBox value={item.value} placeholder="Enter value"
+                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
+                        )}
+                      </div>
+                      <div className="rule-value-field rule-value-kind">
+                        <label>Value kind</label>
+                        <Select value={item.valueKind}
+                          options={[
+                            { value: "text", label: "Text" },
+                            { value: "number", label: "Number" },
+                            { value: "boolean", label: "Boolean" },
+                            { value: "date", label: "Date" },
+                            { value: "field", label: "Field" },
+                          ]}
+                          onChange={(event) => updateOutcome(index, "valueKind", event.target.value)} />
+                      </div>
+                      <button type="button" className="condition-remove" title="Delete outcome" aria-label="Delete outcome" onClick={() => removeOutcome(index)}>
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  );
+                })}
+                <Button type="button" variant="secondary" className="condition-add-button" onClick={addOutcome}>
+                  <FiPlus size={13} /> Add outcome
+                </Button>
               </div>
-            )}
-          </div>
+            )}         </div>
         </section>
       </form>
     </Dialog>
