@@ -530,35 +530,17 @@ function RuleForm({
           </div>
 
           <div className="condition-toolbar-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={groupSelected}
-              disabled={selectedRows.length < 2}
-            >
-              <FiUsers size={14} />
-              Group {selectedRows.length > 1 ? `(${selectedRows.length})` : ""}
+            <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelected} disabled={selectedRows.length < 2} title="Group selected conditions">
+              <FiUsers size={13} /><span>Group</span>
+              {selectedRows.length > 1 && <span className="condition-tool-count">{selectedRows.length}</span>}
             </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={ungroupSelected}
-              disabled={!selectedRows.length}
-            >
-              Ungroup
+            <Button type="button" variant="secondary" className="condition-tool-button" onClick={ungroupSelected} disabled={!selectedRows.length} title="Ungroup selected conditions">
+              <FiMenu size={13} /><span>Ungroup</span>
             </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={addRow}
-            >
-              <FiPlus size={14} />
-              Add Condition
+            <Button type="button" variant="secondary" className="condition-tool-button condition-add-button" onClick={addRow} title="Add a condition">
+              <FiPlus size={13} /><span>Add condition</span>
             </Button>
           </div>
-        </div>
 
         <div className="condition-selection-note">
           {selectedRows.length
@@ -724,11 +706,14 @@ function RuleForm({
 
           {!rows.length && (
             <div className="condition-empty">
-              <FiCheckSquare size={18} />
-              <span>
-                No conditions yet. Add a condition to start building
-                the rule.
-              </span>
+              <div className="condition-empty-icon"><FiCheckSquare size={20} /></div>
+              <div className="condition-empty-content">
+                <strong>No conditions added</strong>
+                <span>Start by adding a condition to define when this rule should match.</span>
+              </div>
+              <Button type="button" variant="secondary" className="condition-empty-action" onClick={addRow}>
+                <FiPlus size={13} /> Add condition
+              </Button>
             </div>
           )}
         </div>
