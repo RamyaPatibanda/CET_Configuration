@@ -17,6 +17,7 @@ const EMPTY_RULE = {
   decisionAreaCode: "CANDIDATE_QUALIFICATION",
   outcome: { values: [] },
   conditions: [],
+  decisionRows: [],
 };
 
 const OPERATORS = {
@@ -84,6 +85,35 @@ const normalizeOutcome = (value) => {
         valueKind: typeof source[key] === "boolean" ? "boolean" : "text",
       })),
   };
+};
+
+
+const normalizeDecisionRows = (value) => {
+  const rows = Array.isArray(value) ? value : value?.decisionRows ?? value?.DecisionRows ?? [];
+
+  return rows.map((row) => ({
+    ruleDecisionId: row.ruleDecisionId ?? row.RuleDecisionId ?? 0,
+    ruleId: row.ruleId ?? row.RuleId ?? 0,
+    decisionName: row.decisionName ?? row.DecisionName ?? "",
+    decisionOrder: row.decisionOrder ?? row.DecisionOrder ?? 1,
+    isActive: row.isActive ?? row.IsActive ?? true,
+    conditions: (row.conditions ?? row.Conditions ?? []).map((condition) => ({
+      ruleDecisionConditionId: condition.ruleDecisionConditionId ?? condition.RuleDecisionConditionId ?? 0,
+      operandType: condition.operandType ?? condition.OperandType ?? "CONTEXT",
+      operandKey: condition.operandKey ?? condition.OperandKey ?? "",
+      logicalOperator: condition.logicalOperator ?? condition.LogicalOperator ?? "AND",
+      operator: condition.operator ?? condition.Operator ?? "",
+      value: condition.value ?? condition.Value ?? "",
+      conditionOrder: condition.conditionOrder ?? condition.ConditionOrder ?? 1,
+    })),
+    results: (row.results ?? row.Results ?? []).map((result) => ({
+      ruleDecisionResultId: result.ruleDecisionResultId ?? result.RuleDecisionResultId ?? 0,
+      resultKey: result.resultKey ?? result.ResultKey ?? "",
+      resultValue: result.resultValue ?? result.ResultValue ?? "",
+      valueKind: result.valueKind ?? result.ValueKind ?? "text",
+      resultOrder: result.resultOrder ?? result.ResultOrder ?? 1,
+    })),
+  }));
 };
 
 const optionsForType = (type) => OPERATORS[type] || OPERATORS.Text;
@@ -155,6 +185,7 @@ function RuleForm({
             ...EMPTY_RULE,
             ...rule,
             decisionAreaCode: rule.decisionAreaCode || "CANDIDATE_QUALIFICATION",
+            decisionRows: normalizeDecisionRows(rule.decisionRows),
             outcome: normalizeOutcome(
               rule.outcome ||
               (rule.outcomeJson ? (() => {
@@ -798,6 +829,52 @@ function RuleForm({
               />
             </div>
           </div>
+
+
+          {form.decisionRows?.length > 0 && (
+            <div className="rule-decision-rows">
+              <div className="rule-result-heading">
+                <div>
+                  <span>Decision rows</span>
+                  <small>IF / THEN branches configured for this rule.</small>
+                </div>
+              </div>
+
+              <div className="rule-decision-row-list">
+                {form.decisionRows.map((decision) => (
+                  <div className="rule-decision-row" key={decision.ruleDecisionId || decision.decisionOrder}>
+                    <div className="rule-decision-row-title">
+                      <strong>{decision.decisionName || "Decision " + decision.decisionOrder}</strong>
+                    </div>
+                    <div className="rule-decision-branch">
+                      <span className="rule-decision-token">IF</span>
+                      <div className="rule-decision-conditions">
+                        {decision.conditions.map((condition, index) => (
+                          <span className="rule-decision-condition" key={condition.ruleDecisionConditionId || index}>
+                            {index > 0 && <b>{condition.logicalOperator}</b>}
+                            <span>{condition.operandKey}</span>
+                            <em>{condition.operator}</em>
+                            <strong>{condition.value}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rule-decision-branch">
+                      <span className="rule-decision-token then">THEN</span>
+                      <div className="rule-decision-results">
+                        {decision.results.map((result, index) => (
+                          <span className="rule-decision-result" key={result.ruleDecisionResultId || index}>
+                            <span>{result.resultKey}</span>
+                            <strong>{result.resultValue}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" ? (
             <div className="rule-result-simple">
