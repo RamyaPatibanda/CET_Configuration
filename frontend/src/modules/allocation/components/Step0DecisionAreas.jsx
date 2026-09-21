@@ -2,7 +2,11 @@ import DecisionAreaRuleSelect from "./DecisionAreaRuleSelect";
 
 const STEP_0_STAGES = [
   { code: "CANDIDATE_QUALIFICATION", name: "Candidate Eligibility", description: "Determine the candidates that enter the Step 0 processing pool." },
-  { code: "SEAT_ALLOCATION", name: "Seat Allocation", description: "Evaluate allocation rules in the configured order and apply the selected result." },
+  { code: "SPECIAL_RESERVATION_ELIGIBILITY", name: "Reservation Eligibility", description: "Determine which special-reservation candidates and reservation types are eligible." },
+  { code: "PREFERENCE_EVALUATION", name: "Preference Evaluation", description: "Determine how eligible preferences are considered." },
+  { code: "SEAT_ELIGIBILITY", name: "Seat Eligibility", description: "Determine which seat and category combinations can be considered." },
+  { code: "SEAT_ALLOCATION", name: "Seat Allocation", description: "Apply the allocation result carried by the selected rules." },
+  { code: "BETTERMENT", name: "Betterment", description: "Determine whether an existing allocation can be replaced." },
 ];
 
 
