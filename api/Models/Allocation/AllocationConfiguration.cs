@@ -47,9 +47,33 @@ public static class AllocationConfiguration
                 },
                 new()
                 {
+                    Code = SpecialReservationEligibility,
+                    Name = "Reservation Eligibility",
+                    Description = "Determine which special-reservation candidates and reservation types are eligible."
+                },
+                new()
+                {
+                    Code = PreferenceEvaluation,
+                    Name = "Preference Evaluation",
+                    Description = "Determine how eligible preferences are considered."
+                },
+                new()
+                {
+                    Code = SeatEligibility,
+                    Name = "Seat Eligibility",
+                    Description = "Determine which seat/category combinations can be considered."
+                },
+                new()
+                {
                     Code = SeatAllocation,
                     Name = "Seat Allocation",
-                    Description = "Evaluate ordered allocation rules and apply their configured allocation result."
+                    Description = "Apply the allocation result carried by the selected rules."
+                },
+                new()
+                {
+                    Code = Betterment,
+                    Name = "Betterment",
+                    Description = "Determine whether an existing allocation can be replaced."
                 }
             ]
         },
