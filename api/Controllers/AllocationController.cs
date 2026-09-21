@@ -418,6 +418,16 @@ public sealed class AllocationController : ControllerBase
         };
     }
 
+    private static string ResolveConditionLogicalOperator(RuleDefinition rule)
+    {
+        return rule.Conditions
+            .OrderBy(condition => condition.GroupOrder)
+            .ThenBy(condition => condition.ConditionOrder)
+            .Select(condition => condition.ConditionLogicalOperator)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+            ?? "AND";
+    }
+
     private static string BuildRuleSetVersionId(
         string allocationStep,
         IEnumerable<AllocationRuleGroupRequest> groups) =>
