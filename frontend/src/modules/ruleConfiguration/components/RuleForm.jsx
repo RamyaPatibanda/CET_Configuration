@@ -546,7 +546,7 @@ function RuleForm({
               between conditions and group related conditions when needed.
             </p>
           </div>
-
+          </div>
           <div className="condition-toolbar-actions">
             <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelected} disabled={selectedRows.length < 2} title="Group selected conditions">
               <FiUsers size={13} /><span>Group</span>
