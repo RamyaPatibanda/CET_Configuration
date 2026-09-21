@@ -57,3 +57,4 @@ namespace api.Models.RuleConfiguration
         public string Label { get; set; } = string.Empty;
         public List<RuleConfigurationOption> Results { get; set; } = new();
     }
+}
