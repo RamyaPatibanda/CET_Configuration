@@ -145,7 +145,6 @@ function RuleForm({
         : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
     setRows(rule ? toRows(rule.conditions) : []);
-    setSelectedRows([]);
     setError("");
 
     const loadFields = async () => {
@@ -200,7 +199,6 @@ function RuleForm({
 
   const removeRow = (rowId) => {
     setRows((current) => current.filter((row) => row.id !== rowId));
-    setSelectedRows((current) =>
       current.filter((id) => id !== rowId)
     );
   };
