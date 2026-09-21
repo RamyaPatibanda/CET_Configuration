@@ -50,19 +50,39 @@ const LOGICAL_OPTIONS = [
 const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
 
 const normalizeOutcome = (value) => {
-  if (Array.isArray(value?.values)) return {
-    values: value.values.map((item) => ({
-      supportingValue: item.supportingValue || "",
-      value: item.value ?? "",
-      valueKind: item.valueKind || "text",
-    })),
-  };
+  // Handle both camelCase JSON returned by the API and PascalCase JSON
+  // that may already exist in the database from an older serializer.
+  const source = value || {};
+  const values = source.values ?? source.Values;
 
-  const legacyKeys = ["allocatedType","vacancyType","seatCategory","reservationType","candidateStatus","preferenceMode","allowBetterment"];
+  if (Array.isArray(values)) {
+    return {
+      values: values.map((item) => ({
+        supportingValue: item.supportingValue ?? item.SupportingValue ?? "",
+        value: item.value ?? item.Value ?? "",
+        valueKind: item.valueKind ?? item.ValueKind ?? "text",
+      })),
+    };
+  }
+
+  const legacyKeys = [
+    "allocatedType",
+    "vacancyType",
+    "seatCategory",
+    "reservationType",
+    "candidateStatus",
+    "preferenceMode",
+    "allowBetterment",
+  ];
+
   return {
     values: legacyKeys
-      .filter((key) => value?.[key] !== undefined && value?.[key] !== null && value[key] !== "")
-      .map((key) => ({ supportingValue: key, value: String(value[key]), valueKind: typeof value[key] === "boolean" ? "boolean" : "text" })),
+      .filter((key) => source[key] !== undefined && source[key] !== null && source[key] !== "")
+      .map((key) => ({
+        supportingValue: key,
+        value: String(source[key]),
+        valueKind: typeof source[key] === "boolean" ? "boolean" : "text",
+      })),
   };
 };
 
