@@ -61,6 +61,9 @@ public sealed class LegacyAllocationDAL
                 var existing = await GetActiveAllocationAsync(
                     connection, transaction, candidate.CandidateId, cancellationToken);
 
+                if (existing is not null && !IsBettermentAllowed(ruleGroups, candidate))
+                    continue;
+
                 var preferenceLimit = existing?.PreferenceNo ?? 0;
                 var preferences = await GetPreferencesBeforeAsync(
                     connection,
@@ -94,6 +97,7 @@ public sealed class LegacyAllocationDAL
                             preference.ChoiceCode,
                             candidate,
                             vacancy,
+                            ruleGroups,
                             cancellationToken);
 
                         if (specialVacancy is not null)
@@ -191,9 +195,36 @@ public sealed class LegacyAllocationDAL
         // All Step 0 candidate eligibility comes from the configured rule.
         // Do not hard-code IsOMS, IsNRI, PH, Defence, or Orphan conditions here.
         return MatchesArea(
-            ruleGroups,
-            AllocationConfiguration.CandidateQualification,
-            candidate);
+                   ruleGroups,
+                   AllocationConfiguration.CandidateQualification,
+                   candidate)
+               && MatchesOptionalArea(
+                   ruleGroups,
+                   AllocationConfiguration.SpecialReservationEligibility,
+                   candidate);
+    }
+
+    private bool MatchesOptionalArea(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
+        string area,
+        AllocationCandidate candidate)
+    {
+        if (!ruleGroups.TryGetValue(area, out var rules) || rules.Count == 0)
+            return true;
+
+        return rules.Any(rule => _ruleEvaluator.Matches(rule, candidate));
+    }
+
+    private bool IsBettermentAllowed(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
+        AllocationCandidate candidate)
+    {
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.Betterment, out var rules) || rules.Count == 0)
+            return true;
+
+        return rules.Any(rule =>
+            _ruleEvaluator.Matches(rule, candidate) &&
+            rule.AllowBetterment != false);
     }
 
     private bool MatchesArea(
@@ -229,8 +260,15 @@ public sealed class LegacyAllocationDAL
             ["MinorityId"] = vacancyRow.MinorityId?.ToString(),
             ["IsSpecialReservation"] = (!string.IsNullOrWhiteSpace(vacancyType)).ToString()
         };
+        if (ruleGroups.TryGetValue(AllocationConfiguration.SeatEligibility, out var seatEligibilityRules) &&
+            seatEligibilityRules.Count > 0 &&
+            !seatEligibilityRules.Any(rule => _ruleEvaluator.Matches(rule, values)))
+            return null;
+
         return rules.OrderBy(r => r.DisplayOrder)
-            .FirstOrDefault(rule => _ruleEvaluator.Matches(rule, values) && !string.IsNullOrWhiteSpace(rule.AllocatedType));
+            .FirstOrDefault(rule =>
+                _ruleEvaluator.Matches(rule, values) &&
+                !string.IsNullOrWhiteSpace(rule.AllocatedType));
     }
 
     private static async Task<LegacyAllocationRow?> GetActiveAllocationAsync(
@@ -383,35 +421,46 @@ public sealed class LegacyAllocationDAL
         long choiceCode,
         AllocationCandidate candidate,
         int currentVacancy,
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         CancellationToken cancellationToken)
     {
         if (currentVacancy != 0)
             return null;
 
-        // Preserve the legacy precedence within the current preference:
-        // PH, then Defence, then Orphan. PreferenceNo itself is controlled by
-        // Allocation_CollegePref and is handled by the caller.
-        var reservationTypes = new[]
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.SpecialReservationEligibility, out var reservationRules) ||
+            reservationRules.Count == 0)
+            return null;
+
+        var candidateValues = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            (IsApplicable: candidate.IsPh.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "PH"),
-            (IsApplicable: candidate.IsExServicemen.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "Def"),
-            (IsApplicable: candidate.IsOrphan.Equals("Y", StringComparison.OrdinalIgnoreCase), Type: "Orp")
+            ["Gender"] = candidate.Gender,
+            ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
+            ["FinalIsPh"] = candidate.IsPh,
+            ["FinalIsExServicemen"] = candidate.IsExServicemen,
+            ["FinalIsOrphan"] = candidate.IsOrphan
         };
 
-        foreach (var reservationType in reservationTypes)
+        foreach (var rule in reservationRules.OrderBy(r => r.DisplayOrder))
         {
-            if (!reservationType.IsApplicable)
+            if (!_ruleEvaluator.Matches(rule, candidateValues))
+                continue;
+
+            var reservationType = string.IsNullOrWhiteSpace(rule.ReservationType)
+                ? rule.VacancyType
+                : rule.ReservationType;
+
+            if (reservationType is not ("PH" or "Def" or "Orp"))
                 continue;
 
             var vacancy = await GetSpecialVacancyAsync(
                 connection,
                 transaction,
                 choiceCode,
-                reservationType.Type,
+                reservationType,
                 cancellationToken);
 
             if (vacancy > 0)
-                return (reservationType.Type, vacancy);
+                return (reservationType, vacancy);
         }
 
         return null;
