@@ -382,6 +382,8 @@ public sealed class AllocationController : ControllerBase
             outcome = string.IsNullOrWhiteSpace(rule.OutcomeJson)
                 ? new RuleOutcome()
                 : JsonSerializer.Deserialize<RuleOutcome>(rule.OutcomeJson) ?? new RuleOutcome();
+
+            outcome = ResolveOutcome(outcome);
         }
         catch (JsonException)
         {
@@ -416,6 +418,54 @@ public sealed class AllocationController : ControllerBase
                     condition.ConditionOrder))
                 .ToList()
         };
+    }
+
+    private static RuleOutcome ResolveOutcome(RuleOutcome outcome)
+    {
+        if (outcome.Values is null || outcome.Values.Count == 0)
+            return outcome;
+
+        foreach (var value in outcome.Values)
+        {
+            if (string.IsNullOrWhiteSpace(value.SupportingValue))
+                continue;
+
+            var key = value.SupportingValue.Trim();
+
+            switch (key.ToLowerInvariant())
+            {
+                case "allocatedtype":
+                    outcome.AllocatedType = value.Value ?? string.Empty;
+                    break;
+
+                case "vacancytype":
+                    outcome.VacancyType = value.Value ?? string.Empty;
+                    break;
+
+                case "seatcategory":
+                    outcome.SeatCategory = value.Value ?? string.Empty;
+                    break;
+
+                case "reservationtype":
+                    outcome.ReservationType = value.Value ?? string.Empty;
+                    break;
+
+                case "candidatestatus":
+                    outcome.CandidateStatus = value.Value ?? string.Empty;
+                    break;
+
+                case "preferencemode":
+                    outcome.PreferenceMode = value.Value ?? string.Empty;
+                    break;
+
+                case "allowbetterment":
+                    if (bool.TryParse(value.Value, out var allowBetterment))
+                        outcome.AllowBetterment = allowBetterment;
+                    break;
+            }
+        }
+
+        return outcome;
     }
 
     private static string ResolveConditionLogicalOperator(RuleDefinition rule)
