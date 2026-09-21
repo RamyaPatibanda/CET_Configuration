@@ -43,6 +43,47 @@ BEGIN
         r.bIsActive,
         r.tDecisionAreaCode,
         r.tOutcomeJson,
+        COALESCE((
+            SELECT
+                d.aRuleDecisionId AS RuleDecisionId,
+                d.aRuleId AS RuleId,
+                d.tDecisionName AS DecisionName,
+                d.nDecisionOrder AS DecisionOrder,
+                d.bIsActive AS IsActive,
+                JSON_QUERY(COALESCE((
+                    SELECT
+                        dc.aRuleDecisionConditionId AS RuleDecisionConditionId,
+                        dc.aRuleDecisionId AS RuleDecisionId,
+                        dc.tOperandType AS OperandType,
+                        dc.tOperandKey AS OperandKey,
+                        dc.tLogicalOperator AS LogicalOperator,
+                        dc.tOperator AS Operator,
+                        dc.tValue AS Value,
+                        dc.nConditionOrder AS ConditionOrder
+                    FROM dbo.tblRuleDecisionCondition dc
+                    WHERE dc.aRuleDecisionId = d.aRuleDecisionId
+                    ORDER BY dc.nConditionOrder, dc.aRuleDecisionConditionId
+                    FOR JSON PATH
+                ), N'[]')) AS Conditions,
+                JSON_QUERY(COALESCE((
+                    SELECT
+                        dr.aRuleDecisionResultId AS RuleDecisionResultId,
+                        dr.aRuleDecisionId AS RuleDecisionId,
+                        dr.tResultKey AS ResultKey,
+                        dr.tResultValue AS ResultValue,
+                        dr.tValueKind AS ValueKind,
+                        dr.nResultOrder AS ResultOrder
+                    FROM dbo.tblRuleDecisionResult dr
+                    WHERE dr.aRuleDecisionId = d.aRuleDecisionId
+                    ORDER BY dr.nResultOrder, dr.aRuleDecisionResultId
+                    FOR JSON PATH
+                ), N'[]')) AS Results
+            FROM dbo.tblRuleDecision d
+            WHERE d.aRuleId = r.aRuleId
+              AND d.bIsActive = 1
+            ORDER BY d.nDecisionOrder, d.aRuleDecisionId
+            FOR JSON PATH
+        ), N'[]') AS tDecisionRowsJson,
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate
@@ -67,6 +108,47 @@ BEGIN
         r.bIsActive,
         r.tDecisionAreaCode,
         r.tOutcomeJson,
+        COALESCE((
+            SELECT
+                d.aRuleDecisionId AS RuleDecisionId,
+                d.aRuleId AS RuleId,
+                d.tDecisionName AS DecisionName,
+                d.nDecisionOrder AS DecisionOrder,
+                d.bIsActive AS IsActive,
+                JSON_QUERY(COALESCE((
+                    SELECT
+                        dc.aRuleDecisionConditionId AS RuleDecisionConditionId,
+                        dc.aRuleDecisionId AS RuleDecisionId,
+                        dc.tOperandType AS OperandType,
+                        dc.tOperandKey AS OperandKey,
+                        dc.tLogicalOperator AS LogicalOperator,
+                        dc.tOperator AS Operator,
+                        dc.tValue AS Value,
+                        dc.nConditionOrder AS ConditionOrder
+                    FROM dbo.tblRuleDecisionCondition dc
+                    WHERE dc.aRuleDecisionId = d.aRuleDecisionId
+                    ORDER BY dc.nConditionOrder, dc.aRuleDecisionConditionId
+                    FOR JSON PATH
+                ), N'[]')) AS Conditions,
+                JSON_QUERY(COALESCE((
+                    SELECT
+                        dr.aRuleDecisionResultId AS RuleDecisionResultId,
+                        dr.aRuleDecisionId AS RuleDecisionId,
+                        dr.tResultKey AS ResultKey,
+                        dr.tResultValue AS ResultValue,
+                        dr.tValueKind AS ValueKind,
+                        dr.nResultOrder AS ResultOrder
+                    FROM dbo.tblRuleDecisionResult dr
+                    WHERE dr.aRuleDecisionId = d.aRuleDecisionId
+                    ORDER BY dr.nResultOrder, dr.aRuleDecisionResultId
+                    FOR JSON PATH
+                ), N'[]')) AS Results
+            FROM dbo.tblRuleDecision d
+            WHERE d.aRuleId = r.aRuleId
+              AND d.bIsActive = 1
+            ORDER BY d.nDecisionOrder, d.aRuleDecisionId
+            FOR JSON PATH
+        ), N'[]') AS tDecisionRowsJson,
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate
@@ -90,6 +172,33 @@ BEGIN
     LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId = rc.aRuleConditionGroupId
     WHERE rc.aRuleId = @aRuleId
     ORDER BY COALESCE(rg.nGroupOrder, 1), rc.nConditionOrder, rc.aRuleConditionId;
+
+    SELECT
+        d.aRuleDecisionId,
+        d.aRuleId,
+        d.tDecisionName,
+        d.nDecisionOrder,
+        d.bIsActive,
+        dc.aRuleDecisionConditionId,
+        dc.tOperandType,
+        dc.tOperandKey,
+        dc.tLogicalOperator,
+        dc.tOperator,
+        dc.tValue,
+        dc.nConditionOrder,
+        dr.aRuleDecisionResultId,
+        dr.tResultKey,
+        dr.tResultValue,
+        dr.tValueKind,
+        dr.nResultOrder
+    FROM dbo.tblRuleDecision d
+    LEFT JOIN dbo.tblRuleDecisionCondition dc
+        ON dc.aRuleDecisionId = d.aRuleDecisionId
+    LEFT JOIN dbo.tblRuleDecisionResult dr
+        ON dr.aRuleDecisionId = d.aRuleDecisionId
+       AND dr.nResultOrder = ISNULL(dc.nConditionOrder, dr.nResultOrder)
+    WHERE d.aRuleId = @aRuleId
+    ORDER BY d.nDecisionOrder, dc.nConditionOrder, dr.nResultOrder;
 END;
 GO
 
