@@ -258,9 +258,7 @@ function RuleConfiguration() {
                     <td>
                       <div className="rule-status-control">
                         <Switch checked={Boolean(rule.isActive)} onChange={() => handleToggleActive(rule)} />
-                        <span className={rule.isActive ? "active-label" : "inactive-label"}>
-                          {rule.isActive ? "Active" : "Inactive"}
-                        </span>
+
                       </div>
                     </td>
                     <td className="rule-actions">
