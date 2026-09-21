@@ -60,8 +60,9 @@ const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
 
 const DECISION_AREAS = [
   { value: "CANDIDATE_QUALIFICATION", label: "Candidate Eligibility" },
-  { value: "RESERVATION_ELIGIBILITY", label: "Reservation Eligibility" },
-  { value: "PREFERENCE", label: "Preference" },
+  { value: "SPECIAL_RESERVATION_ELIGIBILITY", label: "Reservation Eligibility" },
+  { value: "PREFERENCE_EVALUATION", label: "Preference Evaluation" },
+  { value: "SEAT_ELIGIBILITY", label: "Seat Eligibility" },
   { value: "SEAT_ALLOCATION", label: "Seat Allocation" },
   { value: "BETTERMENT", label: "Betterment" },
   { value: "CONVERSION", label: "Conversion" },
@@ -548,7 +549,7 @@ function RuleForm({
               />
             )}
 
-            {form.decisionAreaCode === "RESERVATION_ELIGIBILITY" && (
+            {form.decisionAreaCode === "SPECIAL_RESERVATION_ELIGIBILITY" && (
               <Select
                 value={form.outcome?.reservationType || ""}
                 options={[
@@ -561,7 +562,7 @@ function RuleForm({
               />
             )}
 
-            {form.decisionAreaCode === "PREFERENCE" && (
+            {form.decisionAreaCode === "PREFERENCE_EVALUATION" && (
               <Select
                 value={form.outcome?.preferenceMode || ""}
                 options={[
