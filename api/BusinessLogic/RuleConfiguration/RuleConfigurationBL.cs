@@ -73,13 +73,13 @@ namespace api.BusinessLogic.RuleConfiguration
             ValidateRuleId(ruleId);
             if (string.IsNullOrWhiteSpace(ruleName)) throw new ArgumentException("Rule name is required.", nameof(ruleName));
             if (priority < 1) throw new ArgumentException("Priority must be greater than zero.", nameof(priority));
-            var allowedAreas = new[] { "CANDIDATE_QUALIFICATION", "RESERVATION_ELIGIBILITY", "PREFERENCE", "SEAT_ALLOCATION", "BETTERMENT", "CONVERSION" };
+            var allowedAreas = new[] { "CANDIDATE_QUALIFICATION", "SPECIAL_RESERVATION_ELIGIBILITY", "PREFERENCE_EVALUATION", "SEAT_ELIGIBILITY", "SEAT_ALLOCATION", "BETTERMENT", "CONVERSION" };
             if (string.IsNullOrWhiteSpace(decisionAreaCode) || !allowedAreas.Contains(decisionAreaCode))
                 throw new ArgumentException("A valid decision area is required.", nameof(decisionAreaCode));
             outcome ??= new RuleOutcome();
             if (decisionAreaCode == "SEAT_ALLOCATION" && string.IsNullOrWhiteSpace(outcome.AllocatedType))
                 throw new ArgumentException("Allocation result is required for Seat Allocation rules.", nameof(outcome));
-            if (decisionAreaCode == "RESERVATION_ELIGIBILITY" && string.IsNullOrWhiteSpace(outcome.ReservationType))
+            if (decisionAreaCode == "SPECIAL_RESERVATION_ELIGIBILITY" && string.IsNullOrWhiteSpace(outcome.ReservationType))
                 throw new ArgumentException("Reservation type is required for Reservation Eligibility rules.", nameof(outcome));
             if (conditions is null || conditions.Count == 0) throw new ArgumentException("At least one condition is required.", nameof(conditions));
 
