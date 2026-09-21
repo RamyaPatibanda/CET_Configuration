@@ -1,17 +1,24 @@
 import { useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiSearch, FiMenu, FiTrash2 } from "react-icons/fi";
 
-function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRuleGroup, toggleRule, disabled, allocationDecisions = [], updateAllocationDecision, moveAllocationDecision }) {
+function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRuleGroup, toggleRule, disabled }) {
   const [search, setSearch] = useState("");
+  const areaRules = useMemo(
+    () => rules.filter((rule) =>
+      String(rule.decisionAreaCode || "").toUpperCase() === String(area.code || "").toUpperCase()
+    ),
+    [rules, area.code]
+  );
+
   const filteredRules = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return rules;
-    return rules.filter((rule) =>
+    if (!query) return areaRules;
+    return areaRules.filter((rule) =>
       [rule.ruleName, rule.description].some((value) =>
         String(value ?? "").toLowerCase().includes(query)
       )
     );
-  }, [rules, search]);
+  }, [areaRules, search]);
 
   const selectedRules = group.ruleIds
     .map((id) => rules.find((rule) => rule.ruleId === id))
@@ -48,21 +55,9 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/plain")); if (Number.isInteger(from) && from !== index) moveAllocationDecision?.(from, index); }}>
                   {index > 0 && <span className="allocation-rule-or">OR</span>}
-                  {area.code === "SEAT_ALLOCATION" && <FiMenu className="allocation-drag-handle" size={15} />}
                   <span className="allocation-selected-rule-name">{rule.ruleName}</span>
-                  {area.code === "SEAT_ALLOCATION" && (
-                    <div className="allocation-result-controls">
-                      <select value={config.allocatedType || ""} disabled={disabled} onChange={(e) => updateAllocationDecision?.(rule.ruleId, "allocatedType", e.target.value)}>
-                        <option value="">Allocation result</option><option value="Fem">Fem</option><option value="Gen">Gen</option>
-                      </select>
-                      <select value={config.vacancyType || ""} disabled={disabled} onChange={(e) => updateAllocationDecision?.(rule.ruleId, "vacancyType", e.target.value)}>
-                        <option value="">Vacancy type</option><option value="PH">PH</option><option value="Def">Def</option><option value="Orp">Orp</option>
-                      </select>
-                      <button type="button" className="allocation-remove-rule" disabled={disabled} onClick={() => toggleRule(area.code, rule.ruleId)} aria-label="Remove rule"><FiTrash2 size={14} /></button>
-                    </div>
-                  )}
+                  <button type="button" className="allocation-remove-rule" disabled={disabled} onClick={() => toggleRule(area.code, rule.ruleId)} aria-label="Remove rule"><FiTrash2 size={14} /></button>
                 </div>
-              );
             })}
           </div>
         )}
@@ -91,7 +86,7 @@ function DecisionAreaRuleSelect({ area, group, rules, openRuleGroup, setOpenRule
                   </button>
                 );
               })}
-              {!filteredRules.length && <div className="allocation-rule-no-results">No matching rules</div>}
+              {!filteredRules.length && <div className="allocation-rule-no-results">No rules configured for this decision area.</div>}
             </div>
           </div>
         )}
