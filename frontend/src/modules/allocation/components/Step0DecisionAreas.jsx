@@ -6,7 +6,7 @@ const STEP_0_STAGES = [
 ];
 
 
-function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup, toggleRule, disabled, allocationDecisions, updateAllocationDecision, moveAllocationDecision }) {
+function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup, toggleRule, disabled }) {
   return (
     <div className="allocation-stage-list">
       {STEP_0_STAGES.map((area) => {
@@ -21,9 +21,6 @@ function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup
             setOpenRuleGroup={setOpenRuleGroup}
             toggleRule={toggleRule}
             disabled={disabled}
-            allocationDecisions={allocationDecisions}
-            updateAllocationDecision={updateAllocationDecision}
-            moveAllocationDecision={moveAllocationDecision}
           />
         );
       })}
