@@ -520,16 +520,14 @@ function RuleForm({
         </div>
 
         <div className="conditions-header">
-          <div>
+          <div className="conditions-header-copy">
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
             <p>
-              Use Logic for the condition-to-condition connector.
-              Group Logic controls how groups are combined.
+              Build the rule using fields, operators and values. Use AND / OR
+              between conditions and group related conditions when needed.
             </p>
           </div>
-          </div>
-
 
           <div className="condition-toolbar-actions">
             <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelected} disabled={selectedRows.length < 2} title="Group selected conditions">
@@ -546,12 +544,22 @@ function RuleForm({
 
         <div className="condition-selection-note">
           {selectedRows.length
-            ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected`
-            : "Select rows to group or rearrange them with drag and drop."}
+            ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected for grouping`
+            : "Select two or more rows to group them. Drag the handle to rearrange conditions."}
         </div>
 
         <div className="condition-single-table-wrapper">
           <table className="condition-single-table">
+            <colgroup>
+              <col className="condition-col-check" />
+              <col className="condition-col-group" />
+              <col className="condition-col-drag" />
+              <col className="condition-col-field" />
+              <col className="condition-col-operator" />
+              <col className="condition-col-value" />
+              <col className="condition-col-logic" />
+              <col className="condition-col-action" />
+            </colgroup>
             <thead>
               <tr>
                 <th className="condition-check-column">
@@ -625,8 +633,10 @@ function RuleForm({
                       </span>
                     </td>
 
-                    <td>
-                      <FiMenu size={16} />
+                    <td className="condition-drag-cell">
+                      <span className="condition-drag-handle" title="Drag to rearrange">
+                        <FiMenu size={16} />
+                      </span>
                     </td>
 
                     <td>
@@ -690,9 +700,10 @@ function RuleForm({
                       />
                     </td>
 
-                    <td>
+                    <td className="condition-action-cell">
                       <button
                         type="button"
+                        className="condition-remove"
                         title="Delete condition"
                         aria-label="Delete condition"
                         onClick={() => removeRow(row.id)}
