@@ -122,7 +122,6 @@ function RuleForm({
   const [fields, setFields] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
   const [error, setError] = useState("");
-  const [selectedRows, setSelectedRows] = useState([]);
   const [draggedRow, setDraggedRow] = useState(null);
 
   useEffect(() => {
