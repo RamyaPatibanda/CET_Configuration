@@ -28,14 +28,14 @@ namespace api.Models.RuleConfiguration
 
     public class RuleOutcome
     {
-        public string AllocatedType { get; set; } = string.Empty;
-        public string VacancyType { get; set; } = string.Empty;
-        public string SeatCategory { get; set; } = string.Empty;
-        public string ReservationType { get; set; } = string.Empty;
-        public string CandidateStatus { get; set; } = string.Empty;
-        public string PreferenceMode { get; set; } = string.Empty;
-        public bool? AllowBetterment { get; set; }
-        public Dictionary<string, string> AdditionalValues { get; set; } = new();
+        public List<RuleOutcomeValue> Values { get; set; } = new();
+    }
+
+    public class RuleOutcomeValue
+    {
+        public string SupportingValue { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string ValueKind { get; set; } = "text";
     }
 
     public class RuleFieldOption
@@ -55,6 +55,14 @@ namespace api.Models.RuleConfiguration
     {
         public string Value { get; set; } = string.Empty;
         public string Label { get; set; } = string.Empty;
-        public List<RuleConfigurationOption> Results { get; set; } = new();
+        public List<RuleOutcomeOption> Results { get; set; } = new();
+    }
+
+    public class RuleOutcomeOption
+    {
+        public string SupportingValue { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string ValueKind { get; set; } = "text";
+        public List<RuleConfigurationOption> Values { get; set; } = new();
     }
 }
