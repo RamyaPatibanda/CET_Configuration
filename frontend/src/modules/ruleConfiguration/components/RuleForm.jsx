@@ -14,6 +14,17 @@ const EMPTY_RULE = {
   description: "",
   priority: 1,
   isActive: true,
+  decisionAreaCode: "CANDIDATE_QUALIFICATION",
+  outcome: {
+    allocatedType: "",
+    vacancyType: "",
+    seatCategory: "",
+    reservationType: "",
+    candidateStatus: "",
+    preferenceMode: "",
+    allowBetterment: null,
+    additionalValues: {},
+  },
   conditions: [],
 };
 
@@ -46,6 +57,21 @@ const LOGICAL_OPTIONS = [
 ];
 
 const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
+
+const DECISION_AREAS = [
+  { value: "CANDIDATE_QUALIFICATION", label: "Candidate Eligibility" },
+  { value: "RESERVATION_ELIGIBILITY", label: "Reservation Eligibility" },
+  { value: "PREFERENCE", label: "Preference" },
+  { value: "SEAT_ALLOCATION", label: "Seat Allocation" },
+  { value: "BETTERMENT", label: "Betterment" },
+  { value: "CONVERSION", label: "Conversion" },
+];
+
+const normalizeOutcome = (value) => ({
+  ...EMPTY_RULE.outcome,
+  ...(value || {}),
+  additionalValues: value?.additionalValues || {},
+});
 
 const optionsForType = (type) => OPERATORS[type] || OPERATORS.Text;
 
@@ -110,7 +136,17 @@ function RuleForm({
 
     setForm(
       rule
-        ? { ...EMPTY_RULE, ...rule }
+        ? {
+            ...EMPTY_RULE,
+            ...rule,
+            decisionAreaCode: rule.decisionAreaCode || "CANDIDATE_QUALIFICATION",
+            outcome: normalizeOutcome(
+              rule.outcome ||
+              (rule.outcomeJson ? (() => {
+                try { return JSON.parse(rule.outcomeJson); } catch { return {}; }
+              })() : {})
+            ),
+          }
         : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
     setRows(rule ? toRows(rule.conditions) : []);
@@ -136,6 +172,16 @@ function RuleForm({
     setForm((current) => ({
       ...current,
       [name]: value,
+    }));
+  };
+
+  const updateOutcome = (name, value) => {
+    setForm((current) => ({
+      ...current,
+      outcome: {
+        ...normalizeOutcome(current.outcome),
+        [name]: value,
+      },
     }));
   };
 
@@ -410,6 +456,8 @@ function RuleForm({
     await onSave({
       ...form,
       priority: Number(form.priority || 1),
+      decisionAreaCode: form.decisionAreaCode,
+      outcome: normalizeOutcome(form.outcome),
       conditions,
     });
   };
@@ -470,6 +518,125 @@ function RuleForm({
               update("description", event.target.value)
             }
           />
+        </div>
+
+        <div className="rule-outcome-section">
+          <div className="rule-outcome-header">
+            <div>
+              <span className="conditions-kicker">Decision behavior</span>
+              <h3>Supporting Values</h3>
+              <p>The rule carries the decision values that the allocation engine uses when its conditions match.</p>
+            </div>
+          </div>
+
+          <div className="rule-outcome-grid">
+            <Select
+              value={form.decisionAreaCode}
+              options={DECISION_AREAS}
+              onChange={(event) => update("decisionAreaCode", event.target.value)}
+            />
+
+            {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" && (
+              <Select
+                value={form.outcome?.candidateStatus || ""}
+                options={[
+                  { value: "", label: "Candidate result" },
+                  { value: "Eligible", label: "Eligible" },
+                  { value: "Excluded", label: "Excluded" },
+                ]}
+                onChange={(event) => updateOutcome("candidateStatus", event.target.value)}
+              />
+            )}
+
+            {form.decisionAreaCode === "RESERVATION_ELIGIBILITY" && (
+              <Select
+                value={form.outcome?.reservationType || ""}
+                options={[
+                  { value: "", label: "Reservation type" },
+                  { value: "PH", label: "PH" },
+                  { value: "Def", label: "Defence" },
+                  { value: "Orp", label: "Orphan" },
+                ]}
+                onChange={(event) => updateOutcome("reservationType", event.target.value)}
+              />
+            )}
+
+            {form.decisionAreaCode === "PREFERENCE" && (
+              <Select
+                value={form.outcome?.preferenceMode || ""}
+                options={[
+                  { value: "", label: "Preference behavior" },
+                  { value: "Ascending", label: "Evaluate in preference order" },
+                  { value: "BettermentOnly", label: "Betterment preference only" },
+                ]}
+                onChange={(event) => updateOutcome("preferenceMode", event.target.value)}
+              />
+            )}
+
+            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
+              <>
+                <Select
+                  value={form.outcome?.allocatedType || ""}
+                  options={[
+                    { value: "", label: "Allocation result" },
+                    { value: "Fem", label: "Female seat (Fem)" },
+                    { value: "Gen", label: "General seat (Gen)" },
+                  ]}
+                  onChange={(event) => updateOutcome("allocatedType", event.target.value)}
+                />
+                <Select
+                  value={form.outcome?.vacancyType || ""}
+                  options={[
+                    { value: "", label: "Special vacancy type (optional)" },
+                    { value: "PH", label: "PH" },
+                    { value: "Def", label: "Defence" },
+                    { value: "Orp", label: "Orphan" },
+                  ]}
+                  onChange={(event) => updateOutcome("vacancyType", event.target.value)}
+                />
+                <Select
+                  value={form.outcome?.seatCategory || ""}
+                  options={[
+                    { value: "", label: "Seat category (optional)" },
+                    { value: "Open", label: "Open" },
+                    { value: "Reserved", label: "Reserved" },
+                  ]}
+                  onChange={(event) => updateOutcome("seatCategory", event.target.value)}
+                />
+              </>
+            )}
+
+            {form.decisionAreaCode === "BETTERMENT" && (
+              <Select
+                value={form.outcome?.allowBetterment == null ? "" : String(form.outcome.allowBetterment)}
+                options={[
+                  { value: "", label: "Betterment behavior" },
+                  { value: "true", label: "Allow betterment" },
+                  { value: "false", label: "Do not allow betterment" },
+                ]}
+                onChange={(event) => updateOutcome("allowBetterment", event.target.value === "" ? null : event.target.value === "true")}
+              />
+            )}
+
+            {form.decisionAreaCode === "CONVERSION" && (
+              <TextBox
+                value={form.outcome?.additionalValues?.conversionType || ""}
+                placeholder="Conversion type"
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    outcome: {
+                      ...normalizeOutcome(current.outcome),
+                      additionalValues: {
+                        ...normalizeOutcome(current.outcome).additionalValues,
+                        conversionType: event.target.value,
+                      },
+                    },
+                  }))
+                }
+              />
+            )}
+          </div>
         </div>
 
         <div className="conditions-header">
