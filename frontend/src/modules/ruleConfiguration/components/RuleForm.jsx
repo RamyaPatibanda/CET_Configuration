@@ -528,6 +528,8 @@ function RuleForm({
               Group Logic controls how groups are combined.
             </p>
           </div>
+          </div>
+
 
           <div className="condition-toolbar-actions">
             <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelected} disabled={selectedRows.length < 2} title="Group selected conditions">
@@ -759,6 +761,8 @@ function RuleForm({
       </form>
     </Dialog>
   );
+
 }
+
 
 export default RuleForm;
