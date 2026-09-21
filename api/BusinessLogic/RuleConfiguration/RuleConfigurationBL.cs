@@ -34,7 +34,7 @@ namespace api.BusinessLogic.RuleConfiguration
 
         public async Task<bool> UpdateRuleAsync(UpdateRuleRequest request)
         {
-            try { Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions); return await _dataAccess.UpdateRuleAsync(request); }
+            try { Validate(request.RuleId, request.RuleName, request.Priority, request.DecisionAreaCode, request.Outcome, request.Conditions); return await _dataAccess.UpdateRuleAsync(request); }
             catch (Exception ex) { _logger.LogError(ex, "Error while updating rule {RuleId}.", request.RuleId); throw; }
         }
 
