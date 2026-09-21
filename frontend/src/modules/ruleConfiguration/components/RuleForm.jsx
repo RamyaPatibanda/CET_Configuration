@@ -641,53 +641,48 @@ function RuleForm({
         </div>
 
         <div className="conditions-header">
-          <div>
+          <div className="conditions-heading">
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
-            <p>
-              Use Logic for the condition-to-condition connector.
-              Group Logic controls how groups are combined.
-            </p>
+            <p>Define when this rule should match. Add conditions, choose AND / OR, and use drag and drop to arrange them.</p>
           </div>
 
-          <div className="condition-toolbar-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={groupSelected}
-              disabled={selectedRows.length < 2}
-            >
-              <FiUsers size={14} />
-              Group {selectedRows.length > 1 ? `(${selectedRows.length})` : ""}
-            </Button>
+          <div className="condition-builder-actions">
+            {selectedRows.length >= 2 && (
+              <div className="condition-selection-tools">
+                <span className="condition-selection-count">
+                  {selectedRows.length} selected
+                </span>
+                <button
+                  type="button"
+                  className="condition-tool-button"
+                  onClick={groupSelected}
+                >
+                  <FiUsers size={13} />
+                  Group
+                </button>
+                <button
+                  type="button"
+                  className="condition-tool-button condition-tool-button-muted"
+                  onClick={ungroupSelected}
+                >
+                  Ungroup
+                </button>
+              </div>
+            )}
 
             <Button
               type="button"
-              variant="secondary"
-              onClick={ungroupSelected}
-              disabled={!selectedRows.length}
-            >
-              Ungroup
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
               onClick={addRow}
+              className="condition-add-button"
             >
-              <FiPlus size={14} />
-              Add Condition
+              <FiPlus size={15} />
+              Add condition
             </Button>
           </div>
         </div>
 
-        <div className="condition-selection-note">
-          {selectedRows.length
-            ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected`
-            : "Select rows to group or rearrange them with drag and drop."}
-        </div>
-
-        <div className="condition-single-table-wrapper">
+        <div className={`condition-single-table-wrapper ${rows.length ? "has-conditions" : "is-empty"}`}>
           <table className="condition-single-table">
             <thead>
               <tr>
@@ -845,11 +840,19 @@ function RuleForm({
 
           {!rows.length && (
             <div className="condition-empty">
-              <FiCheckSquare size={18} />
-              <span>
-                No conditions yet. Add a condition to start building
-                the rule.
-              </span>
+              <div className="conditions-empty-icon">
+                <FiCheckSquare size={21} />
+              </div>
+              <strong>No conditions added</strong>
+              <span>Start with a field and value. You can add more conditions and arrange them later.</span>
+              <button
+                type="button"
+                className="condition-empty-add"
+                onClick={addRow}
+              >
+                <FiPlus size={14} />
+                Add your first condition
+              </button>
             </div>
           )}
         </div>
