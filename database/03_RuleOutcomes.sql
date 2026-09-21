@@ -119,7 +119,7 @@ BEGIN
             THROW 50103, 'A rule with the specified Priority already exists.', 1;
 
         IF @tDecisionAreaCode NOT IN
-            ('CANDIDATE_QUALIFICATION','RESERVATION_ELIGIBILITY','PREFERENCE','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
+            ('CANDIDATE_QUALIFICATION','SPECIAL_RESERVATION_ELIGIBILITY','PREFERENCE_EVALUATION','SEAT_ELIGIBILITY','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
             THROW 50104, 'Invalid rule decision area.', 1;
 
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
@@ -201,7 +201,7 @@ BEGIN
             THROW 50109, 'A different rule already uses the specified Priority.', 1;
 
         IF @tDecisionAreaCode NOT IN
-            ('CANDIDATE_QUALIFICATION','RESERVATION_ELIGIBILITY','PREFERENCE','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
+            ('CANDIDATE_QUALIFICATION','SPECIAL_RESERVATION_ELIGIBILITY','PREFERENCE_EVALUATION','SEAT_ELIGIBILITY','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
             THROW 50110, 'Invalid rule decision area.', 1;
 
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
