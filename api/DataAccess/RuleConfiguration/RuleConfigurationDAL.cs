@@ -110,6 +110,8 @@ namespace api.DataAccess.RuleConfiguration
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_UpdateRuleV2", connection);
                 AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
+                command.Parameters.Add("@tDecisionAreaCode", SqlDbType.NVarChar, 100).Value = request.DecisionAreaCode ?? string.Empty;
+                command.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = SerializeOutcome(request.Outcome);
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
