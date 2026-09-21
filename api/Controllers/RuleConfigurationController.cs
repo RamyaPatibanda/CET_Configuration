@@ -49,6 +49,12 @@ namespace api.Controllers
             }
         }
 
+        [HttpGet("decision-options")]
+        public ActionResult<List<RuleDecisionOption>> GetDecisionOptions()
+        {
+            return Ok(_businessLogic.GetDecisionOptions());
+        }
+
         [HttpGet("{ruleId:int}")]
         public async Task<ActionResult<RuleDefinition>> GetRule(int ruleId)
         {
