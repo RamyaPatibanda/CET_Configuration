@@ -28,7 +28,7 @@ namespace api.BusinessLogic.RuleConfiguration
 
         public async Task<int> CreateRuleAsync(CreateRuleRequest request)
         {
-            try { Validate(request.RuleId, request.RuleName, request.Priority, request.Conditions); return await _dataAccess.CreateRuleAsync(request); }
+            try { Validate(request.RuleId, request.RuleName, request.Priority, request.DecisionAreaCode, request.Outcome, request.Conditions); return await _dataAccess.CreateRuleAsync(request); }
             catch (Exception ex) { _logger.LogError(ex, "Error while creating rule {RuleName}.", request.RuleName); throw; }
         }
 
@@ -68,11 +68,19 @@ namespace api.BusinessLogic.RuleConfiguration
             catch (Exception ex) { _logger.LogError(ex, "Error while reordering rules in business logic."); throw; }
         }
 
-        private static void Validate(int ruleId, string ruleName, int priority, List<RuleConditionRequest>? conditions)
+        private static void Validate(int ruleId, string ruleName, int priority, string decisionAreaCode, RuleOutcome? outcome, List<RuleConditionRequest>? conditions)
         {
             ValidateRuleId(ruleId);
             if (string.IsNullOrWhiteSpace(ruleName)) throw new ArgumentException("Rule name is required.", nameof(ruleName));
             if (priority < 1) throw new ArgumentException("Priority must be greater than zero.", nameof(priority));
+            var allowedAreas = new[] { "CANDIDATE_QUALIFICATION", "RESERVATION_ELIGIBILITY", "PREFERENCE", "SEAT_ALLOCATION", "BETTERMENT", "CONVERSION" };
+            if (string.IsNullOrWhiteSpace(decisionAreaCode) || !allowedAreas.Contains(decisionAreaCode))
+                throw new ArgumentException("A valid decision area is required.", nameof(decisionAreaCode));
+            outcome ??= new RuleOutcome();
+            if (decisionAreaCode == "SEAT_ALLOCATION" && string.IsNullOrWhiteSpace(outcome.AllocatedType))
+                throw new ArgumentException("Allocation result is required for Seat Allocation rules.", nameof(outcome));
+            if (decisionAreaCode == "RESERVATION_ELIGIBILITY" && string.IsNullOrWhiteSpace(outcome.ReservationType))
+                throw new ArgumentException("Reservation type is required for Reservation Eligibility rules.", nameof(outcome));
             if (conditions is null || conditions.Count == 0) throw new ArgumentException("At least one condition is required.", nameof(conditions));
 
             var groupOrders = conditions.Select(c => c.GroupOrder).Distinct().OrderBy(o => o).ToList();
