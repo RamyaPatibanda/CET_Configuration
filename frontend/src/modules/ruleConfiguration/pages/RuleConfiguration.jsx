@@ -206,6 +206,7 @@ function RuleConfiguration() {
                 <th className="rule-order-column">Order</th>
                 <th>Rule</th>
                 <th>Description</th>
+                <th>Decision Area</th>
                 <th>Conditions</th>
                 <th>Active</th>
                 <th>Actions</th>
@@ -236,6 +237,19 @@ function RuleConfiguration() {
                       </div>
                     </td>
                     <td>{rule.description || "—"}</td>
+                    <td>
+                      <span className="rule-decision-area-label">
+                        {{
+                          CANDIDATE_QUALIFICATION: "Candidate Eligibility",
+                          SPECIAL_RESERVATION_ELIGIBILITY: "Reservation Eligibility",
+                          PREFERENCE_EVALUATION: "Preference Evaluation",
+                          SEAT_ELIGIBILITY: "Seat Eligibility",
+                          SEAT_ALLOCATION: "Seat Allocation",
+                          BETTERMENT: "Betterment",
+                          CONVERSION: "Conversion"
+                        }[rule.decisionAreaCode] || rule.decisionAreaCode || "—"}
+                      </span>
+                    </td>
                     <td>
                       <span className="condition-count">
                         {conditionCount} condition{conditionCount === 1 ? "" : "s"}
