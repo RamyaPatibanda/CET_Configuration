@@ -19,48 +19,24 @@ public sealed class AllocationController : ControllerBase
     private readonly AllocationRunHistoryDAL _runHistory;
     private readonly LegacyAllocationDAL _legacyAllocation;
     private readonly Step0CandidateRepository _step0CandidateRepository;
-    private readonly AllocationDecisionConfigurationDAL _allocationDecisionConfiguration;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
         ILogger<AllocationController> logger,
         AllocationRunHistoryDAL runHistory,
         LegacyAllocationDAL legacyAllocation,
-        Step0CandidateRepository step0CandidateRepository,
-        AllocationDecisionConfigurationDAL allocationDecisionConfiguration)
+        Step0CandidateRepository step0CandidateRepository)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
         _runHistory = runHistory;
         _legacyAllocation = legacyAllocation;
         _step0CandidateRepository = step0CandidateRepository;
-        _allocationDecisionConfiguration = allocationDecisionConfiguration;
     }
 
     [HttpGet("steps")]
     public ActionResult<IReadOnlyList<AllocationStepDefinition>> GetSteps() =>
         Ok(AllocationConfiguration.GetSteps());
-
-    [HttpGet("decisions")]
-    public async Task<ActionResult<IReadOnlyList<AllocationDecisionConfiguration>>> GetDecisionConfigurations(
-        [FromQuery] string stepCode, [FromQuery] string areaCode, CancellationToken cancellationToken)
-    {
-        if (!AllocationConfiguration.IsDecisionAreaValid(stepCode, areaCode))
-            return BadRequest(new { message = "Invalid allocation decision area." });
-        return Ok(await _allocationDecisionConfiguration.GetAsync(stepCode, areaCode, cancellationToken));
-    }
-
-    [HttpPost("decisions")]
-    public async Task<IActionResult> SaveDecisionConfigurations(
-        [FromBody] SaveAllocationDecisionRequest request, CancellationToken cancellationToken)
-    {
-        if (!AllocationConfiguration.IsDecisionAreaValid(request.StepCode, request.DecisionAreaCode))
-            return BadRequest(new { message = "Invalid allocation decision area." });
-        if (request.Decisions.Any(x => x.RuleId <= 0 || x.DisplayOrder <= 0 || string.IsNullOrWhiteSpace(x.AllocatedType)))
-            return BadRequest(new { message = "Each allocation decision requires a rule, display order and allocation result." });
-        await _allocationDecisionConfiguration.SaveAsync(request, cancellationToken);
-        return NoContent();
-    }
 
     [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(
@@ -372,35 +348,46 @@ public sealed class AllocationController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = new Dictionary<string, IReadOnlyList<AllocationRule>>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var group in groups)
         {
-            var configs = group.Type.Equals(AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase)
-                ? await _allocationDecisionConfiguration.GetByRuleIdsAsync(stepCode, group.Type, group.RuleIds, cancellationToken)
-                : [];
+            cancellationToken.ThrowIfCancellationRequested();
 
-            if (group.Type.Equals(AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase))
-            {
-                var missing = group.RuleIds.Where(id => configs.All(c => c.RuleId != id)).ToList();
-                if (missing.Count > 0)
-                    throw new InvalidOperationException($"Seat Allocation rules require an allocation result configuration. Missing rule(s): {string.Join(", ", missing)}.");
-            }
+            var invalidRules = group.RuleIds
+                .Where(ruleId => rules.TryGetValue(ruleId, out var rule) &&
+                    !string.Equals(rule.DecisionAreaCode, group.Type, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (invalidRules.Count > 0)
+                throw new InvalidOperationException(
+                    $"Rule(s) {string.Join(", ", invalidRules)} are configured for a different decision area.");
 
             result[group.Type] = group.RuleIds
                 .Where(rules.ContainsKey)
-                .Select(ruleId => ToAllocationRule(
-                    rules[ruleId], group.Type,
-                    configs.FirstOrDefault(c => c.RuleId == ruleId)))
+                .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
                 .OrderBy(rule => rule.DisplayOrder == 0 ? int.MaxValue : rule.DisplayOrder)
                 .ToList();
         }
+
         return result;
     }
 
     private static AllocationRule ToAllocationRule(
         RuleDefinition rule,
-        string decisionArea,
-        AllocationDecisionConfiguration? configuration = null)
+        string decisionArea)
     {
+        RuleOutcome outcome;
+        try
+        {
+            outcome = string.IsNullOrWhiteSpace(rule.OutcomeJson)
+                ? new RuleOutcome()
+                : JsonSerializer.Deserialize<RuleOutcome>(rule.OutcomeJson) ?? new RuleOutcome();
+        }
+        catch (JsonException)
+        {
+            throw new InvalidOperationException($"Rule '{rule.RuleName}' contains invalid supporting values.");
+        }
+
         var orderedConditions = rule.Conditions
             .OrderBy(condition => condition.GroupOrder)
             .ThenBy(condition => condition.ConditionOrder)
@@ -410,9 +397,14 @@ public sealed class AllocationController : ControllerBase
         {
             Code = rule.RuleName,
             StageCode = decisionArea,
-            DisplayOrder = configuration?.DisplayOrder ?? 0,
-            AllocatedType = configuration?.AllocatedType ?? string.Empty,
-            VacancyType = configuration?.VacancyType ?? string.Empty,
+            DisplayOrder = rule.Priority,
+            AllocatedType = outcome.AllocatedType ?? string.Empty,
+            VacancyType = outcome.VacancyType ?? string.Empty,
+            SeatCategory = outcome.SeatCategory ?? string.Empty,
+            ReservationType = outcome.ReservationType ?? string.Empty,
+            CandidateStatus = outcome.CandidateStatus ?? string.Empty,
+            PreferenceMode = outcome.PreferenceMode ?? string.Empty,
+            AllowBetterment = outcome.AllowBetterment,
             LogicalOperator = ResolveConditionLogicalOperator(rule),
             Conditions = orderedConditions
                 .Select(condition => new api.Services.Allocation.RuleCondition(
@@ -424,18 +416,6 @@ public sealed class AllocationController : ControllerBase
                     condition.ConditionOrder))
                 .ToList()
         };
-    }
-
-    private static string ResolveConditionLogicalOperator(RuleDefinition rule)
-    {
-        var first = rule.Conditions
-            .OrderBy(c => c.GroupOrder)
-            .ThenBy(c => c.ConditionOrder)
-            .FirstOrDefault();
-
-        return first?.ConditionLogicalOperator?.Equals("OR", StringComparison.OrdinalIgnoreCase) == true
-            ? "OR"
-            : "AND";
     }
 
     private static string BuildRuleSetVersionId(
