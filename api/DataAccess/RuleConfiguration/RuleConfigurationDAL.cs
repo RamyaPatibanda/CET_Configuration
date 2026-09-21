@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Data;
 using System.Data.SqlClient;
 using api.Models.RuleConfiguration;
@@ -254,9 +255,28 @@ namespace api.DataAccess.RuleConfiguration
                 ConditionCount = reader.GetInt32(reader.GetOrdinal("nConditionCount")),
                 DecisionAreaCode = reader.GetString(reader.GetOrdinal("tDecisionAreaCode")),
                 OutcomeJson = reader.IsDBNull(reader.GetOrdinal("tOutcomeJson")) ? "{}" : reader.GetString(reader.GetOrdinal("tOutcomeJson")),
+                DecisionRows = DeserializeDecisionRows(reader.IsDBNull(reader.GetOrdinal("tDecisionRowsJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tDecisionRowsJson"))),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate")
             };
+        }
+
+
+        private static List<RuleDecision> DeserializeDecisionRows(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<RuleDecision>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<RuleDecision>>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                    ?? new List<RuleDecision>();
+            }
+            catch (JsonException)
+            {
+                return new List<RuleDecision>();
+            }
         }
 
         private static RuleCondition MapCondition(SqlDataReader reader)
