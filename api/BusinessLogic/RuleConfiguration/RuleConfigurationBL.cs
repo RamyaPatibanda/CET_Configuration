@@ -50,6 +50,25 @@ namespace api.BusinessLogic.RuleConfiguration
             catch (Exception ex) { _logger.LogError(ex, "Error while getting active rule fields."); throw; }
         }
 
+        public List<RuleDecisionOption> GetDecisionOptions() =>
+        [
+            new()
+            {
+                Value = "CANDIDATE_QUALIFICATION",
+                Label = "Candidate Eligibility"
+            },
+            new()
+            {
+                Value = "SEAT_ALLOCATION",
+                Label = "Seat Allocation",
+                Results =
+                [
+                    new() { Value = "Fem", Label = "Female seat (Fem)" },
+                    new() { Value = "Gen", Label = "General seat (Gen)" }
+                ]
+            }
+        ];
+
         public async Task<bool> SetRuleActiveAsync(int ruleId, bool isActive)
         {
             try { ValidateRuleId(ruleId); return await _dataAccess.SetRuleActiveAsync(ruleId, isActive); }
