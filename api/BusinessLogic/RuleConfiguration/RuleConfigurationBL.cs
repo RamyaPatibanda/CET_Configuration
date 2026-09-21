@@ -82,8 +82,23 @@ namespace api.BusinessLogic.RuleConfiguration
             if (string.IsNullOrWhiteSpace(decisionAreaCode) || !allowedAreas.Contains(decisionAreaCode))
                 throw new ArgumentException("A valid decision area is required.", nameof(decisionAreaCode));
             outcome ??= new RuleOutcome();
-            if (decisionAreaCode == "SEAT_ALLOCATION" && string.IsNullOrWhiteSpace(outcome.AllocatedType))
-                throw new ArgumentException("Allocation result is required for Seat Allocation rules.", nameof(outcome));
+            if (decisionAreaCode == "SEAT_ALLOCATION" && (outcome.Values is null || outcome.Values.Count == 0))
+                throw new ArgumentException("At least one allocation outcome is required for Seat Allocation rules.", nameof(outcome));
+
+            if (outcome.Values is not null)
+            {
+                foreach (var outcomeValue in outcome.Values)
+                {
+                    if (string.IsNullOrWhiteSpace(outcomeValue.SupportingValue))
+                        throw new ArgumentException("Each outcome must have a supporting value.", nameof(outcome));
+
+                    if (string.IsNullOrWhiteSpace(outcomeValue.Value))
+                        throw new ArgumentException("Each outcome must have a value.", nameof(outcome));
+
+                    if (string.IsNullOrWhiteSpace(outcomeValue.ValueKind))
+                        throw new ArgumentException("Each outcome must have a value kind.", nameof(outcome));
+                }
+            }
             if (decisionAreaCode == "SPECIAL_RESERVATION_ELIGIBILITY" && string.IsNullOrWhiteSpace(outcome.ReservationType))
                 throw new ArgumentException("Reservation type is required for Reservation Eligibility rules.", nameof(outcome));
             if (conditions is null || conditions.Count == 0) throw new ArgumentException("At least one condition is required.", nameof(conditions));
