@@ -18,6 +18,7 @@ const API_ENDPOINTS = {
     LIST: "/api/rule-configuration",
     CREATE: "/api/rule-configuration",
     FIELDS: "/api/rule-configuration/fields",
+    DECISION_OPTIONS: "/api/rule-configuration/decision-options",
     ORDER: "/api/rule-configuration/order",
     ACTIVE: (ruleId) => `/api/rule-configuration/${ruleId}/active`,
     BY_ID: (ruleId) => `/api/rule-configuration/${ruleId}`,
