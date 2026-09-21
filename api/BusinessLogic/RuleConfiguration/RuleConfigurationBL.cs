@@ -1,3 +1,4 @@
+using api.Configuration;
 using api.DataAccess.RuleConfiguration;
 using api.Models.RuleConfiguration;
 
@@ -7,11 +8,13 @@ namespace api.BusinessLogic.RuleConfiguration
     {
         private readonly IRuleConfigurationDAL _dataAccess;
         private readonly ILogger<RuleConfigurationBL> _logger;
+        private readonly IRuleDecisionConfiguration _decisionConfiguration;
 
-        public RuleConfigurationBL(IRuleConfigurationDAL dataAccess, ILogger<RuleConfigurationBL> logger)
+        public RuleConfigurationBL(IRuleConfigurationDAL dataAccess, ILogger<RuleConfigurationBL> logger, IRuleDecisionConfiguration decisionConfiguration)
         {
             _dataAccess = dataAccess;
             _logger = logger;
+            _decisionConfiguration = decisionConfiguration;
         }
 
         public async Task<List<RuleDefinition>> GetRulesAsync()
@@ -50,24 +53,7 @@ namespace api.BusinessLogic.RuleConfiguration
             catch (Exception ex) { _logger.LogError(ex, "Error while getting active rule fields."); throw; }
         }
 
-        public List<RuleDecisionOption> GetDecisionOptions() =>
-        [
-            new()
-            {
-                Value = "CANDIDATE_QUALIFICATION",
-                Label = "Candidate Eligibility"
-            },
-            new()
-            {
-                Value = "SEAT_ALLOCATION",
-                Label = "Seat Allocation",
-                Results =
-                [
-                    new() { Value = "Fem", Label = "Female seat (Fem)" },
-                    new() { Value = "Gen", Label = "General seat (Gen)" }
-                ]
-            }
-        ];
+        public List<RuleDecisionOption> GetDecisionOptions() => _decisionConfiguration.GetDecisionOptions().ToList();
 
         public async Task<bool> SetRuleActiveAsync(int ruleId, bool isActive)
         {
