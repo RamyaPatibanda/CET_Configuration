@@ -165,3 +165,280 @@
 .condition-group-brace.amber { color: #b38a51; }
 .condition-group-brace.rose { color: #ad7182; }
 .condition-group-brace.indigo { color: #6674a7; }
+
+
+/* ------------------------------------------------------------------
+   Condition builder refresh
+   ------------------------------------------------------------------ */
+.conditions-header {
+  align-items: center;
+  margin-top: 4px;
+  padding: 0 2px 12px;
+}
+
+.conditions-heading h3 {
+  margin-bottom: 3px;
+}
+
+.conditions-heading p {
+  max-width: 620px;
+}
+
+.condition-builder-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.condition-selection-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(109, 132, 157, 0.18);
+  border-radius: 11px;
+  background: rgba(241, 246, 251, 0.72);
+}
+
+.condition-selection-count {
+  padding: 0 7px;
+  color: #64758a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.condition-tool-button {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  color: #315f91;
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.condition-tool-button:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(43, 57, 83, 0.08);
+}
+
+.condition-tool-button-muted {
+  color: #7c8797;
+  background: transparent;
+}
+
+.condition-add-button {
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 10px;
+  box-shadow: 0 5px 14px rgba(53, 87, 120, 0.10);
+}
+
+.condition-single-table-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(248, 251, 254, 0.62);
+}
+
+.condition-single-table-wrapper.has-conditions {
+  border-color: rgba(124, 145, 168, 0.16);
+}
+
+.condition-single-table-wrapper.is-empty {
+  min-height: 190px;
+}
+
+.condition-single-table-wrapper.is-empty .condition-single-table {
+  min-height: 190px;
+}
+
+.condition-single-table-wrapper.is-empty thead {
+  display: none;
+}
+
+.condition-empty {
+  min-height: 190px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 28px 20px;
+  border: 0;
+  border-radius: 16px;
+  color: #7f8b9d;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(226, 237, 247, 0.62), transparent 55%),
+    rgba(255, 255, 255, 0.32);
+}
+
+.condition-empty .conditions-empty-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3px;
+  border-radius: 13px;
+  color: #4f759b;
+  background: rgba(224, 235, 247, 0.72);
+}
+
+.condition-empty strong {
+  color: #43536a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.condition-empty span {
+  max-width: 470px;
+  margin: 0 0 8px;
+  color: #8d98a7;
+  font-size: 10px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.condition-empty-add {
+  height: 31px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid rgba(83, 119, 151, 0.18);
+  border-radius: 9px;
+  color: #315f91;
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.condition-empty-add:hover {
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(43, 57, 83, 0.07);
+}
+
+.condition-single-table thead th {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.condition-single-table tbody tr {
+  height: 54px;
+}
+
+.condition-single-table td {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.condition-single-table td:nth-child(4),
+.condition-single-table td:nth-child(5),
+.condition-single-table td:nth-child(6),
+.condition-single-table td:nth-child(7) {
+  min-width: 0;
+}
+
+.condition-single-table .condition-select,
+.condition-single-table select,
+.condition-single-table input:not([type="checkbox"]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.condition-single-table .condition-select {
+  min-height: 34px;
+}
+
+.condition-single-table select {
+  min-height: 34px;
+  height: 34px;
+  padding-left: 9px;
+  padding-right: 26px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(137, 153, 173, 0.18);
+}
+
+.condition-single-table input:not([type="checkbox"]) {
+  min-height: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.condition-single-table tbody tr.condition-row-selected {
+  background: rgba(225, 237, 248, 0.78);
+  box-shadow: inset 3px 0 #6b8eae;
+}
+
+.condition-single-table tbody tr.condition-row-selected td:first-child input {
+  accent-color: #4e789d;
+}
+
+.condition-single-table .condition-brace-column {
+  color: #8491a2;
+  font-size: 9px;
+}
+
+.condition-group-brace {
+  width: 22px;
+  min-height: 32px;
+  font-size: 24px;
+}
+
+.condition-single-table .condition-action-column {
+  width: 40px;
+}
+
+.condition-single-table .condition-action-cell button,
+.condition-single-table td:last-child button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(143, 156, 178, 0.14);
+  border-radius: 8px;
+  color: #8a95a4;
+  background: rgba(255,255,255,.58);
+}
+
+.condition-single-table td:last-child button:hover {
+  color: #9b5151;
+  background: rgba(255,238,238,.82);
+}
+
+.rule-outcome-section {
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 15px;
+  background: rgba(248, 251, 254, 0.62);
+}
+
+.rule-outcome-header p {
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.rule-outcome-grid {
+  align-items: end;
+}
+
+.rule-outcome-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .condition-builder-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
