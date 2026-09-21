@@ -521,124 +521,155 @@ function RuleForm({
           />
         </div>
 
-        <div className="rule-outcome-section">
+        <section className="rule-outcome-section">
           <div className="rule-outcome-header">
             <div>
-              <span className="conditions-kicker">Decision behavior</span>
-              <h3>Supporting Values</h3>
-              <p>The rule carries the decision values that the allocation engine uses when its conditions match.</p>
+              <span className="conditions-kicker">Rule behavior</span>
+              <h3>Decision &amp; Result</h3>
+              <p>
+                Choose where this rule is used. If the decision area has an
+                outcome, select the result that should be applied when all of
+                this rule's conditions match.
+              </p>
             </div>
           </div>
 
           <div className="rule-outcome-grid">
-            <Select
-              value={form.decisionAreaCode}
-              options={DECISION_AREAS}
-              onChange={(event) => update("decisionAreaCode", event.target.value)}
-            />
+            <div className="rule-value-field rule-value-field-area">
+              <label htmlFor="rule-decision-area">Decision area</label>
+              <Select
+                value={form.decisionAreaCode}
+                options={DECISION_AREAS}
+                onChange={(event) =>
+                  update("decisionAreaCode", event.target.value)
+                }
+              />
+              <span className="rule-value-help">
+                Determines which allocation decision can use this rule.
+              </span>
+            </div>
 
             {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" && (
-              <Select
-                value={form.outcome?.candidateStatus || ""}
-                options={[
-                  { value: "", label: "Candidate result" },
-                  { value: "Eligible", label: "Eligible" },
-                  { value: "Excluded", label: "Excluded" },
-                ]}
-                onChange={(event) => updateOutcome("candidateStatus", event.target.value)}
-              />
+              <div className="rule-value-info">
+                <span className="rule-value-info-label">Rule meaning</span>
+                <strong>Candidate qualifies when conditions match</strong>
+                <span>No separate result value is required for this decision area.</span>
+              </div>
             )}
 
             {form.decisionAreaCode === "SPECIAL_RESERVATION_ELIGIBILITY" && (
-              <Select
-                value={form.outcome?.reservationType || ""}
-                options={[
-                  { value: "", label: "Reservation type" },
-                  { value: "PH", label: "PH" },
-                  { value: "Def", label: "Defence" },
-                  { value: "Orp", label: "Orphan" },
-                ]}
-                onChange={(event) => updateOutcome("reservationType", event.target.value)}
-              />
-            )}
-
-            {form.decisionAreaCode === "PREFERENCE_EVALUATION" && (
-              <Select
-                value={form.outcome?.preferenceMode || ""}
-                options={[
-                  { value: "", label: "Preference behavior" },
-                  { value: "Ascending", label: "Evaluate in preference order" },
-                  { value: "BettermentOnly", label: "Betterment preference only" },
-                ]}
-                onChange={(event) => updateOutcome("preferenceMode", event.target.value)}
-              />
-            )}
-
-            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
-              <>
+              <div className="rule-value-field">
+                <label htmlFor="rule-reservation-type">Reservation result</label>
                 <Select
-                  value={form.outcome?.allocatedType || ""}
+                  value={form.outcome?.reservationType || ""}
                   options={[
-                    { value: "", label: "Allocation result" },
-                    { value: "Fem", label: "Female seat (Fem)" },
-                    { value: "Gen", label: "General seat (Gen)" },
-                  ]}
-                  onChange={(event) => updateOutcome("allocatedType", event.target.value)}
-                />
-                <Select
-                  value={form.outcome?.vacancyType || ""}
-                  options={[
-                    { value: "", label: "Special vacancy type (optional)" },
+                    { value: "", label: "Select reservation type" },
                     { value: "PH", label: "PH" },
                     { value: "Def", label: "Defence" },
                     { value: "Orp", label: "Orphan" },
                   ]}
-                  onChange={(event) => updateOutcome("vacancyType", event.target.value)}
+                  onChange={(event) =>
+                    updateOutcome("reservationType", event.target.value)
+                  }
                 />
+              </div>
+            )}
+
+            {form.decisionAreaCode === "PREFERENCE_EVALUATION" && (
+              <div className="rule-value-field">
+                <label htmlFor="rule-preference-mode">Preference behavior</label>
                 <Select
-                  value={form.outcome?.seatCategory || ""}
+                  value={form.outcome?.preferenceMode || ""}
                   options={[
-                    { value: "", label: "Seat category (optional)" },
-                    { value: "Open", label: "Open" },
-                    { value: "Reserved", label: "Reserved" },
+                    { value: "", label: "Select preference behavior" },
+                    {
+                      value: "Ascending",
+                      label: "Evaluate in preference order",
+                    },
+                    {
+                      value: "BettermentOnly",
+                      label: "Betterment preference only",
+                    },
                   ]}
-                  onChange={(event) => updateOutcome("seatCategory", event.target.value)}
+                  onChange={(event) =>
+                    updateOutcome("preferenceMode", event.target.value)
+                  }
                 />
-              </>
+              </div>
+            )}
+
+            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
+              <div className="rule-value-field">
+                <label htmlFor="rule-allocation-result">Allocation result</label>
+                <Select
+                  value={form.outcome?.allocatedType || ""}
+                  options={[
+                    { value: "", label: "Select allocation result" },
+                    { value: "Fem", label: "Female seat (Fem)" },
+                    { value: "Gen", label: "General seat (Gen)" },
+                  ]}
+                  onChange={(event) =>
+                    updateOutcome("allocatedType", event.target.value)
+                  }
+                />
+                <span className="rule-value-help">
+                  The conditions decide when the rule matches; this value
+                  decides what the allocation engine applies.
+                </span>
+              </div>
             )}
 
             {form.decisionAreaCode === "BETTERMENT" && (
-              <Select
-                value={form.outcome?.allowBetterment == null ? "" : String(form.outcome.allowBetterment)}
-                options={[
-                  { value: "", label: "Betterment behavior" },
-                  { value: "true", label: "Allow betterment" },
-                  { value: "false", label: "Do not allow betterment" },
-                ]}
-                onChange={(event) => updateOutcome("allowBetterment", event.target.value === "" ? null : event.target.value === "true")}
-              />
+              <div className="rule-value-field">
+                <label htmlFor="rule-betterment">Betterment behavior</label>
+                <Select
+                  value={
+                    form.outcome?.allowBetterment == null
+                      ? ""
+                      : String(form.outcome.allowBetterment)
+                  }
+                  options={[
+                    { value: "", label: "Select betterment behavior" },
+                    { value: "true", label: "Allow betterment" },
+                    { value: "false", label: "Do not allow betterment" },
+                  ]}
+                  onChange={(event) =>
+                    updateOutcome(
+                      "allowBetterment",
+                      event.target.value === ""
+                        ? null
+                        : event.target.value === "true"
+                    )
+                  }
+                />
+              </div>
             )}
 
             {form.decisionAreaCode === "CONVERSION" && (
-              <TextBox
-                value={form.outcome?.additionalValues?.conversionType || ""}
-                placeholder="Conversion type"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    outcome: {
-                      ...normalizeOutcome(current.outcome),
-                      additionalValues: {
-                        ...normalizeOutcome(current.outcome).additionalValues,
-                        conversionType: event.target.value,
+              <div className="rule-value-field">
+                <label htmlFor="rule-conversion-type">Conversion result</label>
+                <TextBox
+                  value={
+                    form.outcome?.additionalValues?.conversionType || ""
+                  }
+                  placeholder="Enter conversion type"
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      outcome: {
+                        ...normalizeOutcome(current.outcome),
+                        additionalValues: {
+                          ...normalizeOutcome(current.outcome).additionalValues,
+                          conversionType: event.target.value,
+                        },
                       },
-                    },
-                  }))
-                }
-              />
+                    }))
+                  }
+                />
+              </div>
             )}
           </div>
-        </div>
+        </section>
 
         <div className="conditions-header">
           <div className="conditions-heading">
