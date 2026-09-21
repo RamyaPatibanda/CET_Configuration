@@ -172,33 +172,6 @@ BEGIN
     LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId = rc.aRuleConditionGroupId
     WHERE rc.aRuleId = @aRuleId
     ORDER BY COALESCE(rg.nGroupOrder, 1), rc.nConditionOrder, rc.aRuleConditionId;
-
-    SELECT
-        d.aRuleDecisionId,
-        d.aRuleId,
-        d.tDecisionName,
-        d.nDecisionOrder,
-        d.bIsActive,
-        dc.aRuleDecisionConditionId,
-        dc.tOperandType,
-        dc.tOperandKey,
-        dc.tLogicalOperator,
-        dc.tOperator,
-        dc.tValue,
-        dc.nConditionOrder,
-        dr.aRuleDecisionResultId,
-        dr.tResultKey,
-        dr.tResultValue,
-        dr.tValueKind,
-        dr.nResultOrder
-    FROM dbo.tblRuleDecision d
-    LEFT JOIN dbo.tblRuleDecisionCondition dc
-        ON dc.aRuleDecisionId = d.aRuleDecisionId
-    LEFT JOIN dbo.tblRuleDecisionResult dr
-        ON dr.aRuleDecisionId = d.aRuleDecisionId
-       AND dr.nResultOrder = ISNULL(dc.nConditionOrder, dr.nResultOrder)
-    WHERE d.aRuleId = @aRuleId
-    ORDER BY d.nDecisionOrder, dc.nConditionOrder, dr.nResultOrder;
 END;
 GO
 
