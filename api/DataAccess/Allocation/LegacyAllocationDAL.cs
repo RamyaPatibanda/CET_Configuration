@@ -76,6 +76,9 @@ public sealed class LegacyAllocationDAL
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
+                    if (!MatchesPreferenceRules(ruleGroups, candidate, preference))
+                        continue;
+
                     var vacancyRows = await GetVacancyRowsAsync(
                         connection,
                         transaction,
@@ -236,6 +239,27 @@ public sealed class LegacyAllocationDAL
             return false;
 
         return rules.Any(rule => _ruleEvaluator.Matches(rule, candidate));
+    }
+
+    private bool MatchesPreferenceRules(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
+        AllocationCandidate candidate,
+        CollegePreference preference)
+    {
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.PreferenceEvaluation, out var rules) ||
+            rules.Count == 0)
+            return true;
+
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Gender"] = candidate.Gender,
+            ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
+            ["MeritNo"] = candidate.MeritNo.ToString(),
+            ["PreferenceNo"] = preference.PreferenceNo.ToString(),
+            ["ChoiceCode"] = preference.ChoiceCode.ToString()
+        };
+
+        return rules.Any(rule => _ruleEvaluator.Matches(rule, values));
     }
 
     private AllocationRule? ResolveAllocationRule(
