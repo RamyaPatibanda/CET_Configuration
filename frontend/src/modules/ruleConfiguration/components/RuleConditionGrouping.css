@@ -273,3 +273,41 @@
   .condition-empty { flex-wrap: wrap; justify-content: flex-start; }
   .condition-empty-action { margin-left: 51px; }
 }
+
+
+/* Configurable rule outcomes */
+.rule-outcome-values {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.rule-outcome-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 130px 34px;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid rgba(30, 41, 59, 0.12);
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.75);
+}
+
+.rule-value-kind {
+  min-width: 0;
+}
+
+.rule-outcome-row .condition-remove {
+  margin-bottom: 2px;
+}
+
+@media (max-width: 900px) {
+  .rule-outcome-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rule-outcome-row .condition-remove {
+    justify-self: end;
+  }
+}
