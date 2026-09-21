@@ -58,11 +58,6 @@ const LOGICAL_OPTIONS = [
 
 const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
 
-const DECISION_AREAS = [
-  { value: "CANDIDATE_QUALIFICATION", label: "Candidate Eligibility" },
-  { value: "SEAT_ALLOCATION", label: "Seat Allocation" },
-];
-
 const normalizeOutcome = (value) => ({
   ...EMPTY_RULE.outcome,
   ...(value || {}),
@@ -120,7 +115,9 @@ function RuleForm({
   const [form, setForm] = useState(EMPTY_RULE);
   const [rows, setRows] = useState([]);
   const [fields, setFields] = useState([]);
+  const [decisionOptions, setDecisionOptions] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  const [loadingDecisionOptions, setLoadingDecisionOptions] = useState(false);
   const [error, setError] = useState("");
   const [draggedRow, setDraggedRow] = useState(null);
 
@@ -147,19 +144,25 @@ function RuleForm({
     setRows(rule ? toRows(rule.conditions) : []);
     setError("");
 
-    const loadFields = async () => {
+    const loadConfiguration = async () => {
       try {
         setLoadingFields(true);
-        const response = await ruleConfigurationService.getFields();
-        setFields(getResponseItems(response));
+        setLoadingDecisionOptions(true);
+        const [fieldsResponse, decisionResponse] = await Promise.all([
+          ruleConfigurationService.getFields(),
+          ruleConfigurationService.getDecisionOptions(),
+        ]);
+        setFields(getResponseItems(fieldsResponse));
+        setDecisionOptions(getResponseItems(decisionResponse));
       } catch (loadError) {
-        setError(loadError.message || "Unable to load active fields.");
+        setError(loadError.message || "Unable to load rule configuration options.");
       } finally {
         setLoadingFields(false);
+        setLoadingDecisionOptions(false);
       }
     };
 
-    loadFields();
+    loadConfiguration();
   }, [open, rule, nextRuleId]);
 
   const update = (name, value) => {
@@ -485,7 +488,9 @@ function RuleForm({
           <div className="rule-outcome-grid">
             <div className="rule-value-field">
               <label htmlFor="rule-decision-area">Decision area</label>
-              <Select value={form.decisionAreaCode} options={DECISION_AREAS}
+              <Select value={form.decisionAreaCode}
+                options={decisionOptions.map((item) => ({ value: item.value, label: item.label }))}
+                disabled={loadingDecisionOptions}
                 onChange={(event) => update("decisionAreaCode", event.target.value)} />
               <span className="rule-value-help">This is the action taken when the rule conditions match.</span>
             </div>
@@ -502,8 +507,11 @@ function RuleForm({
                 <Select value={form.outcome?.allocatedType || ""}
                   options={[
                     { value: "", label: "Select allocation result" },
-                    { value: "Fem", label: "Female seat (Fem)" },
-                    { value: "Gen", label: "General seat (Gen)" },
+                    ...(
+                      decisionOptions.find(
+                        (item) => item.value === form.decisionAreaCode
+                      )?.results || []
+                    ),
                   ]}
                   onChange={(event) => updateOutcome("allocatedType", event.target.value)} />
                 <span className="rule-value-help">Assign this value when the conditions match.</span>
