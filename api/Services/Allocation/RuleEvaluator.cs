@@ -17,6 +17,11 @@ public sealed class AllocationRule
     public string LogicalOperator { get; set; } = "AND";
     public string AllocatedType { get; set; } = string.Empty;
     public string VacancyType { get; set; } = string.Empty;
+    public string SeatCategory { get; set; } = string.Empty;
+    public string ReservationType { get; set; } = string.Empty;
+    public string CandidateStatus { get; set; } = string.Empty;
+    public string PreferenceMode { get; set; } = string.Empty;
+    public bool? AllowBetterment { get; set; }
     public int DisplayOrder { get; set; }
     public List<RuleCondition> Conditions { get; set; } = [];
 }
