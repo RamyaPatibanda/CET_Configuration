@@ -199,8 +199,7 @@ function RuleForm({
 
   const removeRow = (rowId) => {
     setRows((current) => current.filter((row) => row.id !== rowId));
-      current.filter((id) => id !== rowId)
-    );
+    setError("");
   };
 
   const updateRow = (rowId, name, value) => {
@@ -388,44 +387,6 @@ function RuleForm({
           />
         </div>
 
-        <section className="rule-outcome-section">
-          <div className="rule-outcome-header">
-            <div>
-              <span className="conditions-kicker">Rule behavior</span>
-              <h3>Decision &amp; Result</h3>
-              <p>Choose the Step 0 decision area. Conditions define when the rule matches; only Seat Allocation needs a result.</p>
-            </div>
-          </div>
-          <div className="rule-outcome-grid">
-            <div className="rule-value-field">
-              <label htmlFor="rule-decision-area">Decision area</label>
-              <Select value={form.decisionAreaCode} options={DECISION_AREAS}
-                onChange={(event) => update("decisionAreaCode", event.target.value)} />
-              <span className="rule-value-help">Step 0 uses Candidate Eligibility and Seat Allocation.</span>
-            </div>
-            {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" && (
-              <div className="rule-value-info">
-                <span className="rule-value-info-label">Outcome</span>
-                <strong>No separate result</strong>
-                <span>If the configured conditions match, the candidate qualifies.</span>
-              </div>
-            )}
-            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
-              <div className="rule-value-field">
-                <label htmlFor="rule-allocation-result">Allocation result</label>
-                <Select value={form.outcome?.allocatedType || ""}
-                  options={[
-                    { value: "", label: "Select allocation result" },
-                    { value: "Fem", label: "Female seat (Fem)" },
-                    { value: "Gen", label: "General seat (Gen)" },
-                  ]}
-                  onChange={(event) => updateOutcome("allocatedType", event.target.value)} />
-                <span className="rule-value-help">The conditions decide when this rule matches; this result tells the allocation engine what to apply.</span>
-              </div>
-            )}
-          </div>
-        </section>
-
         <section className="conditions-section">
           <div className="conditions-header">
             <div className="conditions-heading">
@@ -510,6 +471,44 @@ function RuleForm({
           <div className="condition-logic-note">
             <FiLayers size={14} />
             <span>Groups are combined with <strong>AND</strong>. Conditions inside each group use the selected AND / OR relationship.</span>
+          </div>
+        </section>
+
+        <section className="rule-outcome-section">
+          <div className="rule-outcome-header">
+            <div>
+              <span className="conditions-kicker">Then</span>
+              <h3>Decision &amp; Result</h3>
+              <p>When the conditions above match, choose the decision and assign the resulting value.</p>
+            </div>
+          </div>
+          <div className="rule-outcome-grid">
+            <div className="rule-value-field">
+              <label htmlFor="rule-decision-area">Decision area</label>
+              <Select value={form.decisionAreaCode} options={DECISION_AREAS}
+                onChange={(event) => update("decisionAreaCode", event.target.value)} />
+              <span className="rule-value-help">This is the action taken when the rule conditions match.</span>
+            </div>
+            {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" && (
+              <div className="rule-value-info">
+                <span className="rule-value-info-label">Then</span>
+                <strong>No separate result</strong>
+                <span>If the configured conditions match, the candidate qualifies.</span>
+              </div>
+            )}
+            {form.decisionAreaCode === "SEAT_ALLOCATION" && (
+              <div className="rule-value-field">
+                <label htmlFor="rule-allocation-result">Allocation result</label>
+                <Select value={form.outcome?.allocatedType || ""}
+                  options={[
+                    { value: "", label: "Select allocation result" },
+                    { value: "Fem", label: "Female seat (Fem)" },
+                    { value: "Gen", label: "General seat (Gen)" },
+                  ]}
+                  onChange={(event) => updateOutcome("allocatedType", event.target.value)} />
+                <span className="rule-value-help">Assign this value when the conditions match.</span>
+              </div>
+            )}
           </div>
         </section>
 
