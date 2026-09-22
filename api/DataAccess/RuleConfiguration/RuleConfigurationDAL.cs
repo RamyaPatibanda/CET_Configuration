@@ -162,6 +162,7 @@ namespace api.DataAccess.RuleConfiguration
                     {
                         FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
                         DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                        FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                         FieldType = reader.GetString(reader.GetOrdinal("tFieldType"))
                     });
                 }
