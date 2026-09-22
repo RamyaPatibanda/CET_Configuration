@@ -545,10 +545,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             </div>
           ) : (
             <div className="rule-conditions-empty">
-              <span>No conditions added yet.</span>
-              <Button type="button" variant="secondary" onClick={addRootCondition}>
-                <FiPlus size={13} /> Add condition
-              </Button>
+              <span>No conditions added yet. Use the Add condition button above to start.</span>
             </div>
           )}
         </section>
