@@ -64,11 +64,11 @@ const normalizeConditions = (conditions) => (Array.isArray(conditions) ? conditi
 const normalizeBranches = (value) => {
   const rows = Array.isArray(value) ? value : value?.branches ?? value?.Branches ?? value?.DecisionRows ?? [];
   return rows.map((row, index) => {
-    let outcome = row.outcome ?? row.Outcome ?? {};
-    if ((!outcome || typeof outcome !== "object") && row.outcomeJson) {
+    let outcome = row.outcome ?? row.Outcome ?? null;
+    if (row.outcomeJson && (!outcome || typeof outcome !== "object" || Object.keys(outcome).length === 0)) {
       try { outcome = JSON.parse(row.outcomeJson); } catch { outcome = {}; }
     }
-    if ((!outcome || typeof outcome !== "object") && row.OutcomeJson) {
+    if (row.OutcomeJson && (!outcome || typeof outcome !== "object" || Object.keys(outcome).length === 0)) {
       try { outcome = JSON.parse(row.OutcomeJson); } catch { outcome = {}; }
     }
     return ({
