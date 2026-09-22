@@ -28,6 +28,7 @@ public static class AllocationConfiguration
     public const string SeatEligibility = "SEAT_ELIGIBILITY";
     public const string Betterment = "BETTERMENT";
     public const string Conversion = "CONVERSION";
+    public const string Step0Sequence = "STEP_0_SEQUENCE";
 
     public static IReadOnlyList<AllocationStepDefinition> GetSteps() =>
     [
