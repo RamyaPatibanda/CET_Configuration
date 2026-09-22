@@ -234,6 +234,7 @@ public sealed class LegacyAllocationDAL
             ["Gen"] = vacancyRow.Gen.ToString(),
             ["Fem"] = vacancyRow.Fem.ToString(),
             ["Vacancy"] = vacancy.ToString(),
+            ["VacCategoryId"] = vacancyRow.CategoryId.ToString(),
             ["VacancyType"] = vacancyType,
             ["QuotaID"] = vacancyRow.QuotaId.ToString(),
             ["MinorityId"] = vacancyRow.MinorityId?.ToString(),
