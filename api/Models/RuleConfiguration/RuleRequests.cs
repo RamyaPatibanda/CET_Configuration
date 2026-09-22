@@ -18,6 +18,7 @@ namespace api.Models.RuleConfiguration
     public class RuleConditionRequest
     {
         public int FieldId { get; set; }
+        public string FieldName { get; set; } = string.Empty;
         public string ConditionLogicalOperator { get; set; } = "AND";
         public string Operator { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
