@@ -41,7 +41,30 @@ public sealed class UserManagementBL : IUserManagementBL
         if (displayName.Length > 200)
             throw new ArgumentException("Display name cannot exceed 200 characters.");
 
+        var permissions = (request.Permissions ?? [])
+            .GroupBy(permission => permission.ModuleCode?.Trim() ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.Last())
+            .ToList();
+
+        foreach (var permission in permissions)
+        {
+            if (!UserPermissionModules.Names.ContainsKey(permission.ModuleCode))
+                throw new ArgumentException($"Invalid permission module '{permission.ModuleCode}'.");
+
+            if (permission.CanWrite && !permission.CanRead)
+                throw new ArgumentException($"{UserPermissionModules.Names[permission.ModuleCode]} write permission requires read permission.");
+        }
+
+        if (request.IsAdmin)
+            permissions.Clear();
+
         var encryptedPassword = _connectionUtils.GetEncryptedValue(request.Password);
-        return _dataAccess.CreateUserAsync(username, encryptedPassword, displayName, request.IsAdmin, request.IsActive);
+        return _dataAccess.CreateUserAsync(
+            username,
+            encryptedPassword,
+            displayName,
+            request.IsAdmin,
+            request.IsActive,
+            permissions);
     }
 }
