@@ -196,7 +196,7 @@ CREATE OR ALTER PROCEDURE dbo.sproc_SaveAllocationRunHistory
     @nCandidateCount INT = 0,
     @nDecisionCount INT = 0,
     @tErrorMessage NVARCHAR(2000) = N'',
-    @aRunByUserId INT = NULL
+    @aCreatedByUserId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -213,7 +213,7 @@ BEGIN
         nCandidateCount = @nCandidateCount,
         nDecisionCount = @nDecisionCount,
         tErrorMessage = @tErrorMessage,
-        aRunByUserId = @aRunByUserId
+        aCreatedByUserId = @aRunByUserId
     WHERE aAllocationRunId = @aAllocationRunId;
 
     IF @@ROWCOUNT = 0
@@ -272,7 +272,7 @@ BEGIN
         nDecisionCount,
         tErrorMessage,
         h.aRunByUserId,
-        COALESCE(u.tDisplayName,N'') AS tRunBy
+        COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblAllocationRunHistory h
     LEFT JOIN dbo.tblUsers u ON u.aUserId=h.aRunByUserId
     ORDER BY dtCreatedAtUtc DESC;
