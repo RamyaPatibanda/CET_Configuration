@@ -250,7 +250,7 @@ public sealed class LegacyAllocationDAL
             // Decision rows replace the old hard-coded IF / ELSE IF branches.
             // They are evaluated strictly by nDecisionOrder and the first
             // matching branch supplies the allocation result.
-            foreach (var decision in rule.Branches.OrderBy(d => d.DecisionOrder))
+            foreach (var branch in rule.Branches.OrderBy(d => d.BranchOrder))
             {
                 if (string.IsNullOrWhiteSpace(branch.AllocationType))
                     continue;
