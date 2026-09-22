@@ -245,7 +245,8 @@ namespace api.DataAccess.FieldConfiguration
                 IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
                 DisplayOrder = reader.GetInt32(reader.GetOrdinal("nDisplayOrder")),
                 CreatedDate = GetNullableDateTime(reader, "dtCreatedDate"),
-                ModifiedDate = GetNullableDateTime(reader, "dtModifiedDate"),\n                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),\n                CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
+                ModifiedDate = GetNullableDateTime(reader, "dtModifiedDate"),
+                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),\n                CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
             };
         }
 
