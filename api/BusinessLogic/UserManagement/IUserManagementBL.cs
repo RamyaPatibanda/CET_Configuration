@@ -6,4 +6,5 @@ public interface IUserManagementBL
 {
     Task<IReadOnlyList<UserDefinition>> GetUsersAsync();
     Task<int> CreateUserAsync(CreateUserRequest request);
+    Task<IReadOnlyList<UserPermission>> GetUserPermissionsAsync(int userId);
 }
