@@ -13,9 +13,7 @@ namespace api.Models.RuleConfiguration
         public List<RuleDecisionRequest> DecisionRows { get; set; } = new();
     }
 
-    public class UpdateRuleRequest : CreateRuleRequest
-    {
-    }
+    public class UpdateRuleRequest : CreateRuleRequest { }
 
     public class RuleConditionRequest
     {
@@ -27,14 +25,18 @@ namespace api.Models.RuleConfiguration
         public int GroupOrder { get; set; } = 1;
     }
 
+    public class RuleDecisionRequest
+    {
+        public string DecisionName { get; set; } = string.Empty;
+        public int DecisionOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+        public string AllocationType { get; set; } = string.Empty;
+        public int Sequence { get; set; }
+    }
+
     public class RuleOutcome
     {
-        // Dynamic/configurable outcome values used by the rule editor.
         public List<RuleOutcomeValue> Values { get; set; } = new();
-
-        // Kept for compatibility with the allocation engine's existing contract.
-        // Values from the configurable collection are resolved into these properties
-        // before an AllocationRule is created.
         public string AllocatedType { get; set; } = string.Empty;
         public string VacancyType { get; set; } = string.Empty;
         public string SeatCategory { get; set; } = string.Empty;
@@ -79,32 +81,3 @@ namespace api.Models.RuleConfiguration
         public List<RuleConfigurationOption> Values { get; set; } = new();
     }
 }
-
-
-    public class RuleDecisionRequest
-    {
-        public string DecisionName { get; set; } = string.Empty;
-        public int DecisionOrder { get; set; }
-        public bool IsActive { get; set; } = true;
-        public List<RuleDecisionConditionRequest> Conditions { get; set; } = new();
-        public string AllocationType { get; set; } = string.Empty;
-        public int Sequence { get; set; }
-    }
-
-    public class RuleDecisionConditionRequest
-    {
-        public string OperandType { get; set; } = "CONTEXT";
-        public string OperandKey { get; set; } = string.Empty;
-        public string LogicalOperator { get; set; } = "AND";
-        public string Operator { get; set; } = "=";
-        public string Value { get; set; } = string.Empty;
-        public int ConditionOrder { get; set; }
-    }
-
-    public class RuleDecisionResultRequest
-    {
-        public string ResultKey { get; set; } = string.Empty;
-        public string ResultValue { get; set; } = string.Empty;
-        public string ValueKind { get; set; } = "text";
-        public int ResultOrder { get; set; }
-    }
