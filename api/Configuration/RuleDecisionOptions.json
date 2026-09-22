@@ -7,41 +7,7 @@
   {
     "value": "SEAT_ALLOCATION",
     "label": "Seat Allocation",
-    "results": [
-      {
-        "supportingValue": "allocatedType",
-        "label": "Allocation Type",
-        "valueKind": "text",
-        "values": [
-          {
-            "value": "Fem",
-            "label": "Female seat (Fem)"
-          },
-          {
-            "value": "Gen",
-            "label": "General seat (Gen)"
-          },
-          {
-            "value": "PH",
-            "label": "PH seat (PH)"
-          },
-          {
-            "value": "Def",
-            "label": "Defence seat (Def)"
-          },
-          {
-            "value": "Orp",
-            "label": "Orphan seat (Orp)"
-          }
-        ]
-      },
-      {
-        "supportingValue": "sequence",
-        "label": "Sequence",
-        "valueKind": "number",
-        "values": []
-      }
-    ]
+    "results": []
   },
   {
     "value": "SPECIAL_RESERVATION_ELIGIBILITY",
