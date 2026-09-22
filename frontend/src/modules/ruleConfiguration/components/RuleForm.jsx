@@ -395,6 +395,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 <table className="condition-single-table">
                   <thead>
                     <tr>
+                      <th className="condition-brace-column" />
                       <th className="condition-check-column" />
                       <th>Field</th>
                       <th>Operator</th>
@@ -404,10 +405,12 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {(form.conditions || []).map((condition) => {
-                      const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
-                      const operators = optionsForType(field?.fieldType);
-                      return (
+                    {getGroups(form.conditions).flatMap(([groupOrder, groupConditions], groupIndex) =>
+                      groupConditions.map((condition, conditionIndex) => {
+                        const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
+                        const operators = optionsForType(field?.fieldType);
+                        const showGroupBrace = groupConditions.length > 1 && conditionIndex === 0;
+                        return (
                         <tr
                           key={condition.id}
                           draggable
@@ -416,6 +419,17 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                           onDrop={() => handleConditionDrop(condition.id)}
                           onDragEnd={() => setDraggedConditionId(null)}
                         >
+                          {showGroupBrace && (
+                            <td
+                              className="condition-brace-cell"
+                              rowSpan={groupConditions.length}
+                              aria-label={`Condition group ${groupOrder}`}
+                            >
+                              <span className={`condition-group-brace ${["blue", "violet", "teal", "amber", "rose", "indigo"][groupIndex % 6]}`}>
+                                {"{"}
+                              </span>
+                            </td>
+                          )}
                           <td className="condition-check-cell">
                             <button type="button" className="condition-drag-handle" title="Drag to rearrange" aria-label="Drag to rearrange">
                               <FiMenu size={16} />
@@ -466,8 +480,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                             </button>
                           </td>
                         </tr>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
