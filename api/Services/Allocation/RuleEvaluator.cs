@@ -16,6 +16,8 @@ public sealed class AllocationRule
     public string StageCode { get; set; } = string.Empty;
     public string LogicalOperator { get; set; } = "AND";
     public string AllocatedType { get; set; } = string.Empty;
+
+    public string VacancySource { get; set; } = string.Empty;
     public string VacancyType { get; set; } = string.Empty;
     public string SeatCategory { get; set; } = string.Empty;
     public string ReservationType { get; set; } = string.Empty;
