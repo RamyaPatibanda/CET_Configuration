@@ -427,14 +427,6 @@ public sealed class AllocationController : ControllerBase
                     AllocationType = decision.AllocationType,
                     Sequence = decision.Sequence
                 })
-                .ToList()       .ToList(),
-                    Results = decision.Results
-                        .OrderBy(result => result.ResultOrder)
-                        .ToDictionary(
-                            result => result.ResultKey,
-                            result => result.ResultValue,
-                            StringComparer.OrdinalIgnoreCase)
-                })
                 .ToList()
         };
     }
