@@ -241,9 +241,9 @@ namespace api.DataAccess.RuleConfiguration
 
                     await using var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleBranch
-                            (aRuleId, tBranchName, nBranchOrder, tAllocatedType, nSequence, bIsActive, bIsElse, tConditionsJson)
+                            (aRuleId, tBranchName, nBranchOrder, tAllocatedType, nSequence, bIsActive, bIsElse, tConditionsJson, tOutcomeJson)
                         VALUES
-                            (@aRuleId, @tBranchName, @nBranchOrder, @tAllocatedType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
+                            (@aRuleId, @tBranchName, @nBranchOrder, @tAllocatedType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson, @tOutcomeJson);",
                         connection, transaction);
 
                     decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
