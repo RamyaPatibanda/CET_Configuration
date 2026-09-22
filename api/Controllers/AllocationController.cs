@@ -231,6 +231,47 @@ public sealed class AllocationController : ControllerBase
             .Distinct()
             .ToList();
 
+        var detailedById = new Dictionary<int, RuleDefinition>();
+        foreach (var ruleId in selectedRuleIds)
+        {
+            var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
+            if (rule is null)
+            {
+                if (!allowIncompleteDraft)
+                    return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
+                continue;
+            }
+
+            if (!rule.IsActive)
+            {
+                if (!allowIncompleteDraft)
+                    return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
+                continue;
+            }
+
+            detailedById[rule.RuleId] = rule;
+        }
+
+        if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
+            return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
+
+        if (!allowIncompleteDraft)
+        {
+            var invalidCandidateRules = candidateRuleIds
+                .Where(id => detailedById.TryGetValue(id, out var rule) &&
+                    !string.Equals(rule.DecisionAreaCode, AllocationConfiguration.CandidateQualification, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (invalidCandidateRules.Count > 0)
+                return PreparedAllocation.Fail($"Rule(s) {string.Join(", ", invalidCandidateRules)} are not configured as Candidate Eligibility rules.");
+
+            var invalidSequenceRules = sequenceRuleIds
+                .Where(id => detailedById.TryGetValue(id, out var rule) &&
+                    !string.Equals(rule.DecisionAreaCode, AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (invalidSequenceRules.Count > 0)
+                return PreparedAllocation.Fail($"Rule(s) {string.Join(", ", invalidSequenceRules)} are not configured as Sequence rules.");
+        }
+
         var run = new AllocationRun
         {
             AllocationRunId = request.AllocationRunId ?? Guid.NewGuid(),
