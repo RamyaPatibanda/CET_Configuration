@@ -51,27 +51,6 @@ const LOGICAL_OPTIONS = [
 
 const GROUP_COLORS = ["blue", "violet", "teal", "amber", "rose", "indigo"];
 
-const normalizeOutcome = (value) => {
-  if (Array.isArray(value?.values)) {
-    return { values: value.values.map((item) => ({
-      supportingValue: item.supportingValue || "",
-      value: item.value ?? "",
-      valueKind: item.valueKind || "text",
-    })) };
-  }
-
-  const legacyKeys = ["allocatedType", "vacancyType", "seatCategory", "reservationType", "candidateStatus", "preferenceMode", "allowBetterment"];
-  return {
-    values: legacyKeys
-      .filter((key) => value?.[key] !== undefined && value?.[key] !== null && value[key] !== "")
-      .map((key) => ({
-        supportingValue: key,
-        value: String(value[key]),
-        valueKind: typeof value[key] === "boolean" ? "boolean" : "text",
-      })),
-  };
-};
-
 const optionsForType = (type) => OPERATORS[type] || OPERATORS.Text;
 
 const getResponseItems = (response) =>
@@ -125,7 +104,6 @@ function RuleForm({
   const [fields, setFields] = useState([]);
   const [decisionOptions, setDecisionOptions] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
-  const [loadingDecisionOptions, setLoadingDecisionOptions] = useState(false);
   const [error, setError] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   const [draggedRow, setDraggedRow] = useState(null);
@@ -141,12 +119,6 @@ function RuleForm({
             ...EMPTY_RULE,
             ...rule,
             decisionAreaCode: rule.decisionAreaCode || "CANDIDATE_QUALIFICATION",
-            outcome: normalizeOutcome(
-              rule.outcome ||
-              (rule.outcomeJson ? (() => {
-                try { return JSON.parse(rule.outcomeJson); } catch { return {}; }
-              })() : {})
-            ),
           }
         : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
@@ -157,18 +129,14 @@ function RuleForm({
     const loadConfiguration = async () => {
       try {
         setLoadingFields(true);
-        setLoadingDecisionOptions(true);
         const [fieldsResponse, decisionResponse] = await Promise.all([
           ruleConfigurationService.getFields(),
-          ruleConfigurationService.getDecisionOptions(),
         ]);
         setFields(getResponseItems(fieldsResponse));
-        setDecisionOptions(getResponseItems(decisionResponse));
       } catch (loadError) {
         setError(loadError.message || "Unable to load rule configuration options.");
       } finally {
         setLoadingFields(false);
-        setLoadingDecisionOptions(false);
       }
     };
 
@@ -179,35 +147,6 @@ function RuleForm({
     setForm((current) => ({
       ...current,
       [name]: value,
-    }));
-  };
-
-  const updateOutcome = (index, name, value) => {
-    setForm((current) => {
-      const values = [...(current.outcome?.values || [])];
-      values[index] = { ...values[index], [name]: value };
-      return { ...current, outcome: { values } };
-    });
-  };
-
-  const addOutcome = () => {
-    const definition = decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results?.[0];
-    setForm((current) => ({
-      ...current,
-      outcome: {
-        values: [...(current.outcome?.values || []), {
-          supportingValue: definition?.supportingValue || "",
-          value: "",
-          valueKind: definition?.valueKind || "text",
-        }],
-      },
-    }));
-  };
-
-  const removeOutcome = (index) => {
-    setForm((current) => ({
-      ...current,
-      outcome: { values: (current.outcome?.values || []).filter((_, i) => i !== index) },
     }));
   };
 
@@ -483,7 +422,7 @@ function RuleForm({
       ...form,
       priority: Number(form.priority || 1),
       decisionAreaCode: form.decisionAreaCode,
-      outcome: normalizeOutcome(form.outcome),
+      outcome: { values: [] },
       conditions,
     });
   };
@@ -544,6 +483,20 @@ function RuleForm({
               update("description", event.target.value)
             }
           />
+          <div className="rule-form-field">
+            <label htmlFor="rule-area">Rule Area</label>
+            <Select
+              value={form.decisionAreaCode}
+              options={decisionOptions.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              disabled={loadingDecisionOptions}
+              onChange={(event) =>
+                update("decisionAreaCode", event.target.value)
+              }
+            />
+          </div>
         </div>
         <div className="conditions-header">
           <div className="conditions-header-copy">
@@ -757,90 +710,6 @@ function RuleForm({
           )}
         </div>
 
-        <section className="rule-outcome-section">
-          <div className="rule-outcome-header">
-            <div>
-              <span className="conditions-kicker">Then</span>
-              <h3>Decision &amp; Result</h3>
-              <p>When the conditions above match, choose the decision and assign the resulting value.</p>
-            </div>
-          </div>
-          <div className="rule-outcome-grid">
-            <div className="rule-value-field">
-              <label htmlFor="rule-decision-area">Decision area</label>
-              <Select value={form.decisionAreaCode}
-                options={decisionOptions.map((item) => ({ value: item.value, label: item.label }))}
-                disabled={loadingDecisionOptions}
-                onChange={(event) => update("decisionAreaCode", event.target.value)} />
-              <span className="rule-value-help">This is the action taken when the rule conditions match.</span>
-            </div>
-            {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" && (
-              <div className="rule-value-info">
-                <span className="rule-value-info-label">Then</span>
-                <strong>No separate result</strong>
-                <span>If the configured conditions match, the candidate qualifies.</span>
-              </div>
-            )}
-            {form.decisionAreaCode !== "CANDIDATE_QUALIFICATION" && (
-              <div className="rule-outcome-values">
-                {(form.outcome?.values || []).map((item, index) => {
-                  const definitions = decisionOptions.find((option) => option.value === form.decisionAreaCode)?.results || [];
-                  const definition = definitions.find((option) => option.supportingValue === item.supportingValue);
-                  const valueOptions = definition?.values || [];
-                  return (
-                    <div className="rule-outcome-row" key={`${item.supportingValue}-${index}`}>
-                      <div className="rule-value-field">
-                        <label>Supporting value</label>
-                        <Select value={item.supportingValue}
-                          options={definitions.map((option) => ({ value: option.supportingValue, label: option.label }))}
-                          onChange={(event) => {
-                            const selected = definitions.find((option) => option.supportingValue === event.target.value);
-                            setForm((current) => {
-                              const values = [...(current.outcome?.values || [])];
-                              values[index] = { supportingValue: event.target.value, value: "", valueKind: selected?.valueKind || "text" };
-                              return { ...current, outcome: { values } };
-                            });
-                          }} />
-                      </div>
-                      <div className="rule-value-field">
-                        <label>Value</label>
-                        {valueOptions.length > 0 ? (
-                          <Select value={item.value}
-                            options={[{ value: "", label: "Select value" }, ...valueOptions]}
-                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
-                        ) : item.valueKind === "boolean" ? (
-                          <Select value={item.value}
-                            options={[{ value: "", label: "Select value" }, { value: "true", label: "Yes" }, { value: "false", label: "No" }]}
-                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
-                        ) : (
-                          <TextBox value={item.value} placeholder="Enter value"
-                            onChange={(event) => updateOutcome(index, "value", event.target.value)} />
-                        )}
-                      </div>
-                      <div className="rule-value-field rule-value-kind">
-                        <label>Value kind</label>
-                        <Select value={item.valueKind}
-                          options={[
-                            { value: "text", label: "Text" },
-                            { value: "number", label: "Number" },
-                            { value: "boolean", label: "Boolean" },
-                            { value: "date", label: "Date" },
-                            { value: "field", label: "Field" },
-                          ]}
-                          onChange={(event) => updateOutcome(index, "valueKind", event.target.value)} />
-                      </div>
-                      <button type="button" className="condition-remove" title="Delete outcome" aria-label="Delete outcome" onClick={() => removeOutcome(index)}>
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  );
-                })}
-                <Button type="button" variant="secondary" className="condition-add-button" onClick={addOutcome}>
-                  <FiPlus size={13} /> Add outcome
-                </Button>
-              </div>
-            )}         </div>
-        </section>
       </form>
     </Dialog>
   );
