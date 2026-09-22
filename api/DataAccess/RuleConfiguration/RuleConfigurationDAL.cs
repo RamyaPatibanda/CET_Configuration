@@ -115,7 +115,10 @@ namespace api.DataAccess.RuleConfiguration
                 command.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = SerializeOutcome(request.Outcome);
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
-                return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+                var updated = Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+                if (updated)
+                    await SaveDecisionRowsAsync(request.RuleId, request.DecisionRows);
+                return updated;
             }
             catch (Exception ex)
             {
@@ -202,6 +205,92 @@ namespace api.DataAccess.RuleConfiguration
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while reordering rules.");
+                throw;
+            }
+        }
+
+        private async Task SaveDecisionRowsAsync(int ruleId, List<RuleDecisionRequest>? decisionRows)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            await using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                await using (var delete = new SqlCommand(
+                    "DELETE FROM dbo.tblRuleDecision WHERE aRuleId = @aRuleId",
+                    connection, transaction))
+                {
+                    delete.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
+                    await delete.ExecuteNonQueryAsync();
+                }
+
+                foreach (var row in (decisionRows ?? new List<RuleDecisionRequest>())
+                    .OrderBy(x => x.DecisionOrder))
+                {
+                    if (string.IsNullOrWhiteSpace(row.DecisionName))
+                        throw new ArgumentException("Each decision row must have a name.");
+                    if (row.Conditions is null || row.Conditions.Count == 0)
+                        throw new ArgumentException($"Decision '{row.DecisionName}' must contain at least one condition.");
+                    if (row.Results is null || row.Results.Count == 0)
+                        throw new ArgumentException($"Decision '{row.DecisionName}' must contain at least one result.");
+
+                    int decisionId;
+                    await using (var decision = new SqlCommand(@"
+                        INSERT INTO dbo.tblRuleDecision
+                            (aRuleId, tDecisionName, nDecisionOrder, bIsActive)
+                        VALUES
+                            (@aRuleId, @tDecisionName, @nDecisionOrder, @bIsActive);
+                        SELECT CAST(SCOPE_IDENTITY() AS INT);",
+                        connection, transaction))
+                    {
+                        decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
+                        decision.Parameters.Add("@tDecisionName", SqlDbType.NVarChar, 200).Value = row.DecisionName.Trim();
+                        decision.Parameters.Add("@nDecisionOrder", SqlDbType.Int).Value = row.DecisionOrder;
+                        decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
+                        decisionId = Convert.ToInt32(await decision.ExecuteScalarAsync());
+                    }
+
+                    foreach (var condition in row.Conditions.OrderBy(x => x.ConditionOrder))
+                    {
+                        await using var command = new SqlCommand(@"
+                            INSERT INTO dbo.tblRuleDecisionCondition
+                                (aRuleDecisionId, tOperandType, tOperandKey, tLogicalOperator, tOperator, tValue, nConditionOrder)
+                            VALUES
+                                (@aRuleDecisionId, @tOperandType, @tOperandKey, @tLogicalOperator, @tOperator, @tValue, @nConditionOrder);",
+                            connection, transaction);
+                        command.Parameters.Add("@aRuleDecisionId", SqlDbType.Int).Value = decisionId;
+                        command.Parameters.Add("@tOperandType", SqlDbType.NVarChar, 30).Value = condition.OperandType;
+                        command.Parameters.Add("@tOperandKey", SqlDbType.NVarChar, 200).Value = condition.OperandKey.Trim();
+                        command.Parameters.Add("@tLogicalOperator", SqlDbType.NVarChar, 10).Value = condition.LogicalOperator.ToUpperInvariant();
+                        command.Parameters.Add("@tOperator", SqlDbType.NVarChar, 50).Value = condition.Operator;
+                        command.Parameters.Add("@tValue", SqlDbType.NVarChar, 1000).Value = condition.Value;
+                        command.Parameters.Add("@nConditionOrder", SqlDbType.Int).Value = condition.ConditionOrder;
+                        await command.ExecuteNonQueryAsync();
+                    }
+
+                    foreach (var result in row.Results.OrderBy(x => x.ResultOrder))
+                    {
+                        await using var command = new SqlCommand(@"
+                            INSERT INTO dbo.tblRuleDecisionResult
+                                (aRuleDecisionId, tResultKey, tResultValue, tValueKind, nResultOrder)
+                            VALUES
+                                (@aRuleDecisionId, @tResultKey, @tResultValue, @tValueKind, @nResultOrder);",
+                            connection, transaction);
+                        command.Parameters.Add("@aRuleDecisionId", SqlDbType.Int).Value = decisionId;
+                        command.Parameters.Add("@tResultKey", SqlDbType.NVarChar, 200).Value = result.ResultKey.Trim();
+                        command.Parameters.Add("@tResultValue", SqlDbType.NVarChar, 1000).Value = result.ResultValue;
+                        command.Parameters.Add("@tValueKind", SqlDbType.NVarChar, 30).Value = result.ValueKind;
+                        command.Parameters.Add("@nResultOrder", SqlDbType.Int).Value = result.ResultOrder;
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
                 throw;
             }
         }
