@@ -239,6 +239,33 @@ function RuleForm({
     outcome: { values: (current.outcome?.values || []).filter((_, i) => i !== index) },
   }));
 
+  const groupSelected = () => {
+    if (selectedRows.length < 2) return;
+    setForm((current) => {
+      const selected = new Set(selectedRows);
+      const rows = current.conditions || [];
+      const groupOrder = Math.max(0, ...rows.map((row) => Number(row.groupOrder) || 0)) + 1;
+      return {
+        ...current,
+        conditions: rows.map((row, index) =>
+          selected.has(index) ? { ...row, groupOrder } : row
+        ),
+      };
+    });
+    setSelectedRows([]);
+  };
+
+  const ungroupSelected = () => {
+    if (!selectedRows.length) return;
+    setForm((current) => ({
+      ...current,
+      conditions: (current.conditions || []).map((row, index) =>
+        selectedRows.includes(index) ? { ...row, groupOrder: 1 } : row
+      ),
+    }));
+    setSelectedRows([]);
+  };
+
   const addDecisionRow = () => {
     const definitions = decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results || [];
     const allocationType = definitions.find((item) => item.supportingValue === "allocatedType");
