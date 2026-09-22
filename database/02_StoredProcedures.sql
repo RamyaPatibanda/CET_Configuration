@@ -371,7 +371,7 @@ BEGIN
                 COALESCE(d.nSequence, 1) AS Sequence,
                 d.bIsElse AS IsElse,
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions,
-                JSON_QUERY(COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}')) AS Outcome
+                COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}') AS OutcomeJson
             FROM dbo.tblRuleBranch d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
