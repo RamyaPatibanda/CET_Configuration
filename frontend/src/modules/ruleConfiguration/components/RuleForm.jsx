@@ -213,13 +213,15 @@ function RuleForm({
     }
 
     setRows((current) => {
-      const selectedSet = new Set(selectedRows);
       const selectedIndexes = current
-        .map((row, index) => (selectedSet.has(row.id) ? index : -1))
-        .filter((index) => index >= 0);
+        .map((row, index) => (selectedRows.includes(row.id) ? index : -1))
+        .filter((index) => index >= 0)
+        .sort((a, b) => a - b);
 
-      const selected = selectedIndexes.map((index) => current[index]);
       const firstSelectedIndex = selectedIndexes[0];
+      const lastSelectedIndex = selectedIndexes[selectedIndexes.length - 1];
+      const selected = current.slice(firstSelectedIndex, lastSelectedIndex + 1);
+      const selectedSet = new Set(selected.map((row) => row.id));
 
       if (selected.length < 2 || firstSelectedIndex < 0) {
         return current;
