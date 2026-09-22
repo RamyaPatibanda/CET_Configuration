@@ -385,7 +385,7 @@ prepared:
         await _runHistory.SaveAsync(new AllocationRunHistory
         {
             AllocationRunId = run.AllocationRunId,
-            RunByUserId = currentUserId,
+            CreatedByUserId = currentUserId,
             AllocationRunName = run.AllocationRunName,
             CapRound = run.CapRound,
             AllocationStep = run.AllocationStep,
