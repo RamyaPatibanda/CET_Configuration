@@ -213,13 +213,87 @@ function RuleForm({
       setError("Select at least two conditions to create a group.");
       return;
     }
+
     setRows((current) => {
-      const indexes = current.map((row, index) => selectedRows.includes(row.id) ? index : -1).filter((index) => index >= 0).sort((a, b) => a - b);
-      if (indexes.length < 2) return current;
-      const start = indexes[0], end = indexes[indexes.length - 1];
+      const selectedSet = new Set(selectedRows);
+      const selectedIndexes = current
+        .map((row, index) => (selectedSet.has(row.id) ? index : -1))
+        .filter((index) => index >= 0)
+        .sort((a, b) => a - b);
+
+      if (selectedIndexes.length < 2) {
+        setError("Select at least two conditions to create a group.");
+        return current;
+      }
+
+      const start = selectedIndexes[0];
+      const end = selectedIndexes[selectedIndexes.length - 1];
+      const rangeRows = current.slice(start, end + 1);
+      const selectedAllInRange = rangeRows.every((row) => selectedSet.has(row.id));
+
+      // Grouping is range based: selecting the first and last row includes
+      // every condition between them. This must be explicit so the user
+      // cannot accidentally create a group from a discontinuous selection.
+      if (!selectedAllInRange) {
+        // This is expected for the "first + last" interaction. Continue.
+      }
+
+      const groupsInRange = new Map();
+      current.forEach((row, index) => {
+        (row.groupPath || []).forEach((groupId, depth) => {
+          if (index >= start && index <= end) {
+            if (!groupsInRange.has(groupId)) {
+              groupsInRange.set(groupId, { start: index, end: index, depth });
+            } else {
+              const group = groupsInRange.get(groupId);
+              group.start = Math.min(group.start, index);
+              group.end = Math.max(group.end, index);
+            }
+          }
+        });
+      });
+
+      // Never create a group that cuts through an existing group. An
+      // existing nested group must be completely inside the new range.
+      for (const [groupId, range] of groupsInRange) {
+        const fullIndexes = current
+          .map((row, index) => (row.groupPath || []).includes(groupId) ? index : -1)
+          .filter((index) => index >= 0);
+
+        const fullStart = fullIndexes[0];
+        const fullEnd = fullIndexes[fullIndexes.length - 1];
+
+        if (fullStart < start || fullEnd > end) {
+          setError("The selected range cuts through an existing group. Select the complete group or start/end outside it.");
+          return current;
+        }
+      }
+
+      // Do not create a duplicate group when the complete selected range is
+      // already covered by the same existing group.
+      const commonGroups = (rangeRows[0].groupPath || []).filter((groupId) =>
+        rangeRows.every((row) => (row.groupPath || []).includes(groupId))
+      );
+
+      if (commonGroups.length) {
+        setError("The selected conditions are already in the same group.");
+        return current;
+      }
+
+      // A new parent group is valid only when the selected range contains
+      // complete existing groups. This supports:
+      // ((A AND B) OR (D OR C))
+      // while preventing malformed overlapping groups.
       const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      return current.map((row, index) => index < start || index > end ? row : { ...row, groupPath: [...(row.groupPath || []), groupId] });
+
+      return current.map((row, index) => {
+        if (index < start || index > end) return row;
+
+        const path = Array.isArray(row.groupPath) ? row.groupPath : [];
+        return { ...row, groupPath: [...path, groupId] };
+      });
     });
+
     setSelectedRows([]);
     setError("");
   };
