@@ -1,21 +1,31 @@
 [
-  { "value": "CANDIDATE_QUALIFICATION", "label": "Candidate Eligibility", "results": [] },
+  {
+    "value": "CANDIDATE_QUALIFICATION",
+    "label": "Candidate Eligibility",
+    "results": []
+  },
   {
     "value": "SEAT_ALLOCATION",
     "label": "Seat Allocation",
     "results": [
-      { "supportingValue": "allocatedType", "label": "Allocated Type", "valueKind": "text", "values": [
-        { "value": "Fem", "label": "Female seat (Fem)" },
-        { "value": "Gen", "label": "General seat (Gen)" }
-      ]},
-      { "supportingValue": "vacancyType", "label": "Vacancy Type", "valueKind": "text", "values": [] },
-      { "supportingValue": "seatCategory", "label": "Seat Category", "valueKind": "text", "values": [] },
-      { "supportingValue": "reservationType", "label": "Reservation Type", "valueKind": "text", "values": [] },
-      { "supportingValue": "candidateStatus", "label": "Candidate Status", "valueKind": "text", "values": [] },
-      { "supportingValue": "preferenceMode", "label": "Preference Mode", "valueKind": "text", "values": [] },
-      { "supportingValue": "allowBetterment", "label": "Allow Betterment", "valueKind": "boolean", "values": [
-        { "value": "true", "label": "Yes" }, { "value": "false", "label": "No" }
-      ]}
+      {
+        "supportingValue": "allocatedType",
+        "label": "Allocation Type",
+        "valueKind": "text",
+        "values": [
+          { "value": "Fem", "label": "Female seat (Fem)" },
+          { "value": "Gen", "label": "General seat (Gen)" },
+          { "value": "PH", "label": "PH seat (PH)" },
+          { "value": "Def", "label": "Defence seat (Def)" },
+          { "value": "Orp", "label": "Orphan seat (Orp)" }
+        ]
+      },
+      {
+        "supportingValue": "sequence",
+        "label": "Sequence",
+        "valueKind": "number",
+        "values": []
+      }
     ]
   }
 ]
