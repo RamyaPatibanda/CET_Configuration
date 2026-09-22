@@ -611,3 +611,180 @@ BEGIN
     END CATCH;
 END;
 GO
+
+
+/* ============================================================
+   User Management + module permissions
+   ============================================================ */
+IF OBJECT_ID(N'dbo.sproc_GetUsers', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetUsers;
+GO
+CREATE PROCEDURE dbo.sproc_GetUsers
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        u.aUserId,
+        u.tUsername,
+        u.tDisplayName,
+        u.bIsAdmin,
+        u.bIsActive,
+        u.dtCreatedDate,
+        COUNT(p.aUserPermissionId) AS nPermissionCount
+    FROM dbo.tblUsers u
+    LEFT JOIN dbo.tblUserPermission p
+        ON p.aUserId = u.aUserId
+    GROUP BY
+        u.aUserId, u.tUsername, u.tDisplayName,
+        u.bIsAdmin, u.bIsActive, u.dtCreatedDate
+    ORDER BY u.tUsername;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_CreateUser', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateUser;
+GO
+CREATE PROCEDURE dbo.sproc_CreateUser
+    @tUsername NVARCHAR(100),
+    @tPassword NVARCHAR(500),
+    @tDisplayName NVARCHAR(200),
+    @bIsAdmin BIT,
+    @bIsActive BIT,
+    @tPermissionsJson NVARCHAR(MAX) = N'[]'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        IF EXISTS (SELECT 1 FROM dbo.tblUsers WHERE tUsername = @tUsername)
+            THROW 50201, 'A user with the specified username already exists.', 1;
+
+        IF ISJSON(COALESCE(@tPermissionsJson, N'[]')) <> 1
+            THROW 50202, 'User permissions must be valid JSON.', 1;
+
+        INSERT INTO dbo.tblUsers
+        (
+            tUsername, tPassword, tDisplayName, bIsAdmin, bIsActive
+        )
+        VALUES
+        (
+            @tUsername, @tPassword, @tDisplayName, @bIsAdmin, @bIsActive
+        );
+
+        DECLARE @aUserId INT = CONVERT(INT, SCOPE_IDENTITY());
+
+        IF @bIsAdmin = 0
+        BEGIN
+            INSERT INTO dbo.tblUserPermission
+            (
+                aUserId, tModuleCode, bCanRead, bCanWrite
+            )
+            SELECT
+                @aUserId,
+                UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode')))),
+                COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 0),
+                CASE
+                    WHEN COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 0) = 1
+                     AND COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1
+                    THEN 1
+                    ELSE 0
+                END
+            FROM OPENJSON(@tPermissionsJson) j
+            WHERE UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode'))))
+                  IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')
+              AND COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 0) = 1
+               OR
+                  (
+                      UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode'))))
+                      IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')
+                      AND COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1
+                  );
+
+            IF EXISTS
+            (
+                SELECT 1
+                FROM dbo.tblUserPermission
+                WHERE aUserId = @aUserId
+                  AND tModuleCode IS NULL
+            )
+                THROW 50203, 'Invalid user permission.', 1;
+        END;
+
+        COMMIT;
+        SELECT @aUserId AS aUserId;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_GetUserPermissions', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetUserPermissions;
+GO
+CREATE PROCEDURE dbo.sproc_GetUserPermissions
+    @aUserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        m.tModuleCode,
+        m.tModuleName,
+        CASE WHEN u.bIsAdmin = 1 THEN CAST(1 AS BIT) ELSE COALESCE(p.bCanRead, 0) END AS bCanRead,
+        CASE WHEN u.bIsAdmin = 1 THEN CAST(1 AS BIT) ELSE COALESCE(p.bCanWrite, 0) END AS bCanWrite
+    FROM
+    (
+        SELECT 'FIELDS' AS tModuleCode, 'Field Configuration' AS tModuleName
+        UNION ALL SELECT 'RULES', 'Rule Configuration'
+        UNION ALL SELECT 'ALLOCATION_RUN', 'Allocation Run'
+    ) m
+    INNER JOIN dbo.tblUsers u ON u.aUserId = @aUserId
+    LEFT JOIN dbo.tblUserPermission p
+        ON p.aUserId = u.aUserId
+       AND p.tModuleCode = m.tModuleCode
+    ORDER BY CASE m.tModuleCode WHEN 'FIELDS' THEN 1 WHEN 'RULES' THEN 2 ELSE 3 END;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_CheckUserPermission', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CheckUserPermission;
+GO
+CREATE PROCEDURE dbo.sproc_CheckUserPermission
+    @aUserId INT,
+    @tModuleCode NVARCHAR(50),
+    @bCheckWrite BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT CAST(
+        CASE
+            WHEN EXISTS
+            (
+                SELECT 1
+                FROM dbo.tblUsers
+                WHERE aUserId = @aUserId
+                  AND bIsActive = 1
+                  AND bIsAdmin = 1
+            ) THEN 1
+            WHEN EXISTS
+            (
+                SELECT 1
+                FROM dbo.tblUsers u
+                INNER JOIN dbo.tblUserPermission p ON p.aUserId = u.aUserId
+                WHERE u.aUserId = @aUserId
+                  AND u.bIsActive = 1
+                  AND p.tModuleCode = UPPER(@tModuleCode)
+                  AND
+                  (
+                      (@bCheckWrite = 1 AND p.bCanWrite = 1)
+                      OR
+                      (@bCheckWrite = 0 AND p.bCanRead = 1)
+                  )
+            ) THEN 1
+            ELSE 0
+        END AS BIT
+    ) AS HasPermission;
+END;
+GO
