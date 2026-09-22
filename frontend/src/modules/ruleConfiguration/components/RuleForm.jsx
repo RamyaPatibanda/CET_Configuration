@@ -380,34 +380,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           {(form.conditions || []).length > 0 ? (
             <>
               <div className="condition-toolbar-actions">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="condition-tool-button"
-                  onClick={groupSelectedConditions}
-                  disabled={selectedConditions.length < 2}
-                >
-                  <FiUsers size={13} />
-                  <span>Group</span>
+                <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelectedConditions} disabled={selectedConditions.length < 2}>
+                  <FiUsers size={13} /><span>Group</span>
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="condition-tool-button"
-                  onClick={ungroupSelectedConditions}
-                  disabled={!selectedConditions.length}
-                >
-                  <FiMenu size={13} />
-                  <span>Ungroup</span>
+                <Button type="button" variant="secondary" className="condition-tool-button" onClick={ungroupSelectedConditions} disabled={!selectedConditions.length}>
+                  <FiMenu size={13} /><span>Ungroup</span>
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="condition-tool-button condition-add-button"
-                  onClick={addRootCondition}
-                >
-                  <FiPlus size={13} />
-                  <span>Add condition</span>
+                <Button type="button" variant="secondary" className="condition-tool-button condition-add-button" onClick={addRootCondition}>
+                  <FiPlus size={13} /><span>Add condition</span>
                 </Button>
               </div>
 
@@ -427,7 +407,6 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                     {(form.conditions || []).map((condition) => {
                       const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
                       const operators = optionsForType(field?.fieldType);
-
                       return (
                         <tr
                           key={condition.id}
@@ -438,12 +417,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                           onDragEnd={() => setDraggedConditionId(null)}
                         >
                           <td className="condition-check-cell">
-                            <button
-                              type="button"
-                              className="condition-drag-handle"
-                              title="Drag to rearrange"
-                              aria-label="Drag to rearrange"
-                            >
+                            <button type="button" className="condition-drag-handle" title="Drag to rearrange" aria-label="Drag to rearrange">
                               <FiMenu size={16} />
                             </button>
                             <input
@@ -483,18 +457,11 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                             <Select
                               value={condition.conditionLogicalOperator}
                               options={LOGICAL_OPTIONS}
-                              onChange={(event) =>
-                                updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)
-                              }
+                              onChange={(event) => updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)}
                             />
                           </td>
                           <td className="condition-action-cell">
-                            <button
-                              type="button"
-                              className="condition-remove"
-                              onClick={() => removeRootCondition(condition.id)}
-                              title="Delete condition"
-                            >
+                            <button type="button" className="condition-remove" onClick={() => removeRootCondition(condition.id)} title="Delete condition">
                               <FiTrash2 />
                             </button>
                           </td>
@@ -506,74 +473,11 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               </div>
             </>
           ) : (
-                            <Select
-                              value={condition.conditionLogicalOperator}
-                              options={LOGICAL_OPTIONS}
-                              onChange={(event) =>
-                                updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)
-                              }
-                            />
-                          )}
-                        </td>
-                        <td className="condition-action-cell">
-                          <div className="condition-row-actions">
-                            <button
-                              type="button"
-                              className="condition-row-action"
-                              title="Move up"
-                              disabled={globalIndex === 0}
-                              onClick={() => moveCondition(condition.id, -1)}
-                            >
-                              <FiArrowUp />
-                            </button>
-                            <button
-                              type="button"
-                              className="condition-row-action"
-                              title="Move down"
-                              disabled={globalIndex === (form.conditions || []).length - 1}
-                              onClick={() => moveCondition(condition.id, 1)}
-                            >
-                              <FiArrowDown />
-                            </button>
-                            {canGroup && (
-                              <button
-                                type="button"
-                                className="condition-row-action"
-                                title="Group with previous condition"
-                                onClick={() => groupWithPrevious(condition.id)}
-                              >
-                                <FiLink />
-                              </button>
-                            )}
-                            {groupMembers.length > 1 && (
-                              <button
-                                type="button"
-                                className="condition-row-action"
-                                title="Ungroup this condition"
-                                onClick={() => ungroupCondition(condition.id)}
-                              >
-                                <FiLink2 />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="condition-remove"
-                              title="Delete condition"
-                              onClick={() => removeRootCondition(condition.id)}
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
             <div className="rule-conditions-empty">
-              <span>No conditions added yet. Use the Add condition button above to start.</span>
+              <span>No conditions added yet.</span>
+              <Button type="button" variant="secondary" className="condition-add-button" onClick={addRootCondition}>
+                <FiPlus size={13} /> Add condition
+              </Button>
             </div>
           )}
         </section>
