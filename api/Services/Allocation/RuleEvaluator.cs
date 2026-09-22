@@ -55,7 +55,7 @@ public sealed class RuleEvaluator : IRuleEvaluator
     public bool Matches(AllocationRule rule, AllocationCandidate candidate)
     {
         if (rule.Conditions.Count == 0)
-            return false;
+            return true;
 
         var groups = rule.Conditions
             .GroupBy(condition => condition.GroupOrder)
