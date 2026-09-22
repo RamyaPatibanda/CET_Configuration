@@ -50,34 +50,8 @@ BEGIN
                 d.tDecisionName AS DecisionName,
                 d.nDecisionOrder AS DecisionOrder,
                 d.bIsActive AS IsActive,
-                JSON_QUERY(COALESCE((
-                    SELECT
-                        dc.aRuleDecisionConditionId AS RuleDecisionConditionId,
-                        dc.aRuleDecisionId AS RuleDecisionId,
-                        dc.tOperandType AS OperandType,
-                        dc.tOperandKey AS OperandKey,
-                        dc.tLogicalOperator AS LogicalOperator,
-                        dc.tOperator AS Operator,
-                        dc.tValue AS Value,
-                        dc.nConditionOrder AS ConditionOrder
-                    FROM dbo.tblRuleDecisionCondition dc
-                    WHERE dc.aRuleDecisionId = d.aRuleDecisionId
-                    ORDER BY dc.nConditionOrder, dc.aRuleDecisionConditionId
-                    FOR JSON PATH
-                ), N'[]')) AS Conditions,
-                JSON_QUERY(COALESCE((
-                    SELECT
-                        dr.aRuleDecisionResultId AS RuleDecisionResultId,
-                        dr.aRuleDecisionId AS RuleDecisionId,
-                        dr.tResultKey AS ResultKey,
-                        dr.tResultValue AS ResultValue,
-                        dr.tValueKind AS ValueKind,
-                        dr.nResultOrder AS ResultOrder
-                    FROM dbo.tblRuleDecisionResult dr
-                    WHERE dr.aRuleDecisionId = d.aRuleDecisionId
-                    ORDER BY dr.nResultOrder, dr.aRuleDecisionResultId
-                    FOR JSON PATH
-                ), N'[]')) AS Results
+                d.tAllocationType AS AllocationType,
+                d.nSequence AS Sequence
             FROM dbo.tblRuleDecision d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
@@ -115,34 +89,8 @@ BEGIN
                 d.tDecisionName AS DecisionName,
                 d.nDecisionOrder AS DecisionOrder,
                 d.bIsActive AS IsActive,
-                JSON_QUERY(COALESCE((
-                    SELECT
-                        dc.aRuleDecisionConditionId AS RuleDecisionConditionId,
-                        dc.aRuleDecisionId AS RuleDecisionId,
-                        dc.tOperandType AS OperandType,
-                        dc.tOperandKey AS OperandKey,
-                        dc.tLogicalOperator AS LogicalOperator,
-                        dc.tOperator AS Operator,
-                        dc.tValue AS Value,
-                        dc.nConditionOrder AS ConditionOrder
-                    FROM dbo.tblRuleDecisionCondition dc
-                    WHERE dc.aRuleDecisionId = d.aRuleDecisionId
-                    ORDER BY dc.nConditionOrder, dc.aRuleDecisionConditionId
-                    FOR JSON PATH
-                ), N'[]')) AS Conditions,
-                JSON_QUERY(COALESCE((
-                    SELECT
-                        dr.aRuleDecisionResultId AS RuleDecisionResultId,
-                        dr.aRuleDecisionId AS RuleDecisionId,
-                        dr.tResultKey AS ResultKey,
-                        dr.tResultValue AS ResultValue,
-                        dr.tValueKind AS ValueKind,
-                        dr.nResultOrder AS ResultOrder
-                    FROM dbo.tblRuleDecisionResult dr
-                    WHERE dr.aRuleDecisionId = d.aRuleDecisionId
-                    ORDER BY dr.nResultOrder, dr.aRuleDecisionResultId
-                    FOR JSON PATH
-                ), N'[]')) AS Results
+                d.tAllocationType AS AllocationType,
+                d.nSequence AS Sequence
             FROM dbo.tblRuleDecision d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
