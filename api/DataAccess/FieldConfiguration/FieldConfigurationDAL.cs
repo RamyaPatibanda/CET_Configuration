@@ -62,7 +62,8 @@ namespace api.DataAccess.FieldConfiguration
                 await using var connection = new SqlConnection(_connectionString);
                 await using var command = CreateCommand("sproc_CreateField", connection);
                 command.Parameters.Add("@aFieldId", SqlDbType.Int).Value = request.FieldId;
-                AddFieldParameters(command, request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);\n                command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = request.CreatedByUserId;
+                AddFieldParameters(command, request.TableName, request.FieldName, request.DisplayName, request.FieldType, request.IsRequired, request.IsActive, request.DisplayOrder);
+                command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = request.CreatedByUserId;
                 await connection.OpenAsync();
                 return Convert.ToInt32(await command.ExecuteScalarAsync());
             }
@@ -246,7 +247,8 @@ namespace api.DataAccess.FieldConfiguration
                 DisplayOrder = reader.GetInt32(reader.GetOrdinal("nDisplayOrder")),
                 CreatedDate = GetNullableDateTime(reader, "dtCreatedDate"),
                 ModifiedDate = GetNullableDateTime(reader, "dtModifiedDate"),
-                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),\n                CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
+                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),
+                CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
             };
         }
 
