@@ -24,7 +24,7 @@ public sealed class AllocationRule
     public bool? AllowBetterment { get; set; }
     public int DisplayOrder { get; set; }
     public List<RuleCondition> Conditions { get; set; } = [];
-    public List<AllocationDecisionRow> DecisionRows { get; set; } = [];
+    public List<AllocationRuleBranch> Branches { get; set; } = [];
     public int SequenceId { get; set; }
 }
 
@@ -38,10 +38,10 @@ public interface IRuleEvaluator
         IReadOnlyDictionary<string, string?> values);
 }
 
-public sealed class AllocationDecisionRow
+public sealed class AllocationRuleBranch
 {
-    public int DecisionOrder { get; set; }
-    public string DecisionName { get; set; } = string.Empty;
+    public int BranchOrder { get; set; }
+    public string BranchName { get; set; } = string.Empty;
     public string AllocationType { get; set; } = string.Empty;
     public int Sequence { get; set; }
     public bool IsElse { get; set; }
