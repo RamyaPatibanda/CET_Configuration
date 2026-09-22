@@ -10,7 +10,7 @@ namespace api.Models.RuleConfiguration
         public string DecisionAreaCode { get; set; } = string.Empty;
         public RuleOutcome Outcome { get; set; } = new();
         public List<RuleConditionRequest> Conditions { get; set; } = new();
-        public List<RuleDecisionRequest> DecisionRows { get; set; } = new();
+        public List<RuleBranchRequest> Branches { get; set; } = new();
     }
 
     public class UpdateRuleRequest : CreateRuleRequest { }
@@ -28,8 +28,8 @@ namespace api.Models.RuleConfiguration
 
     public class RuleDecisionRequest
     {
-        public string DecisionName { get; set; } = string.Empty;
-        public int DecisionOrder { get; set; }
+        public string BranchName { get; set; } = string.Empty;
+        public int BranchOrder { get; set; }
         public bool IsActive { get; set; } = true;
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
