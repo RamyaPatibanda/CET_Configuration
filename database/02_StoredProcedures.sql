@@ -16,20 +16,20 @@ GO
 IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetFields
-AS BEGIN SET NOCOUNT ON; SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType, bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate FROM dbo.tblFieldConfiguration ORDER BY nDisplayOrder, aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.aCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.aCreatedByUserId ORDER BY f.nDisplayOrder, f.aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetField;
 GO
 CREATE PROCEDURE dbo.sproc_GetField @aFieldId INT
-AS BEGIN SET NOCOUNT ON; SELECT aFieldId, tTableName, tFieldName, tDisplayName, tFieldType, bIsRequired, bIsActive, nDisplayOrder, dtCreatedDate, dtModifiedDate FROM dbo.tblFieldConfiguration WHERE aFieldId = @aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.aCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.aCreatedByUserId WHERE f.aFieldId = @aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateField;
 GO
 CREATE PROCEDURE dbo.sproc_CreateField
-    @aFieldId INT, @tTableName NVARCHAR(128), @tFieldName NVARCHAR(200), @tDisplayName NVARCHAR(200), @tFieldType NVARCHAR(50), @bIsRequired BIT, @bIsActive BIT, @nDisplayOrder INT
-AS BEGIN SET NOCOUNT ON; INSERT INTO dbo.tblFieldConfiguration (aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate) VALUES (@aFieldId,@tTableName,@tFieldName,@tDisplayName,@tFieldType,@bIsRequired,@bIsActive,@nDisplayOrder,GETDATE(),NULL); SELECT @aFieldId AS aFieldId; END;
+    @aFieldId INT, @tTableName NVARCHAR(128), @tFieldName NVARCHAR(200), @tDisplayName NVARCHAR(200), @tFieldType NVARCHAR(50), @bIsRequired BIT, @bIsActive BIT, @nDisplayOrder INT, @aCreatedByUserId INT
+AS BEGIN SET NOCOUNT ON; INSERT INTO dbo.tblFieldConfiguration (aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate,aCreatedByUserId) VALUES (@aFieldId,@tTableName,@tFieldName,@tDisplayName,@tFieldType,@bIsRequired,@bIsActive,@nDisplayOrder,GETDATE(),NULL,@aCreatedByUserId); SELECT @aFieldId AS aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_UpdateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateField;
