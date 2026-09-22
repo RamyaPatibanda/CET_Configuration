@@ -32,6 +32,10 @@ public interface IRuleEvaluator
 {
     bool Matches(AllocationRule rule, AllocationCandidate candidate);
     bool Matches(AllocationRule rule, IReadOnlyDictionary<string, string?> values);
+
+    bool MatchesConditions(
+        IReadOnlyList<RuleCondition> conditions,
+        IReadOnlyDictionary<string, string?> values);
 }
 
 public sealed class AllocationDecisionRow
@@ -40,6 +44,8 @@ public sealed class AllocationDecisionRow
     public string DecisionName { get; set; } = string.Empty;
     public string AllocationType { get; set; } = string.Empty;
     public int Sequence { get; set; }
+    public bool IsElse { get; set; }
+    public List<RuleCondition> Conditions { get; set; } = [];
 }
 
 public sealed class RuleEvaluator : IRuleEvaluator
