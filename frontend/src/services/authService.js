@@ -22,6 +22,7 @@ const authService = {
         isAdmin: response.isAdmin,
         expiresAt: response.expiresAt,
         isAdmin: response.isAdmin,
+        permissions: response.permissions || [],
       })
     );
 
