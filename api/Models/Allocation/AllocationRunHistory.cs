@@ -13,5 +13,5 @@ public sealed class AllocationRunHistory
     public DateTime? CompletedAtUtc { get; set; }
     public int CandidateCount { get; set; }
     public int DecisionCount { get; set; }
-    public string ErrorMessage { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;\n    public int? RunByUserId { get; set; }\n    public string RunBy { get; set; } = string.Empty;
 }
