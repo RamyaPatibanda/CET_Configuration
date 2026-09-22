@@ -43,6 +43,8 @@ public sealed class AllocationRuleBranch
     public int BranchOrder { get; set; }
     public string BranchName { get; set; } = string.Empty;
     public string AllocationType { get; set; } = string.Empty;
+    public string VacancySource { get; set; } = string.Empty;
+    public string VacancyType { get; set; } = string.Empty;
     public int Sequence { get; set; }
     public bool IsElse { get; set; }
     public List<RuleCondition> Conditions { get; set; } = [];
@@ -68,7 +70,7 @@ public sealed class RuleEvaluator : IRuleEvaluator
 
     public bool Matches(AllocationRule rule, IReadOnlyDictionary<string, string?> values)
     {
-        if (rule.Conditions.Count == 0) return false;
+        if (rule.Conditions.Count == 0) return true;
         var groups = rule.Conditions.GroupBy(c => c.GroupOrder).OrderBy(g => g.Key).ToList();
         return groups.All(group => EvaluateGroup(group.ToList(), values));
     }
