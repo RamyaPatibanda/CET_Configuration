@@ -460,3 +460,44 @@
   .rule-result-row .rule-result-field:nth-of-type(2) { grid-column:2; }
   .rule-result-delete { grid-column:3; grid-row:1; }
 }
+
+/* Compact condition editor controls: keep selection + drag affordance together. */
+.condition-single-table {
+  min-width: 900px;
+}
+.condition-check-column,
+.condition-check-cell {
+  width: 64px;
+  min-width: 64px;
+  padding-left: 5px !important;
+  padding-right: 5px !important;
+}
+.condition-check-cell {
+  display: table-cell;
+  white-space: nowrap;
+}
+.condition-check-cell .condition-drag-handle {
+  width: 22px;
+  height: 30px;
+  margin-right: 2px;
+  vertical-align: middle;
+  display: inline-flex;
+}
+.condition-check-cell input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  vertical-align: middle;
+}
+.condition-toolbar-actions {
+  justify-content: flex-start;
+  margin: 0 0 8px;
+}
+.condition-tool-button {
+  height: 30px;
+  min-height: 30px;
+}
+.condition-single-table th,
+.condition-single-table td {
+  padding: 5px 7px;
+}
