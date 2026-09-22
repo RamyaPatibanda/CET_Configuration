@@ -1,5 +1,6 @@
 using api.BusinessLogic.RuleConfiguration;
 using api.Models.RuleConfiguration;
+using api.Models.UserManagement;
 using api.BusinessLogic.UserManagement;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
