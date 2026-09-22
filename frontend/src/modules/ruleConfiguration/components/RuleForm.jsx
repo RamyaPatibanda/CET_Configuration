@@ -97,22 +97,8 @@ const normalizeDecisionRows = (value) => {
     decisionName: row.decisionName ?? row.DecisionName ?? "",
     decisionOrder: row.decisionOrder ?? row.DecisionOrder ?? 1,
     isActive: row.isActive ?? row.IsActive ?? true,
-    conditions: (row.conditions ?? row.Conditions ?? []).map((condition) => ({
-      ruleDecisionConditionId: condition.ruleDecisionConditionId ?? condition.RuleDecisionConditionId ?? 0,
-      operandType: condition.operandType ?? condition.OperandType ?? "CONTEXT",
-      operandKey: condition.operandKey ?? condition.OperandKey ?? "",
-      logicalOperator: condition.logicalOperator ?? condition.LogicalOperator ?? "AND",
-      operator: condition.operator ?? condition.Operator ?? "",
-      value: condition.value ?? condition.Value ?? "",
-      conditionOrder: condition.conditionOrder ?? condition.ConditionOrder ?? 1,
-    })),
-    results: (row.results ?? row.Results ?? []).map((result) => ({
-      ruleDecisionResultId: result.ruleDecisionResultId ?? result.RuleDecisionResultId ?? 0,
-      resultKey: result.resultKey ?? result.ResultKey ?? "",
-      resultValue: result.resultValue ?? result.ResultValue ?? "",
-      valueKind: result.valueKind ?? result.ValueKind ?? "text",
-      resultOrder: result.resultOrder ?? result.ResultOrder ?? 1,
-    })),
+    allocationType: row.allocationType ?? row.AllocationType ?? "",
+    sequence: row.sequence ?? row.Sequence ?? 1,
   }));
 };
 
