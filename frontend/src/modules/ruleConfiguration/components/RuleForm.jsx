@@ -17,7 +17,7 @@ const EMPTY_RULE = {
   decisionAreaCode: "SEAT_ALLOCATION",
   outcome: { values: [] },
   conditions: [],
-  decisionRows: [],
+  branches: [],
 };
 
 const OPERATORS = {
@@ -61,13 +61,13 @@ const normalizeConditions = (conditions) => (Array.isArray(conditions) ? conditi
   groupOrder: condition.groupOrder ?? condition.GroupOrder ?? 1,
 }));
 
-const normalizeDecisionRows = (value) => {
-  const rows = Array.isArray(value) ? value : value?.decisionRows ?? value?.DecisionRows ?? [];
+const normalizeBranches = (value) => {
+  const rows = Array.isArray(value) ? value : value?.branches ?? value?.DecisionRows ?? [];
   return rows.map((row, index) => ({
-    ruleDecisionId: row.ruleDecisionId ?? row.RuleDecisionId ?? 0,
+    ruleBranchId: row.ruleBranchId ?? row.RuleDecisionId ?? 0,
     ruleId: row.ruleId ?? row.RuleId ?? 0,
-    decisionName: row.decisionName ?? row.DecisionName ?? "",
-    decisionOrder: row.decisionOrder ?? row.DecisionOrder ?? index + 1,
+    branchName: row.branchName ?? row.DecisionName ?? "",
+    branchOrder: row.branchOrder ?? row.DecisionOrder ?? index + 1,
     isActive: row.isActive ?? row.IsActive ?? true,
     allocationType: row.allocationType ?? row.AllocationType ?? "",
     sequence: row.sequence ?? row.Sequence ?? index + 1,
@@ -100,14 +100,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   useEffect(() => {
     if (!open) return;
 
-    const existingRows = normalizeDecisionRows(rule?.decisionRows);
+    const existingRows = normalizeBranches(rule?.branches);
     const fallbackRows = existingRows.length
       ? existingRows
       : [{
-          ruleDecisionId: 0,
+          ruleBranchId: 0,
           ruleId: rule?.ruleId || nextRuleId,
-          decisionName: "",
-          decisionOrder: 1,
+          branchName: "",
+          branchOrder: 1,
           isActive: true,
           allocationType: "",
           sequence: 1,
@@ -120,7 +120,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       ...(rule || {}),
       ruleId: rule?.ruleId ?? nextRuleId,
       decisionAreaCode: rule?.decisionAreaCode || "SEAT_ALLOCATION",
-      decisionRows: fallbackRows,
+      branches: fallbackRows,
     });
     setSelectedByBranch({});
     setError("");
@@ -156,18 +156,18 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
   const addBranch = () => {
     setForm((current) => {
-      const rows = current.decisionRows || [];
+      const rows = current.branches || [];
       const hasElse = rows.some((row) => row.isElse);
       if (hasElse) return current;
       return {
         ...current,
-        decisionRows: [
+        branches: [
           ...nextRows,
           {
-            ruleDecisionId: 0,
+            ruleBranchId: 0,
             ruleId: current.ruleId,
-            decisionName: "",
-            decisionOrder: nextRows.length + 1,
+            branchName: "",
+            branchOrder: nextRows.length + 1,
             isActive: true,
             allocationType: "",
             sequence: nextRows.length + 1,
@@ -181,17 +181,17 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
   const addElseBranch = () => {
     setForm((current) => {
-      const rows = current.decisionRows || [];
+      const rows = current.branches || [];
       if (rows.some((row) => row.isElse)) return current;
       return {
         ...current,
-        decisionRows: [
+        branches: [
           ...rows,
           {
-            ruleDecisionId: 0,
+            ruleBranchId: 0,
             ruleId: current.ruleId,
-            decisionName: "Else",
-            decisionOrder: rows.length + 1,
+            branchName: "Else",
+            branchOrder: rows.length + 1,
             isActive: true,
             allocationType: "",
             sequence: rows.length + 1,
@@ -206,7 +206,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const updateBranch = (branchIndex, name, value) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) =>
+      branches: (current.branches || []).map((branch, index) =>
         index === branchIndex ? { ...branch, [name]: value } : branch
       ),
     }));
@@ -215,16 +215,16 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const removeBranch = (branchIndex) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || [])
+      branches: (current.branches || [])
         .filter((_, index) => index !== branchIndex)
-        .map((branch, index) => ({ ...branch, decisionOrder: index + 1, sequence: Number(branch.sequence || index + 1) })),
+        .map((branch, index) => ({ ...branch, branchOrder: index + 1, sequence: Number(branch.sequence || index + 1) })),
     }));
   };
 
   const addCondition = (branchIndex) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) => {
+      branches: (current.branches || []).map((branch, index) => {
         if (index !== branchIndex || branch.isElse) return branch;
         const conditions = branch.conditions || [];
         return {
@@ -249,7 +249,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const updateCondition = (branchIndex, conditionId, name, value) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) => {
+      branches: (current.branches || []).map((branch, index) => {
         if (index !== branchIndex) return branch;
         return {
           ...branch,
@@ -266,7 +266,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     const operators = optionsForType(field?.fieldType);
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) => {
+      branches: (current.branches || []).map((branch, index) => {
         if (index !== branchIndex) return branch;
         return {
           ...branch,
@@ -283,7 +283,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const removeCondition = (branchIndex, conditionId) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) => {
+      branches: (current.branches || []).map((branch, index) => {
         if (index !== branchIndex) return branch;
         return {
           ...branch,
@@ -312,7 +312,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     if (selected.size < 2) return;
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) =>
+      branches: (current.branches || []).map((branch, index) =>
         index === branchIndex
           ? {
               ...branch,
@@ -331,7 +331,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     if (!selected.size) return;
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) =>
+      branches: (current.branches || []).map((branch, index) =>
         index === branchIndex
           ? {
               ...branch,
@@ -351,7 +351,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((branch, index) => {
+      branches: (current.branches || []).map((branch, index) => {
         if (index !== branchIndex) return branch;
         const conditions = [...(branch.conditions || [])];
         const sourceIndex = conditions.findIndex((condition) => condition.id === sourceId);
@@ -379,7 +379,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       return;
     }
 
-    const branches = form.decisionRows || [];
+    const branches = form.branches || [];
     if (!branches.length) {
       setError("Add at least one IF branch.");
       return;
@@ -416,8 +416,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       }
 
       return {
-        decisionName: branch.isElse ? (branch.decisionName || "Else") : (branch.decisionName || `Decision ${branchIndex + 1}`),
-        decisionOrder: branchIndex + 1,
+        branchName: branch.isElse ? (branch.branchName || "Else") : (branch.branchName || `Decision ${branchIndex + 1}`),
+        branchOrder: branchIndex + 1,
         isActive: branch.isActive !== false,
         allocationType: branch.allocationType,
         sequence: Number(branch.sequence || branchIndex + 1),
@@ -439,12 +439,11 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
     try {
       setError("");
-      const rootConditions = normalizedBranches.find((branch) => !branch.isElse)?.conditions || [];
       await onSave({
         ...form,
-        conditions: rootConditions,
+        conditions: [],
         outcome: { values: [] },
-        decisionRows: normalizedBranches,
+        branches: normalizedBranches,
       });
     } catch (saveError) {
       setError(saveError.message || "Unable to save the rule.");
@@ -498,22 +497,22 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         </div>
 
         <div className="rule-branch-list">
-          {(form.decisionRows || []).map((branch, branchIndex) => {
+          {(form.branches || []).map((branch, branchIndex) => {
             const selected = selectedByBranch[branchIndex] || [];
             const branchFields = fields;
             const branchConditions = branch.conditions || [];
-            const isLastBranch = branchIndex === (form.decisionRows || []).length - 1;
-            const hasLaterBranch = branchIndex < (form.decisionRows || []).length - 1;
+            const isLastBranch = branchIndex === (form.branches || []).length - 1;
+            const hasLaterBranch = branchIndex < (form.branches || []).length - 1;
 
             return (
-              <section className={`rule-branch-card ${branch.isElse ? "rule-branch-else" : ""}`} key={branch.ruleDecisionId || `branch-${branchIndex}`}>
+              <section className={`rule-branch-card ${branch.isElse ? "rule-branch-else" : ""}`} key={branch.ruleBranchId || `branch-${branchIndex}`}>
                 <div className="rule-branch-header">
                   <div className="rule-branch-title">
                     <span className="rule-branch-badge">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
                     <TextBox
-                      value={branch.decisionName}
+                      value={branch.branchName}
                       placeholder={branch.isElse ? "Else decision" : "Decision name"}
-                      onChange={(event) => updateBranch(branchIndex, "decisionName", event.target.value)}
+                      onChange={(event) => updateBranch(branchIndex, "branchName", event.target.value)}
                     />
                   </div>
                   <button
@@ -670,14 +669,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         </div>
 
         <div className="rule-branch-actions">
-          <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.decisionRows || []).some((branch) => branch.isElse)}>
+          <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.branches || []).some((branch) => branch.isElse)}>
             <FiPlus size={13} /> Add ELSE IF
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={addElseBranch}
-            disabled={(form.decisionRows || []).some((branch) => branch.isElse)}
+            disabled={(form.branches || []).some((branch) => branch.isElse)}
           >
             <FiPlus size={13} /> Add ELSE
           </Button>
