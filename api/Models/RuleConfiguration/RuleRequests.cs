@@ -10,6 +10,7 @@ namespace api.Models.RuleConfiguration
         public string DecisionAreaCode { get; set; } = string.Empty;
         public RuleOutcome Outcome { get; set; } = new();
         public List<RuleConditionRequest> Conditions { get; set; } = new();
+        public List<RuleDecisionRequest> DecisionRows { get; set; } = new();
     }
 
     public class UpdateRuleRequest : CreateRuleRequest
@@ -78,3 +79,31 @@ namespace api.Models.RuleConfiguration
         public List<RuleConfigurationOption> Values { get; set; } = new();
     }
 }
+
+
+    public class RuleDecisionRequest
+    {
+        public string DecisionName { get; set; } = string.Empty;
+        public int DecisionOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+        public List<RuleDecisionConditionRequest> Conditions { get; set; } = new();
+        public List<RuleDecisionResultRequest> Results { get; set; } = new();
+    }
+
+    public class RuleDecisionConditionRequest
+    {
+        public string OperandType { get; set; } = "CONTEXT";
+        public string OperandKey { get; set; } = string.Empty;
+        public string LogicalOperator { get; set; } = "AND";
+        public string Operator { get; set; } = "=";
+        public string Value { get; set; } = string.Empty;
+        public int ConditionOrder { get; set; }
+    }
+
+    public class RuleDecisionResultRequest
+    {
+        public string ResultKey { get; set; } = string.Empty;
+        public string ResultValue { get; set; } = string.Empty;
+        public string ValueKind { get; set; } = "text";
+        public int ResultOrder { get; set; }
+    }
