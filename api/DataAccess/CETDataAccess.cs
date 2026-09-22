@@ -127,8 +127,8 @@ namespace api.DataAccess
                 {
                     ModuleCode = reader.GetString(reader.GetOrdinal("tModuleCode")),
                     ModuleName = reader.GetString(reader.GetOrdinal("tModuleName")),
-                    CanRead = reader.GetBoolean(reader.GetOrdinal("bCanRead")),
-                    CanWrite = reader.GetBoolean(reader.GetOrdinal("bCanWrite"))
+                    CanRead = Convert.ToBoolean(reader["bCanRead"]),
+                    CanWrite = Convert.ToBoolean(reader["bCanWrite"])
                 });
             }
 
