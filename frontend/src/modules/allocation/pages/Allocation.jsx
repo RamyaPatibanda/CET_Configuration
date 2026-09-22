@@ -54,7 +54,6 @@ function Allocation() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [allocationDecisions, setAllocationDecisions] = useState([]);
   const [searchParams] = useSearchParams();
   const editRunId = searchParams.get("runId");
 
@@ -120,12 +119,6 @@ function Allocation() {
           setCapRound(existingRun.capRound || 1);
           setAllocationStep(savedStep?.code || existingRun.allocationStep);
           setRuleGroups(groups);
-          if (savedStep?.code === "STEP_0") {
-            try {
-              const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
-              setAllocationDecisions(getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
-            } catch { setAllocationDecisions([]); }
-          }
           setStatus(normalizeStatus(existingRun.status, "Draft"));
           setResult(null);
           setMessage(existingRun.status === "Draft"
@@ -138,12 +131,6 @@ function Allocation() {
         if (firstAvailableStep) {
           setAllocationStep(firstAvailableStep.code);
           setRuleGroups(createRuleGroups(firstAvailableStep.code));
-          if (firstAvailableStep.code === "STEP_0") {
-            try {
-              const decisionResponse = await allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION");
-              setAllocationDecisions(getItems(decisionResponse).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
-            } catch { setAllocationDecisions([]); }
-          }
         }
       } catch (e) {
         setError(e.message || "Unable to load allocation configuration.");
@@ -163,13 +150,6 @@ function Allocation() {
     if (!step.enabled || !canEdit) return;
     setAllocationStep(step.code);
     setRuleGroups(createRuleGroups(step.code));
-    if (step.code === "STEP_0") {
-      allocationService.getDecisionConfigurations("STEP_0", "SEAT_ALLOCATION")
-        .then((response) => setAllocationDecisions(getItems(response).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))))
-        .catch(() => setAllocationDecisions([]));
-    } else {
-      setAllocationDecisions([]);
-    }
     markEdited();
   };
 
@@ -178,20 +158,17 @@ function Allocation() {
     setRuleGroups((current) => current.map((group) => {
       if (group.type !== groupType) return group;
       const selected = group.ruleIds.includes(ruleId);
-      const ruleIds = selected ? group.ruleIds.filter((id) => id !== ruleId) : [...group.ruleIds, ruleId];
-      return { ...group, ruleIds };
+      return {
+        ...group,
+        ruleIds: selected
+          ? group.ruleIds.filter((id) => id !== ruleId)
+          : [...group.ruleIds, ruleId],
+      };
     }));
-    if (groupType === "SEAT_ALLOCATION") {
-      setAllocationDecisions((current) => {
-        if (current.some((item) => item.ruleId === ruleId))
-          return current.filter((item) => item.ruleId !== ruleId).map((item, index) => ({ ...item, displayOrder: index + 1 }));
-        return [...current, { ruleId, displayOrder: current.length + 1, allocatedType: "", vacancyType: "", resultJson: "" }];
-      });
-    }
     markEdited();
   };
 
-  const updateAllocationDecision = (ruleId, property, value) => {
+ (ruleId, property, value) => {
     if (!canEdit) return;
     setAllocationDecisions((current) => current.map((item) => item.ruleId === ruleId ? { ...item, [property]: value } : item));
     markEdited();
@@ -267,7 +244,6 @@ function Allocation() {
       setRunning(true);
       setError("");
       setMessage("");
-      await saveAllocationDecisionConfiguration();
       const response = await allocationService.saveDraft(buildRequest());
       const data = response?.data || response;
       setRunId(data.run?.allocationRunId);
@@ -289,7 +265,6 @@ function Allocation() {
       setError("");
       setMessage("");
       setStatus("Running");
-      await saveAllocationDecisionConfiguration();
 
       const response = await allocationService.run(buildRequest());
       const data = response?.data || response;
@@ -407,9 +382,6 @@ function Allocation() {
               setOpenRuleGroup={setOpenRuleGroup}
               toggleRule={toggleRule}
               disabled={!canEdit}
-              allocationDecisions={allocationDecisions}
-              updateAllocationDecision={updateAllocationDecision}
-              moveAllocationDecision={moveAllocationDecision}
             />
           )}
         </section>
