@@ -83,8 +83,8 @@
 }
 .condition-brace-column,
 .condition-brace-cell {
-  width: 30px;
-  min-width: 30px;
+  width: 22px;
+  min-width: 22px;
   padding-left: 2px !important;
   padding-right: 2px !important;
   text-align: center !important;
@@ -114,15 +114,17 @@
 
 .condition-group-brace {
   display: inline-flex;
-  width: 18px;
-  height: 100%;
-  min-height: 28px;
+  width: 12px;
+  height: 26px;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 18px;
+  font-size: 14px;
   line-height: 1;
   font-weight: 400;
+  transform: scaleX(.62) scaleY(.68);
+  transform-origin: center;
 }
 .condition-group-brace.blue { color: #5b86ad; }
 .condition-group-brace.violet { color: #816eae; }
