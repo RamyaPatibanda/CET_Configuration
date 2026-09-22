@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FiArrowDown, FiArrowUp, FiLink, FiPlus, FiTrash2, FiLink2 } from "react-icons/fi";
+import "../components/RuleConditionGrouping.css";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
@@ -370,7 +371,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             <div>
               <span className="conditions-kicker">Rule criteria</span>
               <h3>Conditions</h3>
-              <p>Add one or more conditions. Use AND / OR to control how the conditions are evaluated.</p>
+              <p>Build the rule by adding conditions. Rearrange rows and group conditions when needed.</p>
             </div>
             <Button type="button" variant="secondary" onClick={addRootCondition}>
               <FiPlus size={13} /> Add condition
@@ -378,170 +379,149 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           </div>
 
           {(form.conditions || []).length > 0 ? (
-            <div className="conditions-list">
-              {getGroups(form.conditions).map(([groupOrder, group], groupIndex) => (
-                <div key={groupOrder}>
-                  {groupIndex > 0 && (
-                    <div className="group-connector">
-                      <div>
-                        <Select
-                          value={group[0]?.conditionLogicalOperator || "AND"}
-                          options={LOGICAL_OPTIONS}
-                          onChange={(event) => changeGroupLogic(groupOrder, event.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
+            <div className="condition-single-table-wrapper">
+              <table className="condition-single-table">
+                <thead>
+                  <tr>
+                    <th className="condition-col-group">Group</th>
+                    <th className="condition-col-drag">Move</th>
+                    <th>Field</th>
+                    <th>Operator</th>
+                    <th>Value</th>
+                    <th className="condition-col-logic">Logic</th>
+                    <th className="condition-col-action" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(form.conditions || []).map((condition, globalIndex) => {
+                    const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
+                    const operators = optionsForType(field?.fieldType);
+                    const groupOrder = Number(condition.groupOrder || 1);
+                    const groupMembers = (form.conditions || []).filter(
+                      (item) => Number(item.groupOrder || 1) === groupOrder
+                    );
+                    const isFirstInGroup = groupMembers[0]?.id === condition.id;
+                    const canGroup = globalIndex > 0 && !isFirstInGroup;
 
-                  <section className="condition-group">
-                    <div className="condition-group-header">
-                      <div className="condition-group-title">
-                        <span className="group-eyebrow">Condition group</span>
-                        <strong>
-                          {group.length > 1
-                            ? "Grouped conditions"
-                            : "Single condition"}
-                        </strong>
-                        <span>
-                          {group.length > 1
-                            ? "Conditions inside this group are evaluated together."
-                            : "Use Group to combine this condition with the previous one."}
-                        </span>
-                      </div>
-                      <div className="condition-group-actions">
-                        {group.length > 1 && (
-                          <span className="group-eyebrow">{group.length} conditions</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="condition-table">
-                      <div className="condition-table-header">
-                        <span />
-                        <span>Field</span>
-                        <span>Operator</span>
-                        <span>Value</span>
-                        <span>Logic</span>
-                        <span />
-                      </div>
-
-                      {group.map((condition, conditionIndex) => {
-                        const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
-                        const operators = optionsForType(field?.fieldType);
-                        const globalIndex = (form.conditions || []).findIndex((item) => item.id === condition.id);
-                        const isFirst = globalIndex === 0;
-
-                        return (
-                          <div
-                            key={condition.id}
-                            className="condition-row"
-                            draggable
-                            onDragStart={() => setDraggedConditionId(condition.id)}
-                            onDragEnd={() => setDraggedConditionId(null)}
-                            onDragOver={(event) => event.preventDefault()}
-                            onDrop={() => handleConditionDrop(condition.id)}
+                    return (
+                      <tr
+                        key={condition.id}
+                        className="condition-row"
+                        draggable
+                        onDragStart={() => setDraggedConditionId(condition.id)}
+                        onDragEnd={() => setDraggedConditionId(null)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={() => handleConditionDrop(condition.id)}
+                      >
+                        <td className="condition-brace-cell">
+                          <span className="condition-group-badge" title={`Condition group ${groupOrder}`}>
+                            {groupOrder}
+                          </span>
+                        </td>
+                        <td className="condition-drag-cell">
+                          <button
+                            type="button"
+                            className="condition-drag-handle"
+                            title="Drag to rearrange"
+                            onMouseDown={(event) => event.stopPropagation()}
                           >
+                            ↕
+                          </button>
+                        </td>
+                        <td>
+                          <SearchableSelect
+                            value={condition.fieldId}
+                            options={fields.map((item) => ({
+                              value: item.fieldId,
+                              label: item.displayName ?? item.DisplayName ?? item.fieldName ?? item.FieldName,
+                            }))}
+                            placeholder={loadingFields ? "Loading fields..." : "Select field"}
+                            disabled={loadingFields}
+                            onChange={(value) => changeRootField(condition.id, value)}
+                          />
+                        </td>
+                        <td>
+                          <Select
+                            value={condition.operator}
+                            options={operators}
+                            onChange={(event) => updateRootCondition(condition.id, "operator", event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <TextBox
+                            value={condition.value}
+                            placeholder="Enter value"
+                            onChange={(event) => updateRootCondition(condition.id, "value", event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          {globalIndex === 0 ? (
+                            <div className="condition-logic-end">Start</div>
+                          ) : (
+                            <Select
+                              value={condition.conditionLogicalOperator}
+                              options={LOGICAL_OPTIONS}
+                              onChange={(event) =>
+                                updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)
+                              }
+                            />
+                          )}
+                        </td>
+                        <td className="condition-action-cell">
+                          <div className="condition-row-actions">
                             <button
                               type="button"
-                              className="condition-drag-handle"
-                              title="Drag to rearrange"
-                              onMouseDown={(event) => event.stopPropagation()}
+                              className="condition-row-action"
+                              title="Move up"
+                              disabled={globalIndex === 0}
+                              onClick={() => moveCondition(condition.id, -1)}
                             >
-                              ↕
+                              <FiArrowUp />
                             </button>
-
-                            <SearchableSelect
-                              value={condition.fieldId}
-                              options={fields.map((item) => ({
-                                value: item.fieldId,
-                                label: item.displayName ?? item.DisplayName ?? item.fieldName ?? item.FieldName,
-                              }))}
-                              placeholder={loadingFields ? "Loading fields..." : "Select field"}
-                              disabled={loadingFields}
-                              onChange={(value) => changeRootField(condition.id, value)}
-                            />
-
-                            <Select
-                              value={condition.operator}
-                              options={operators}
-                              onChange={(event) => updateRootCondition(condition.id, "operator", event.target.value)}
-                            />
-
-                            <TextBox
-                              value={condition.value}
-                              placeholder="Enter value"
-                              onChange={(event) => updateRootCondition(condition.id, "value", event.target.value)}
-                            />
-
-                            <div className="condition-logic-cell">
-                              {isFirst ? (
-                                <div className="condition-logic-end">Start</div>
-                              ) : (
-                                <Select
-                                  value={condition.conditionLogicalOperator}
-                                  options={LOGICAL_OPTIONS}
-                                  onChange={(event) =>
-                                    updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)
-                                  }
-                                />
-                              )}
-                            </div>
-
-                            <div className="condition-row-actions">
+                            <button
+                              type="button"
+                              className="condition-row-action"
+                              title="Move down"
+                              disabled={globalIndex === (form.conditions || []).length - 1}
+                              onClick={() => moveCondition(condition.id, 1)}
+                            >
+                              <FiArrowDown />
+                            </button>
+                            {canGroup && (
                               <button
                                 type="button"
                                 className="condition-row-action"
-                                title="Move up"
-                                disabled={globalIndex === 0}
-                                onClick={() => moveCondition(condition.id, -1)}
+                                title="Group with previous condition"
+                                onClick={() => groupWithPrevious(condition.id)}
                               >
-                                <FiArrowUp />
+                                <FiLink />
                               </button>
+                            )}
+                            {groupMembers.length > 1 && (
                               <button
                                 type="button"
                                 className="condition-row-action"
-                                title="Move down"
-                                disabled={globalIndex === (form.conditions || []).length - 1}
-                                onClick={() => moveCondition(condition.id, 1)}
+                                title="Ungroup this condition"
+                                onClick={() => ungroupCondition(condition.id)}
                               >
-                                <FiArrowDown />
+                                <FiLink2 />
                               </button>
-                              {conditionIndex === 0 && globalIndex > 0 && (
-                                <button
-                                  type="button"
-                                  className="condition-row-action"
-                                  title="Group with previous condition"
-                                  onClick={() => groupWithPrevious(condition.id)}
-                                >
-                                  <FiLink />
-                                </button>
-                              )}
-                              {group.length > 1 && (
-                                <button
-                                  type="button"
-                                  className="condition-row-action"
-                                  title="Ungroup this condition"
-                                  onClick={() => ungroupCondition(condition.id)}
-                                >
-                                  <FiLink2 />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className="condition-remove"
-                                title="Delete condition"
-                                onClick={() => removeRootCondition(condition.id)}
-                              >
-                                <FiTrash2 />
-                              </button>
-                            </div>
+                            )}
+                            <button
+                              type="button"
+                              className="condition-remove"
+                              title="Delete condition"
+                              onClick={() => removeRootCondition(condition.id)}
+                            >
+                              <FiTrash2 />
+                            </button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                </div>
-              ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="rule-conditions-empty">
