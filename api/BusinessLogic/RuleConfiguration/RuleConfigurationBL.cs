@@ -89,29 +89,14 @@ namespace api.BusinessLogic.RuleConfiguration
             {
                 if (string.IsNullOrWhiteSpace(decision.DecisionName))
                     throw new ArgumentException("Each decision row must have a name.", nameof(decisionRows));
-                if (decision.Conditions is null || decision.Conditions.Count == 0)
-                    throw new ArgumentException($"Decision '{decision.DecisionName}' must contain at least one condition.", nameof(decisionRows));
-                if (decision.Results is null || decision.Results.Count == 0)
-                    throw new ArgumentException($"Decision '{decision.DecisionName}' must contain at least one result.", nameof(decisionRows));
                 if (decision.DecisionOrder < 1)
                     throw new ArgumentException("Decision order must be greater than zero.", nameof(decisionRows));
-                foreach (var condition in decision.Conditions)
-                {
-                    if (string.IsNullOrWhiteSpace(condition.OperandType) ||
-                        condition.OperandType is not ("FIELD" or "CONTEXT"))
-                        throw new ArgumentException("Decision condition operand type must be FIELD or CONTEXT.", nameof(decisionRows));
-                    if (string.IsNullOrWhiteSpace(condition.OperandKey) ||
-                        string.IsNullOrWhiteSpace(condition.Operator) ||
-                        string.IsNullOrWhiteSpace(condition.Value))
-                        throw new ArgumentException($"Decision '{decision.DecisionName}' contains an incomplete condition.", nameof(decisionRows));
-                }
-                foreach (var result in decision.Results)
-                {
-                    if (string.IsNullOrWhiteSpace(result.ResultKey) ||
-                        string.IsNullOrWhiteSpace(result.ResultValue))
-                        throw new ArgumentException($"Decision '{decision.DecisionName}' contains an incomplete result.", nameof(decisionRows));
-                }
+                if (string.IsNullOrWhiteSpace(decision.AllocationType))
+                    throw new ArgumentException($"Decision '{decision.DecisionName}' must have an allocation type.", nameof(decisionRows));
+                if (decision.Sequence < 1)
+                    throw new ArgumentException($"Decision '{decision.DecisionName}' must have a sequence greater than zero.", nameof(decisionRows));
             }
+
             if (conditions is null || conditions.Count == 0) throw new ArgumentException("At least one condition is required.", nameof(conditions));
 
             var groupOrders = conditions.Select(c => c.GroupOrder).Distinct().OrderBy(o => o).ToList();
