@@ -677,7 +677,7 @@ BEGIN
         ALTER TABLE dbo.tblRule ADD aCreatedByUserId INT NULL;
 
     IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'aCreatedByUserId') IS NULL
-        ALTER TABLE dbo.tblAllocationRunHistory ADD aRunByUserId INT NULL;
+        ALTER TABLE dbo.tblAllocationRunHistory ADD aCreatedByUserId INT NULL;
 
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblFieldConfiguration_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblFieldConfiguration'))
         ALTER TABLE dbo.tblFieldConfiguration ADD CONSTRAINT FK_tblFieldConfiguration_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
@@ -687,6 +687,6 @@ BEGIN
 
     IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblAllocationRunHistory_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblAllocationRunHistory'))
-        ALTER TABLE dbo.tblAllocationRunHistory ADD CONSTRAINT FK_tblAllocationRunHistory_RunBy FOREIGN KEY (aRunByUserId) REFERENCES dbo.tblUsers(aUserId);
+        ALTER TABLE dbo.tblAllocationRunHistory ADD CONSTRAINT FK_tblAllocationRunHistory_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
 END;
 GO
