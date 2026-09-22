@@ -214,10 +214,12 @@ function RuleForm({
 
     setRows((current) => {
       const selectedSet = new Set(selectedRows);
-      const selected = current.filter((row) => selectedSet.has(row.id));
-      const firstSelectedIndex = current.findIndex((row) =>
-        selectedSet.has(row.id)
-      );
+      const selectedIndexes = current
+        .map((row, index) => (selectedSet.has(row.id) ? index : -1))
+        .filter((index) => index >= 0);
+
+      const selected = selectedIndexes.map((index) => current[index]);
+      const firstSelectedIndex = selectedIndexes[0];
 
       if (selected.length < 2 || firstSelectedIndex < 0) {
         return current;
