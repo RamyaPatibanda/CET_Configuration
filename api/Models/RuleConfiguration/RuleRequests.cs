@@ -34,7 +34,14 @@ namespace api.Models.RuleConfiguration
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
         public bool IsElse { get; set; }
+        public RuleBranchOutcome Outcome { get; set; } = new();
         public List<RuleConditionRequest> Conditions { get; set; } = new();
+    }
+
+    public class RuleBranchOutcome
+    {
+        public string VacancySource { get; set; } = string.Empty;
+        public string VacancyType { get; set; } = string.Empty;
     }
 
     public class RuleOutcome
