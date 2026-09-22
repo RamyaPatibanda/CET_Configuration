@@ -820,7 +820,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                           <div className="condition-empty-icon"><FiCheckSquare size={20} /></div>
                           <div className="condition-empty-content">
                             <strong>No conditions in this branch</strong>
-                            <span>Add the conditions that make this IF / ELSE IF branch true.</span>
+                            <span>Add the conditions that make this decision true.</span>
                           </div>
                           <Button type="button" variant="secondary" className="condition-empty-action" onClick={() => addCondition(branchIndex)}>
                             <FiPlus size={13} /> Add condition
