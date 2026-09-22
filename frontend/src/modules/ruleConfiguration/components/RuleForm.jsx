@@ -379,7 +379,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
           {(form.conditions || []).length > 0 ? (
             <>
-              <div className="condition-toolbar-actions">
+              <div className="condition-toolbar-actions condition-toolbar-actions-right">
                 <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelectedConditions} disabled={selectedConditions.length < 2}>
                   <FiUsers size={13} /><span>Group</span>
                 </Button>
@@ -473,10 +473,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               </div>
             </>
           ) : (
-            <div className="rule-conditions-empty">
-              <span>No conditions added yet.</span>
-              <Button type="button" variant="secondary" className="condition-add-button" onClick={addRootCondition}>
-                <FiPlus size={13} /> Add condition
+            <div className="rule-conditions-empty condition-empty-state">
+              <div className="condition-empty-copy">
+                <strong>No conditions configured</strong>
+                <span>Add a condition to start defining when this rule should match.</span>
+              </div>
+              <Button type="button" variant="primary" className="condition-empty-add-button" onClick={addRootCondition}>
+                <FiPlus size={14} />
+                <span>Add your first condition</span>
               </Button>
             </div>
           )}
