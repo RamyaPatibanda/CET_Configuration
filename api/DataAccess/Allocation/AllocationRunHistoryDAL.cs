@@ -40,7 +40,7 @@ public sealed class AllocationRunHistoryDAL
             command.Parameters.Add("@dtCompletedAtUtc", SqlDbType.DateTime2).Value = (object?)history.CompletedAtUtc ?? DBNull.Value;
             command.Parameters.Add("@nCandidateCount", SqlDbType.Int).Value = history.CandidateCount;
             command.Parameters.Add("@nDecisionCount", SqlDbType.Int).Value = history.DecisionCount;
-            command.Parameters.Add("@tErrorMessage", SqlDbType.NVarChar, 2000).Value = history.ErrorMessage;
+            command.Parameters.Add("@tErrorMessage", SqlDbType.NVarChar, 2000).Value = history.ErrorMessage;\n            command.Parameters.Add("@aRunByUserId", SqlDbType.Int).Value = (object?)history.RunByUserId ?? DBNull.Value;
 
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
@@ -151,7 +151,7 @@ public sealed class AllocationRunHistoryDAL
                     CompletedAtUtc = reader.IsDBNull(completedOrdinal) ? null : reader.GetDateTime(completedOrdinal),
                     CandidateCount = reader.GetInt32(reader.GetOrdinal("nCandidateCount")),
                     DecisionCount = reader.GetInt32(reader.GetOrdinal("nDecisionCount")),
-                    ErrorMessage = reader.IsDBNull(errorOrdinal) ? string.Empty : reader.GetString(errorOrdinal)
+                    ErrorMessage = reader.IsDBNull(errorOrdinal) ? string.Empty : reader.GetString(errorOrdinal),\n                    RunByUserId = reader.IsDBNull(reader.GetOrdinal("aRunByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aRunByUserId")),\n                    RunBy = reader.IsDBNull(reader.GetOrdinal("tRunBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tRunBy"))
                 });
             }
 
