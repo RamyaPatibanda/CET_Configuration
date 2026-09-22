@@ -418,9 +418,9 @@ public sealed class AllocationController : ControllerBase
                     condition.ConditionOrder))
                 .ToList(),
             Branches = rule.Branches
-                .Where(decision => branch.IsActive)
-                .OrderBy(decision => branch.BranchOrder)
-                .Select(decision => new api.Services.Allocation.AllocationRuleBranch
+                .Where(branch => branch.IsActive)
+                .OrderBy(branch => branch.BranchOrder)
+                .Select(branch => new api.Services.Allocation.AllocationRuleBranch
                 {
                     BranchOrder = branch.BranchOrder,
                     BranchName = branch.BranchName,
