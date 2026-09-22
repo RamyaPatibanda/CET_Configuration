@@ -11,6 +11,6 @@ namespace api.Models.FieldConfiguration
         public bool IsActive { get; set; }
         public int DisplayOrder { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public DateTime? ModifiedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }\n        public int? CreatedByUserId { get; set; }\n        public string CreatedBy { get; set; } = string.Empty;
     }
 }
