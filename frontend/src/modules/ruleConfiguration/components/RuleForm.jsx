@@ -10,7 +10,7 @@ import "./RuleConditionGrouping.css";
 
 const EMPTY_RULE = {
   ruleId: 0, ruleName: "", description: "", priority: 1, isActive: true,
-  decisionAreaCode: "CANDIDATE_QUALIFICATION", outcome: { values: [] },
+  decisionAreaCode: "SEAT_ALLOCATION", outcome: { values: [] },
   conditions: [], decisionRows: [],
 };
 
@@ -105,7 +105,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     if (!open) return;
     setForm(rule ? {
       ...EMPTY_RULE, ...rule,
-      decisionAreaCode: rule.decisionAreaCode || "CANDIDATE_QUALIFICATION",
+      decisionAreaCode: rule.decisionAreaCode || "SEAT_ALLOCATION",
       decisionRows: normalizeDecisionRows(rule.decisionRows),
       outcome: normalizeOutcome(rule.outcome || (rule.outcomeJson ? (() => { try { return JSON.parse(rule.outcomeJson); } catch { return {}; } })() : {})),
     } : { ...EMPTY_RULE, ruleId: nextRuleId });
@@ -231,8 +231,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setSelectedRows([]);
   };
 
+  const getStepDecisionDefinition = () => {
+    return decisionOptions.find((item) => item.value === "SEAT_ALLOCATION")
+      || decisionOptions.find((item) => item.value === form.decisionAreaCode)
+      || {};
+  };
+
   const addDecisionRow = () => {
-    const definitions = decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results || [];
+    const definitions = getStepDecisionDefinition().results || [];
     const allocationType = definitions.find((item) => item.supportingValue === "allocatedType");
     setForm((current) => ({
       ...current,
@@ -325,6 +331,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           </div>
         </div>
 
+        <div className="decision-flow-label"><span>WHEN</span><small>All conditions above must be satisfied according to the selected AND / OR logic.</small></div>
+
         <div className="condition-toolbar-actions">
           <Button type="button" variant="secondary" className="condition-tool-button" onClick={groupSelected} disabled={selectedRows.length < 2} title="Group selected conditions"><FiUsers size={13} /><span>Group</span>{selectedRows.length > 1 && <span className="condition-tool-count">{selectedRows.length}</span>}</Button>
           <Button type="button" variant="secondary" className="condition-tool-button" onClick={ungroupSelected} disabled={!selectedRows.length} title="Ungroup selected conditions"><FiMenu size={13} /><span>Ungroup</span></Button>
@@ -376,7 +384,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           <div className="rule-outcome-title"><div><span className="conditions-kicker">Allocation outcome</span><h3>Decision Rows</h3><p>For this allocation step, configure only the values the allocation service needs.</p></div><Button type="button" variant="secondary" onClick={addDecisionRow}><FiPlus size={13} /> Add decision</Button></div>
           <div className="decision-row-editor-list">
             {(form.decisionRows || []).map((decision, rowIndex) => {
-              const definition = decisionOptions.find((item) => item.value === form.decisionAreaCode);
+              const definition = getStepDecisionDefinition();
               const allocationTypeField = definition?.results?.find((item) => item.supportingValue === "allocatedType");
               const sequenceField = definition?.results?.find((item) => item.supportingValue === "sequence");
               const allocationOptions = allocationTypeField?.values || [];
