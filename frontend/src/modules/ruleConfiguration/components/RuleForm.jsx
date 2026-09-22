@@ -63,7 +63,15 @@ const normalizeConditions = (conditions) => (Array.isArray(conditions) ? conditi
 
 const normalizeBranches = (value) => {
   const rows = Array.isArray(value) ? value : value?.branches ?? value?.Branches ?? value?.DecisionRows ?? [];
-  return rows.map((row, index) => ({
+  return rows.map((row, index) => {
+    let outcome = row.outcome ?? row.Outcome ?? {};
+    if ((!outcome || typeof outcome !== "object") && row.outcomeJson) {
+      try { outcome = JSON.parse(row.outcomeJson); } catch { outcome = {}; }
+    }
+    if ((!outcome || typeof outcome !== "object") && row.OutcomeJson) {
+      try { outcome = JSON.parse(row.OutcomeJson); } catch { outcome = {}; }
+    }
+    return ({
     ruleBranchId: row.ruleBranchId ?? row.RuleBranchId ?? row.RuleDecisionId ?? 0,
     ruleId: row.ruleId ?? row.RuleId ?? 0,
     branchName: row.branchName ?? row.BranchName ?? row.DecisionName ?? "",
@@ -72,9 +80,13 @@ const normalizeBranches = (value) => {
     allocationType: row.allocationType ?? row.AllocationType ?? "",
     sequence: row.sequence ?? row.Sequence ?? index + 1,
     isElse: row.isElse ?? row.IsElse ?? false,
-    outcome: row.outcome ?? row.Outcome ?? { vacancySource: "", vacancyType: "" },
-    conditions: normalizeConditions(row.conditions ?? row.Conditions),
-  }));
+    outcome: {
+      vacancySource: outcome?.vacancySource ?? outcome?.VacancySource ?? "",
+      vacancyType: outcome?.vacancyType ?? outcome?.VacancyType ?? "",
+    },
+      conditions: normalizeConditions(row.conditions ?? row.Conditions),
+    });
+  });
 };
 
 const getOutcomeOptions = (decisionOptions, area, supportingValue) => {
