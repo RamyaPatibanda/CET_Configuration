@@ -336,7 +336,9 @@ prepared:
             AllocationRunName = request.AllocationRunName.Trim(),
             CapRound = request.CapRound,
             AllocationStep = step.Code,
-            RuleSetVersionId = BuildRuleSetVersionId(step.Code, candidateRuleIds, sequenceRuleIds)
+            RuleSetVersionId = string.Equals(step.Code, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase)
+                ? BuildRuleSetVersionId(step.Code, candidateRuleIds, sequenceRuleIds)
+                : BuildLegacyRuleSetVersionId(step.Code, request.RuleGroups)
         };
 
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> builtRuleGroups;
@@ -637,6 +639,12 @@ prepared:
         IEnumerable<int> candidateRuleIds,
         IEnumerable<int> sequenceRuleIds) =>
         $"{allocationStep}:candidate={string.Join(",", candidateRuleIds)}|sequence={string.Join(",", sequenceRuleIds)}";
+
+    private static string BuildLegacyRuleSetVersionId(
+        string allocationStep,
+        IEnumerable<AllocationRuleGroupRequest> groups) =>
+        $"{allocationStep}:{string.Join("|", groups.OrderBy(g => g.Type)
+            .Select(g => $"{g.Type}={string.Join(",", g.RuleIds.OrderBy(id => id))}"))}";
 
     private sealed class PreparedAllocation
     {
