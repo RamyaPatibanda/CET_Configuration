@@ -370,7 +370,8 @@ BEGIN
                 COALESCE(d.tAllocatedType, N'') AS AllocationType,
                 COALESCE(d.nSequence, 1) AS Sequence,
                 d.bIsElse AS IsElse,
-                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
+                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions,
+                JSON_QUERY(COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}')) AS Outcome
             FROM dbo.tblRuleBranch d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
@@ -412,7 +413,8 @@ BEGIN
                 d.tAllocatedType AS AllocationType,
                 d.nSequence AS Sequence,
                 d.bIsElse AS IsElse,
-                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
+                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions,
+                JSON_QUERY(COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}')) AS Outcome
             FROM dbo.tblRuleBranch d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
