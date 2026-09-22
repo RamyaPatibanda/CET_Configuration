@@ -5,6 +5,7 @@ import Dialog from "../../../components/common/Dialog/Dialog";
 import Switch from "../../../components/common/Switch/Switch";
 import RuleForm from "../components/RuleForm";
 import ruleConfigurationService from "../services/ruleConfigurationService";
+import authService from "../../../services/authService";
 import "../ruleConfiguration.css";
 
 function RuleConfiguration() {
@@ -173,9 +174,9 @@ function RuleConfiguration() {
           <p>Create reusable rules from the fields configured in Field Configuration.</p>
         </div>
 
-        <Button onClick={openCreate} title="Create Rule" aria-label="Create Rule" className="add-rule-button">
+        {canWrite && <Button onClick={openCreate} title="Create Rule" aria-label="Create Rule" className="add-rule-button">
           <FiPlus size={18} strokeWidth={2.2} />
-        </Button>
+        </Button>}
       </div>
 
       {/* <div className="rule-order-note">
@@ -219,9 +220,9 @@ function RuleConfiguration() {
                 return (
                   <tr
                     key={rule.ruleId}
-                    draggable
+                    draggable={canWrite}
                     className={draggedRuleId === rule.ruleId ? "rule-row-dragging" : ""}
-                    onDragStart={() => setDraggedRuleId(rule.ruleId)}
+                    onDragStart={() => canWrite && setDraggedRuleId(rule.ruleId)}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleDrop(rule.ruleId)}
                     onDragEnd={() => setDraggedRuleId(null)}
@@ -257,17 +258,19 @@ function RuleConfiguration() {
                     </td>
                     <td>
                       <div className="rule-status-control">
-                        <Switch checked={Boolean(rule.isActive)} onChange={() => handleToggleActive(rule)} />
+                        {canWrite ? <Switch checked={Boolean(rule.isActive)} onChange={() => handleToggleActive(rule)} /> : <span className="rule-readonly-status">{rule.isActive ? "Active" : "Inactive"}</span>}
 
                       </div>
                     </td>
                     <td className="rule-actions">
-                      <button type="button" title="Edit rule" aria-label="Edit rule" onClick={() => openEdit(rule)}>
-                        <FiEdit2 />
-                      </button>
-                      <button type="button" title="Delete rule" aria-label="Delete rule" onClick={() => setDeleteRule(rule)}>
-                        <FiTrash2 />
-                      </button>
+                      {canWrite && <>
+                        <button type="button" title="Edit rule" aria-label="Edit rule" onClick={() => openEdit(rule)}>
+                          <FiEdit2 />
+                        </button>
+                        <button type="button" title="Delete rule" aria-label="Delete rule" onClick={() => setDeleteRule(rule)}>
+                          <FiTrash2 />
+                        </button>
+                      </>}
                     </td>
                   </tr>
                 );
