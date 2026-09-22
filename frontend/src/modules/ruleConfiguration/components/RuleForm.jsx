@@ -62,12 +62,12 @@ const normalizeConditions = (conditions) => (Array.isArray(conditions) ? conditi
 }));
 
 const normalizeBranches = (value) => {
-  const rows = Array.isArray(value) ? value : value?.branches ?? value?.DecisionRows ?? [];
+  const rows = Array.isArray(value) ? value : value?.branches ?? value?.Branches ?? value?.DecisionRows ?? [];
   return rows.map((row, index) => ({
-    ruleBranchId: row.ruleBranchId ?? row.RuleDecisionId ?? 0,
+    ruleBranchId: row.ruleBranchId ?? row.RuleBranchId ?? row.RuleDecisionId ?? 0,
     ruleId: row.ruleId ?? row.RuleId ?? 0,
-    branchName: row.branchName ?? row.DecisionName ?? "",
-    branchOrder: row.branchOrder ?? row.DecisionOrder ?? index + 1,
+    branchName: row.branchName ?? row.BranchName ?? row.DecisionName ?? "",
+    branchOrder: row.branchOrder ?? row.BranchOrder ?? row.DecisionOrder ?? index + 1,
     isActive: row.isActive ?? row.IsActive ?? true,
     allocationType: row.allocationType ?? row.AllocationType ?? "",
     sequence: row.sequence ?? row.Sequence ?? index + 1,
