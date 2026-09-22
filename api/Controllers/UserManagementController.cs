@@ -33,6 +33,21 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [HttpGet("permission-catalog")]
+    public ActionResult<IReadOnlyList<UserPermission>> GetPermissionCatalog()
+    {
+        return Ok(UserPermissionModules.Names
+            .Select(item => new UserPermission
+            {
+                ModuleCode = item.Key,
+                ModuleName = item.Value,
+                CanRead = false,
+                CanWrite = false
+            })
+            .OrderBy(item => item.ModuleCode)
+            .ToList());
+    }
+
     [HttpPost]
     public async Task<ActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
