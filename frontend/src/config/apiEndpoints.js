@@ -5,6 +5,7 @@ const API_ENDPOINTS = {
   USER_MANAGEMENT: {
     LIST: "/api/users",
     CREATE: "/api/users",
+    PERMISSION_CATALOG: "/api/users/permission-catalog",
   },
   FIELD_CONFIGURATION: {
     LIST: "/api/field-configuration",
