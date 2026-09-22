@@ -21,6 +21,7 @@ const formatDate = (value) => {
 
 function Overview() {
   const navigate = useNavigate();
+  const canWrite = authService.hasPermission("ALLOCATION_RUN", "write");
   const [runs, setRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [runError, setRunError] = useState("");
@@ -144,12 +145,12 @@ function Overview() {
                             type="button"
                             className="overview-icon-button"
                             onClick={() => navigate("/allocation?runId=" + encodeURIComponent(run.allocationRunId))}
-                            title={canEdit ? "Edit allocation" : "View allocation"}
-                            aria-label={canEdit ? "Edit allocation" : "View allocation"}
+                            title={canWrite && canEdit ? "Edit allocation" : "View allocation"}
+                            aria-label={canWrite && canEdit ? "Edit allocation" : "View allocation"}
                           >
-                            {canEdit ? <FiEdit2 size={15} /> : <FiEye size={15} />}
+                            {canWrite && canEdit ? <FiEdit2 size={15} /> : <FiEye size={15} />}
                           </button>
-                          <button
+                          {canWrite && <button
                             type="button"
                             className="overview-icon-button danger"
                             onClick={() => deleteRun(run.allocationRunId, run.allocationRunName)}
@@ -158,7 +159,7 @@ function Overview() {
                             disabled={normalizedStatus === "running"}
                           >
                             <FiTrash2 size={15} />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>
