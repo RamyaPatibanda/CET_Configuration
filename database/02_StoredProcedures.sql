@@ -381,8 +381,11 @@ BEGIN
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId)
         + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rb CROSS APPLY OPENJSON(rb.tConditionsJson) bc WHERE rb.aRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
-        r.dtModifiedDate
+        r.dtModifiedDate,
+        r.aCreatedByUserId,
+        COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblRule r
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.aCreatedByUserId
     ORDER BY r.nPriority, r.aRuleId;
 END;
 GO
@@ -424,8 +427,11 @@ BEGIN
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId)
         + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rbCount CROSS APPLY OPENJSON(rbCount.tConditionsJson) bcCount WHERE rbCount.aRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
-        r.dtModifiedDate
+        r.dtModifiedDate,
+        r.aCreatedByUserId,
+        COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblRule r
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.aCreatedByUserId
     WHERE r.aRuleId = @aRuleId;
 
     SELECT
@@ -459,7 +465,8 @@ CREATE PROCEDURE dbo.sproc_CreateRuleV2
     @bIsActive BIT,
     @tDecisionAreaCode NVARCHAR(100),
     @tOutcomeJson NVARCHAR(MAX),
-    @tConditionsJson NVARCHAR(MAX)
+    @tConditionsJson NVARCHAR(MAX),
+    @aCreatedByUserId INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -484,12 +491,12 @@ BEGIN
         INSERT INTO dbo.tblRule
         (
             aRuleId, tRuleName, tDescription, nPriority, bIsActive,
-            tDecisionAreaCode, tOutcomeJson
+            tDecisionAreaCode, tOutcomeJson, aCreatedByUserId
         )
         VALUES
         (
             @aRuleId, @tRuleName, @tDescription, @nPriority, @bIsActive,
-            @tDecisionAreaCode, @tOutcomeJson
+            @tDecisionAreaCode, @tOutcomeJson, @aCreatedByUserId
         );
 
         INSERT INTO dbo.tblRuleConditionGroup (aRuleId, nGroupOrder, tLogicalOperator)
