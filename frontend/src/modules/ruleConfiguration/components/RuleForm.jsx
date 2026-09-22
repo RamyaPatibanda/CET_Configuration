@@ -162,15 +162,15 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       return {
         ...current,
         branches: [
-          ...nextRows,
+          ...rows,
           {
             ruleBranchId: 0,
             ruleId: current.ruleId,
             branchName: "",
-            branchOrder: nextRows.length + 1,
+            branchOrder: rows.length + 1,
             isActive: true,
             allocationType: "",
-            sequence: nextRows.length + 1,
+            sequence: rows.length + 1,
             isElse: false,
             conditions: [],
           },
