@@ -341,16 +341,6 @@ prepared:
                 : BuildLegacyRuleSetVersionId(step.Code, request.RuleGroups)
         };
 
-        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> builtRuleGroups;
-        try
-        {
-            builtRuleGroups = await BuildRuleGroupsAsync(step.Code, candidateRuleIds, sequenceRuleIds, detailedById, cancellationToken);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return PreparedAllocation.Fail(ex.Message);
-        }
-
         return new PreparedAllocation
         {
             Run = run,
