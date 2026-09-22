@@ -97,6 +97,27 @@ namespace api.BusinessLogic.RuleConfiguration
                     throw new ArgumentException($"Decision '{decision.DecisionName}' must have a sequence greater than zero.", nameof(decisionRows));
             }
 
+            var elseBranches = (decisionRows ?? []).Where(d => d.IsElse).ToList();
+            if (elseBranches.Count > 1)
+                throw new ArgumentException("Only one ELSE branch is allowed.", nameof(decisionRows));
+            if (elseBranches.Count == 1 && elseBranches[0].DecisionOrder != decisionRows!.Count)
+                throw new ArgumentException("The ELSE branch must be the last branch.", nameof(decisionRows));
+
+            foreach (var decision in decisionRows ?? [])
+            {
+                if (decision.IsElse)
+                {
+                    if (decision.Conditions is { Count: > 0 })
+                        throw new ArgumentException("An ELSE branch cannot contain conditions.", nameof(decisionRows));
+                    continue;
+                }
+
+                if (decision.Conditions is null || decision.Conditions.Count == 0)
+                    throw new ArgumentException($"IF branch '{decision.DecisionName}' must have at least one condition.", nameof(decisionRows));
+
+                ValidateBranchConditions(decision.Conditions, decision.DecisionName);
+            }
+
             if (conditions is null || conditions.Count == 0) throw new ArgumentException("At least one condition is required.", nameof(conditions));
 
             var groupOrders = conditions.Select(c => c.GroupOrder).Distinct().OrderBy(o => o).ToList();
@@ -114,6 +135,27 @@ namespace api.BusinessLogic.RuleConfiguration
                 if (string.IsNullOrWhiteSpace(condition.Value)) throw new ArgumentException("Each condition must have a value.", nameof(conditions));
                 if (condition.ConditionLogicalOperator is not ("AND" or "OR")) throw new ArgumentException("Condition logical operator must be AND or OR.", nameof(conditions));
                 if (condition.GroupOrder < 1 || condition.ConditionOrder < 1) throw new ArgumentException("Condition and group order must be greater than zero.", nameof(conditions));
+            }
+        }
+
+
+        private static void ValidateBranchConditions(List<RuleConditionRequest> conditions, string branchName)
+        {
+            var groupOrders = conditions.Select(c => c.GroupOrder).Distinct().OrderBy(o => o).ToList();
+            if (!groupOrders.Any() || groupOrders.First() != 1 || groupOrders.Select((order, index) => order == index + 1).Any(valid => !valid))
+                throw new ArgumentException($"Condition groups in branch '{branchName}' must be sequential.", nameof(conditions));
+
+            var conditionOrders = conditions.Select(c => c.ConditionOrder).OrderBy(o => o).ToList();
+            if (conditionOrders.Any(o => o < 1) || conditionOrders.Select((order, index) => order == index + 1).Any(valid => !valid))
+                throw new ArgumentException($"Condition order in branch '{branchName}' must be sequential.", nameof(conditions));
+
+            foreach (var condition in conditions)
+            {
+                if (condition.FieldId <= 0) throw new ArgumentException($"Branch '{branchName}' contains an invalid field.", nameof(conditions));
+                if (string.IsNullOrWhiteSpace(condition.Operator)) throw new ArgumentException($"Branch '{branchName}' contains a condition without an operator.", nameof(conditions));
+                if (string.IsNullOrWhiteSpace(condition.Value)) throw new ArgumentException($"Branch '{branchName}' contains a condition without a value.", nameof(conditions));
+                if (condition.ConditionLogicalOperator is not ("AND" or "OR")) throw new ArgumentException($"Branch '{branchName}' condition logical operator must be AND or OR.", nameof(conditions));
+                if (condition.GroupOrder < 1 || condition.ConditionOrder < 1) throw new ArgumentException($"Branch '{branchName}' condition order must be greater than zero.", nameof(conditions));
             }
         }
 
