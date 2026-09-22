@@ -26,7 +26,7 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
       <div className="field-reorder-hint"><FiMenu size={15} /> Drag the handle to rearrange field order.</div>
       <table className="field-table">
         <thead>
-          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Field Type</th><th>Required</th><th>Active</th><th>Actions</th></tr>
+          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Created By</th><th>Field Type</th><th>Required</th><th>Active</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {fields.map((field) => (
