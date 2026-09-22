@@ -158,7 +158,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     setForm((current) => {
       const rows = current.decisionRows || [];
       const hasElse = rows.some((row) => row.isElse);
-      const nextRows = hasElse ? rows : rows;
+      if (hasElse) return current;
       return {
         ...current,
         decisionRows: [
@@ -669,7 +669,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         </div>
 
         <div className="rule-branch-actions">
-          <Button type="button" variant="secondary" onClick={addBranch}>
+          <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.decisionRows || []).some((branch) => branch.isElse)}>
             <FiPlus size={13} /> Add ELSE IF
           </Button>
           <Button
