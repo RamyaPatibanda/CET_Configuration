@@ -95,7 +95,9 @@ namespace api.DataAccess.RuleConfiguration
                 command.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = SerializeOutcome(request.Outcome);
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
-                return Convert.ToInt32(await command.ExecuteScalarAsync());
+                var ruleId = Convert.ToInt32(await command.ExecuteScalarAsync());
+                await SaveDecisionRowsAsync(ruleId, request.DecisionRows);
+                return ruleId;
             }
             catch (Exception ex)
             {
@@ -232,21 +234,25 @@ namespace api.DataAccess.RuleConfiguration
                         throw new ArgumentException("Each decision row must have a name.");
                     if (row.Conditions is null || row.Conditions.Count == 0)
                         throw new ArgumentException($"Decision '{row.DecisionName}' must contain at least one condition.");
-                    if (row.Results is null || row.Results.Count == 0)
-                        throw new ArgumentException($"Decision '{row.DecisionName}' must contain at least one result.");
+                    if (string.IsNullOrWhiteSpace(row.AllocationType))
+                        throw new ArgumentException($"Decision '{row.DecisionName}' must have an allocation type.");
+                    if (row.Sequence < 1)
+                        throw new ArgumentException($"Decision '{row.DecisionName}' must have a sequence greater than zero.");
 
                     int decisionId;
                     await using (var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleDecision
-                            (aRuleId, tDecisionName, nDecisionOrder, bIsActive)
+                            (aRuleId, tDecisionName, nDecisionOrder, tAllocationType, nSequence, bIsActive)
                         VALUES
-                            (@aRuleId, @tDecisionName, @nDecisionOrder, @bIsActive);
+                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive);
                         SELECT CAST(SCOPE_IDENTITY() AS INT);",
                         connection, transaction))
                     {
                         decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
                         decision.Parameters.Add("@tDecisionName", SqlDbType.NVarChar, 200).Value = row.DecisionName.Trim();
                         decision.Parameters.Add("@nDecisionOrder", SqlDbType.Int).Value = row.DecisionOrder;
+                        decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
+                        decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
                         decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
                         decisionId = Convert.ToInt32(await decision.ExecuteScalarAsync());
                     }
@@ -269,21 +275,7 @@ namespace api.DataAccess.RuleConfiguration
                         await command.ExecuteNonQueryAsync();
                     }
 
-                    foreach (var result in row.Results.OrderBy(x => x.ResultOrder))
-                    {
-                        await using var command = new SqlCommand(@"
-                            INSERT INTO dbo.tblRuleDecisionResult
-                                (aRuleDecisionId, tResultKey, tResultValue, tValueKind, nResultOrder)
-                            VALUES
-                                (@aRuleDecisionId, @tResultKey, @tResultValue, @tValueKind, @nResultOrder);",
-                            connection, transaction);
-                        command.Parameters.Add("@aRuleDecisionId", SqlDbType.Int).Value = decisionId;
-                        command.Parameters.Add("@tResultKey", SqlDbType.NVarChar, 200).Value = result.ResultKey.Trim();
-                        command.Parameters.Add("@tResultValue", SqlDbType.NVarChar, 1000).Value = result.ResultValue;
-                        command.Parameters.Add("@tValueKind", SqlDbType.NVarChar, 30).Value = result.ValueKind;
-                        command.Parameters.Add("@nResultOrder", SqlDbType.Int).Value = result.ResultOrder;
-                        await command.ExecuteNonQueryAsync();
-                    }
+                }
                 }
 
                 await transaction.CommitAsync();
