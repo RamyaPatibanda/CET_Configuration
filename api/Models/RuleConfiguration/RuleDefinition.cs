@@ -16,7 +16,6 @@ namespace api.Models.RuleConfiguration
         public DateTime? ModifiedDate { get; set; }
     }
 
-
     public class RuleDecision
     {
         public int RuleDecisionId { get; set; }
@@ -24,21 +23,7 @@ namespace api.Models.RuleConfiguration
         public string DecisionName { get; set; } = string.Empty;
         public int DecisionOrder { get; set; }
         public bool IsActive { get; set; }
-        public List<RuleDecisionCondition> Conditions { get; set; } = new();
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
     }
-
-    public class RuleDecisionCondition
-    {
-        public int RuleDecisionConditionId { get; set; }
-        public int RuleDecisionId { get; set; }
-        public string OperandType { get; set; } = string.Empty;
-        public string OperandKey { get; set; } = string.Empty;
-        public string LogicalOperator { get; set; } = "AND";
-        public string Operator { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
-        public int ConditionOrder { get; set; }
-    }
-
 }
