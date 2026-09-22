@@ -23,6 +23,7 @@ builder.Services.AddScoped<CETDataAccess>();
 
 builder.Services.AddScoped<IAuthBL, AuthBL>();
 builder.Services.AddScoped<IUserManagementBL, UserManagementBL>();
+builder.Services.AddScoped<UserPermissionService>();
 
 builder.Services.AddScoped<IFieldConfigurationDAL, FieldConfigurationDAL>();
 builder.Services.AddScoped<IFieldConfigurationBL, FieldConfigurationBL>();
