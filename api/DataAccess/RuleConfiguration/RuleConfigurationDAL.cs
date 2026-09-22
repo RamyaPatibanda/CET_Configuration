@@ -254,6 +254,7 @@ namespace api.DataAccess.RuleConfiguration
                     decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
                     decision.Parameters.Add("@bIsElse", SqlDbType.Bit).Value = row.IsElse;
                     decision.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = JsonSerializer.Serialize(row.Conditions ?? new List<RuleConditionRequest>());
+                    decision.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = JsonSerializer.Serialize(row.Outcome ?? new RuleBranchOutcome());
                     await decision.ExecuteNonQueryAsync();
                 }
 
