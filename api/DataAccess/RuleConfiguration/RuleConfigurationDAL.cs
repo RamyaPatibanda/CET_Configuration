@@ -233,14 +233,16 @@ namespace api.DataAccess.RuleConfiguration
                         throw new ArgumentException("Each decision row must have a name.");
                     if (string.IsNullOrWhiteSpace(row.AllocationType))
                         throw new ArgumentException($"Decision '{row.DecisionName}' must have an allocation type.");
+                    if (!row.IsElse && row.Conditions.Count == 0)
+                        throw new ArgumentException($"Decision '{row.DecisionName}' must have at least one IF condition unless it is ELSE.");
                     if (row.Sequence < 1)
                         throw new ArgumentException($"Decision '{row.DecisionName}' must have a sequence greater than zero.");
 
                     await using var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleDecision
-                            (aRuleId, tDecisionName, nDecisionOrder, tAllocationType, nSequence, bIsActive)
+                            (aRuleId, tDecisionName, nDecisionOrder, tAllocationType, nSequence, bIsActive, bIsElse, tConditionsJson)
                         VALUES
-                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive);",
+                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
                         connection, transaction);
 
                     decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
@@ -249,6 +251,8 @@ namespace api.DataAccess.RuleConfiguration
                     decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
                     decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
                     decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
+                    decision.Parameters.Add("@bIsElse", SqlDbType.Bit).Value = row.IsElse;
+                    decision.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = JsonSerializer.Serialize(row.Conditions ?? new List<RuleConditionRequest>());
                     await decision.ExecuteNonQueryAsync();
                 }
 
