@@ -133,6 +133,7 @@ function RuleForm({
         setLoadingDecisionOptions(true);
         const [fieldsResponse, decisionResponse] = await Promise.all([
           ruleConfigurationService.getFields(),
+          ruleConfigurationService.getDecisionOptions(),
         ]);
         setFields(getResponseItems(fieldsResponse));
         setDecisionOptions(getResponseItems(decisionResponse));
