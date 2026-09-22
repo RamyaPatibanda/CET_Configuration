@@ -393,6 +393,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
       const conditions = (branch.conditions || []).map((condition, conditionIndex) => ({
         fieldId: Number(condition.fieldId),
+        fieldName: fields.find((field) => String(field.fieldId) === String(condition.fieldId))?.fieldName || fields.find((field) => String(field.fieldId) === String(condition.fieldId))?.FieldName || "",
         conditionLogicalOperator: (condition.conditionLogicalOperator || "AND").toUpperCase(),
         operator: condition.operator,
         value: condition.value,
