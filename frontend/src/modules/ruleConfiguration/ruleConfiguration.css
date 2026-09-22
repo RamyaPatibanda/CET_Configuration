@@ -1087,3 +1087,66 @@
   text-align: center;
   font-size: 10px;
 }
+
+
+/* Condition grouping and rearranging controls */
+.condition-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.condition-row-action {
+  width: 28px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(143, 156, 178, 0.14);
+  border-radius: 8px;
+  color: #718097;
+  background: rgba(255, 255, 255, 0.52);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.condition-row-action:hover:not(:disabled) {
+  color: #315d8c;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 5px 12px rgba(54, 73, 102, 0.07);
+}
+
+.condition-row-action:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.condition-drag-handle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.condition-drag-handle:active {
+  cursor: grabbing;
+}
+
+.condition-row[draggable="true"] {
+  cursor: default;
+}
+
+@media (max-width: 1100px) {
+  .condition-table {
+    overflow-x: auto;
+  }
+
+  .condition-table-header,
+  .condition-row {
+    min-width: 980px;
+  }
+}
