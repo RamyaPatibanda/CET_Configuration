@@ -102,7 +102,7 @@ public sealed class LegacyAllocationDAL
 
                         if (existing is not null)
                         {
-                            await RestoreAllocationAsync(connection, transaction, existing, cancellationToken);
+                            await RestoreAllocationAsync(connection, transaction, existing, ruleGroups, cancellationToken);
                             await DeactivateAllocationAsync(connection, transaction, existing.AllocationId, cancellationToken);
                         }
 
@@ -269,7 +269,8 @@ public sealed class LegacyAllocationDAL
                     StageCode = rule.StageCode,
                     LogicalOperator = rule.LogicalOperator,
                     AllocatedType = branch.AllocationType,
-                    VacancyType = rule.VacancyType,
+                    VacancySource = branch.VacancySource,
+                    VacancyType = branch.VacancyType,
                     SeatCategory = rule.SeatCategory,
                     ReservationType = rule.ReservationType,
                     CandidateStatus = rule.CandidateStatus,
@@ -492,17 +493,28 @@ public sealed class LegacyAllocationDAL
     private static bool IsSafeIdentifier(string value) =>
         value.Length > 0 && value.All(ch => char.IsLetterOrDigit(ch) || ch == '_');
 
-    private static async Task RestoreAllocationAsync(SqlConnection connection, SqlTransaction transaction, LegacyAllocationRow allocation, CancellationToken cancellationToken)
+    private static async Task RestoreAllocationAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        LegacyAllocationRow allocation,
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
+        CancellationToken cancellationToken)
     {
-        if (allocation.OriginalAllocatedType is "PH" or "Def" or "Orp")
+        if (!string.IsNullOrWhiteSpace(allocation.OriginalAllocatedType))
         {
-            var column = allocation.OriginalAllocatedType switch
+            var vacancySource = FindVacancySourceForType(ruleGroups, allocation.OriginalAllocatedType);
+            if (!string.IsNullOrWhiteSpace(vacancySource))
             {
-                "PH" => "PH", "Def" => "Def", "Orp" => "Orp", _ => throw new InvalidOperationException()
-            };
-            await ExecuteNonQueryAsync(connection, transaction,
-                $"UPDATE dbo.Allocation_SeatDistribution_PH SET {column} = {column} + 1 WHERE ChoiceCode = @ChoiceCode;",
-                cancellationToken, ("@ChoiceCode", SqlDbType.BigInt, allocation.ChoiceCode));
+                if (!IsSafeIdentifier(vacancySource) || !IsSafeIdentifier(allocation.OriginalAllocatedType))
+                    throw new InvalidOperationException("Configured vacancy restoration contains an invalid identifier.");
+
+                await ExecuteNonQueryAsync(
+                    connection,
+                    transaction,
+                    $"UPDATE dbo.{SqlSafeIdentifier(vacancySource)} SET {SqlSafeIdentifier(allocation.OriginalAllocatedType)} = ISNULL({SqlSafeIdentifier(allocation.OriginalAllocatedType)}, 0) + 1 WHERE ChoiceCode = @ChoiceCode;",
+                    cancellationToken,
+                    ("@ChoiceCode", SqlDbType.BigInt, allocation.ChoiceCode));
+            }
         }
 
         var seatColumn = allocation.AllocatedType switch { "Gen" => "Gen", "Fem" => "Fem", _ => null };
@@ -515,6 +527,28 @@ public sealed class LegacyAllocationDAL
                 ("@CategoryId", SqlDbType.TinyInt, allocation.AllocatedCategoryId),
                 ("@QuotaId", SqlDbType.TinyInt, allocation.AllocatedQuotaId));
         }
+    }
+
+    private static string FindVacancySourceForType(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
+        string vacancyType)
+    {
+        foreach (var rules in ruleGroups.Values)
+        {
+            foreach (var rule in rules)
+            {
+                var branch = rule.Branches
+                    .OrderBy(item => item.BranchOrder)
+                    .FirstOrDefault(item =>
+                        string.Equals(item.VacancyType, vacancyType, StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(item.VacancySource));
+
+                if (branch is not null)
+                    return branch.VacancySource;
+            }
+        }
+
+        return string.Empty;
     }
 
     private static async Task DeactivateAllocationAsync(SqlConnection connection, SqlTransaction transaction, long allocationId, CancellationToken cancellationToken)
