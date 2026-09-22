@@ -8,5 +8,6 @@ namespace api.Models
         public string DisplayName { get; set; } = string.Empty;
         public Boolean IsAdmin { get; set; }
         public DateTime ExpiresAt { get; set; }
+        public IReadOnlyList<api.Models.UserManagement.UserPermission> Permissions { get; set; } = [];
     }
 }
