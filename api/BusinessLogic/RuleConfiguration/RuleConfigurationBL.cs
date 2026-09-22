@@ -106,6 +106,9 @@ namespace api.BusinessLogic.RuleConfiguration
 
             var ruleBranches = branches ?? new List<RuleBranchRequest>();
 
+            if (conditions is { Count: > 0 })
+                ValidateRootConditions(conditions);
+
             // Decisions are optional. A rule may contain only conditions.
             if (ruleBranches.Count == 0)
             {
