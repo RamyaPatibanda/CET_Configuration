@@ -72,8 +72,17 @@ const normalizeBranches = (value) => {
     allocationType: row.allocationType ?? row.AllocationType ?? "",
     sequence: row.sequence ?? row.Sequence ?? index + 1,
     isElse: row.isElse ?? row.IsElse ?? false,
+    outcome: row.outcome ?? row.Outcome ?? { vacancySource: "", vacancyType: "" },
     conditions: normalizeConditions(row.conditions ?? row.Conditions),
   }));
+};
+
+const getOutcomeOptions = (decisionOptions, area, supportingValue) => {
+  const definition = decisionOptions.find((item) => item.value === area);
+  const field = definition?.results?.find((item) =>
+    String(item.supportingValue || "").toLowerCase() === supportingValue.toLowerCase()
+  );
+  return (field?.values || []).map((item) => ({ value: item.value, label: item.label }));
 };
 
 const getAllocationOptions = (decisionOptions) => {
@@ -137,6 +146,16 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const allocationOptions = useMemo(
     () => getAllocationOptions(decisionOptions),
     [decisionOptions]
+  );
+
+  const vacancySourceOptions = useMemo(
+    () => getOutcomeOptions(decisionOptions, form.decisionAreaCode, "vacancySource"),
+    [decisionOptions, form.decisionAreaCode]
+  );
+
+  const vacancyTypeOptions = useMemo(
+    () => getOutcomeOptions(decisionOptions, form.decisionAreaCode, "vacancyType"),
+    [decisionOptions, form.decisionAreaCode]
   );
 
   const updateForm = (name, value) =>
@@ -243,6 +262,17 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         ],
       };
     });
+  };
+
+  const updateBranchOutcome = (branchIndex, name, value) => {
+    setForm((current) => ({
+      ...current,
+      branches: (current.branches || []).map((branch, index) =>
+        index === branchIndex
+          ? { ...branch, outcome: { ...(branch.outcome || {}), [name]: value } }
+          : branch
+      ),
+    }));
   };
 
   const updateBranch = (branchIndex, name, value) => {
@@ -459,6 +489,10 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
         allocationType: branch.allocationType,
         sequence: Number(branch.sequence || branchIndex + 1),
         isElse: Boolean(branch.isElse),
+        outcome: {
+          vacancySource: branch.outcome?.vacancySource || "",
+          vacancyType: branch.outcome?.vacancyType || "",
+        },
         conditions,
       };
     });
@@ -791,6 +825,29 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                     onChange={(event) => updateBranch(branchIndex, "sequence", Number(event.target.value))}
                   />
                 </div>
+
+                {form.decisionAreaCode === "SPECIAL_RESERVATION_ELIGIBILITY" && (
+                  <div className="decision-simple-grid rule-branch-action">
+                    <div>
+                      <label className="rule-field-label">Vacancy Source</label>
+                      <Select
+                        value={branch.outcome?.vacancySource || ""}
+                        options={vacancySourceOptions}
+                        disabled={loadingDecisionOptions}
+                        onChange={(event) => updateBranchOutcome(branchIndex, "vacancySource", event.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="rule-field-label">Vacancy Type</label>
+                      <Select
+                        value={branch.outcome?.vacancyType || ""}
+                        options={vacancyTypeOptions}
+                        disabled={loadingDecisionOptions}
+                        onChange={(event) => updateBranchOutcome(branchIndex, "vacancyType", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {hasLaterBranch && <div className="rule-branch-connector"><FiGitBranch size={14} /> Evaluation continues with the next decision when this one does not match.</div>}
               </section>
