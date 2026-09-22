@@ -517,39 +517,104 @@ WHERE d.tAllocationType IS NULL OR d.nSequence IS NULL;
 GO
 
 
-/*
- CET Configuration - Single Rule IF / ELSE decision branches
+/* ============================================================
+   Single Rule IF / ELSE IF / ELSE branch configuration
 
- Each tblRuleDecision row represents one branch of a rule:
-   IF / ELSE IF -> tConditionsJson contains the branch conditions
-   ELSE         -> bIsElse = 1 and tConditionsJson is []
+   A Rule is the business rule.
+   A Rule Branch is only the conditional path inside that rule.
 
- The branch is still linked to tblRule through aRuleId.
-*/
+   Example:
+       IF Gender = 'F' AND Fem > 0 AND Vacancy > 0
+           THEN AllocatedType = 'Fem', Sequence = 1
+       ELSE IF Gen > 0 AND Vacancy > 0
+           THEN AllocatedType = 'Gen', Sequence = 2
+       ELSE
+           THEN ...
 
-IF COL_LENGTH(N'dbo.tblRuleDecision', N'bIsElse') IS NULL
+   The UI and API expose these as Branches. There is no separate
+   "Decision Row" concept.
+   ============================================================ */
+
+IF OBJECT_ID(N'dbo.tblRuleBranch', N'U') IS NULL
 BEGIN
-    ALTER TABLE dbo.tblRuleDecision
-        ADD bIsElse BIT NOT NULL
-            CONSTRAINT DF_tblRuleDecision_bIsElse DEFAULT (0);
-END
+    CREATE TABLE dbo.tblRuleBranch
+    (
+        aRuleBranchId INT IDENTITY(1,1) NOT NULL,
+        aRuleId INT NOT NULL,
+        tBranchName NVARCHAR(200) NOT NULL,
+        nBranchOrder INT NOT NULL,
+        tAllocatedType NVARCHAR(100) NULL,
+        nSequence INT NULL,
+        bIsElse BIT NOT NULL CONSTRAINT DF_tblRuleBranch_bIsElse DEFAULT (0),
+        bIsActive BIT NOT NULL CONSTRAINT DF_tblRuleBranch_bIsActive DEFAULT (1),
+        tConditionsJson NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRuleBranch_tConditionsJson DEFAULT (N'[]'),
+        dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblRuleBranch_dtCreatedDate DEFAULT (GETDATE()),
+        dtModifiedDate DATETIME NULL,
+
+        CONSTRAINT PK_tblRuleBranch PRIMARY KEY (aRuleBranchId),
+        CONSTRAINT FK_tblRuleBranch_tblRule
+            FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule(aRuleId) ON DELETE CASCADE,
+        CONSTRAINT CK_tblRuleBranch_nBranchOrder CHECK (nBranchOrder > 0),
+        CONSTRAINT CK_tblRuleBranch_nSequence CHECK (nSequence IS NULL OR nSequence > 0),
+        CONSTRAINT UQ_tblRuleBranch_Rule_Order UNIQUE (aRuleId, nBranchOrder)
+    );
+
+    CREATE INDEX IX_tblRuleBranch_Rule
+        ON dbo.tblRuleBranch(aRuleId, nBranchOrder);
+END;
 GO
 
-IF COL_LENGTH(N'dbo.tblRuleDecision', N'tConditionsJson') IS NULL
+/* Migrate the previous internal decision-row storage once.
+   This preserves existing configured rules while changing the model
+   to Rule -> Branches. */
+IF OBJECT_ID(N'dbo.tblRuleBranch', N'U') IS NOT NULL
+   AND OBJECT_ID(N'dbo.tblRuleDecision', N'U') IS NOT NULL
 BEGIN
-    ALTER TABLE dbo.tblRuleDecision
-        ADD tConditionsJson NVARCHAR(MAX) NULL;
-END
+    INSERT INTO dbo.tblRuleBranch
+    (
+        aRuleId,
+        tBranchName,
+        nBranchOrder,
+        tAllocatedType,
+        nSequence,
+        bIsElse,
+        bIsActive,
+        tConditionsJson,
+        dtCreatedDate,
+        dtModifiedDate
+    )
+    SELECT
+        d.aRuleId,
+        d.tDecisionName,
+        d.nDecisionOrder,
+        d.tAllocationType,
+        d.nSequence,
+        d.bIsElse,
+        d.bIsActive,
+        COALESCE(NULLIF(d.tConditionsJson, N''), N'[]'),
+        d.dtCreatedDate,
+        d.dtModifiedDate
+    FROM dbo.tblRuleDecision d
+    WHERE NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.tblRuleBranch b
+        WHERE b.aRuleId = d.aRuleId
+          AND b.nBranchOrder = d.nDecisionOrder
+    );
+END;
 GO
 
-UPDATE dbo.tblRuleDecision
-SET tConditionsJson = N'[]'
-WHERE tConditionsJson IS NULL OR LTRIM(RTRIM(tConditionsJson)) = N'';
+/* The old decision-row tables are obsolete.
+   Drop the dependent tables first, then the old parent table. */
+IF OBJECT_ID(N'dbo.tblRuleDecisionResult', N'U') IS NOT NULL
+    DROP TABLE dbo.tblRuleDecisionResult;
 GO
 
--- Existing decision rows are retained as IF branches.
--- Their old rule-level conditions are not automatically copied here because
--- the migration cannot safely infer which conditions belong to each branch.
--- Open and save an existing rule once in the new Rule Configuration UI to
--- explicitly create the linked branch conditions.
+IF OBJECT_ID(N'dbo.tblRuleDecisionCondition', N'U') IS NOT NULL
+    DROP TABLE dbo.tblRuleDecisionCondition;
+GO
 
+IF OBJECT_ID(N'dbo.tblRuleDecision', N'U') IS NOT NULL
+    DROP TABLE dbo.tblRuleDecision;
+GO
