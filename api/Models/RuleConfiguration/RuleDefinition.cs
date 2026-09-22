@@ -16,7 +16,6 @@ namespace api.Models.RuleConfiguration
         public DateTime? ModifiedDate { get; set; }
     }
 
-}
 
     public class RuleDecision
     {
