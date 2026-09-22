@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
@@ -187,7 +187,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     } catch (saveError) {
       setError(saveError.message || "Unable to save the rule.");
     }
-
+  };
 
   return (
     <Dialog
