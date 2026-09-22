@@ -71,6 +71,7 @@ function Allocation() {
   );
 
   const isLocked = lockedStatuses.has(status);
+  const canWrite = authService.hasPermission("ALLOCATION_RUN", "write");
   const canEdit = editableStatuses.has(status) && !running && canWrite;
 
   useEffect(() => {
