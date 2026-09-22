@@ -32,6 +32,8 @@ namespace api.Models.RuleConfiguration
         public bool IsActive { get; set; } = true;
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
+        public bool IsElse { get; set; }
+        public List<RuleConditionRequest> Conditions { get; set; } = new();
     }
 
     public class RuleOutcome
