@@ -911,3 +911,116 @@
 .decision-row-editor {
   box-shadow: 0 8px 24px rgba(43,57,83,.045);
 }
+
+
+/* Single-rule IF / ELSE branch editor */
+.rule-branch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rule-branch-card {
+  position: relative;
+  padding: 16px;
+  border: 1px solid rgba(104, 126, 151, .20);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 8px 24px rgba(43, 57, 83, .045);
+}
+.rule-branch-else {
+  border-style: dashed;
+}
+.rule-branch-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.rule-branch-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.rule-branch-title > *:last-child {
+  flex: 1;
+}
+.rule-branch-badge {
+  flex: 0 0 auto;
+  min-width: 62px;
+  height: 26px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(224, 235, 247, .92);
+  color: #315f91;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.rule-branch-when,
+.rule-branch-then {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 4px 0 10px;
+}
+.rule-branch-when span,
+.rule-branch-then span {
+  min-width: 52px;
+  height: 23px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .11em;
+}
+.rule-branch-when span {
+  color: #315f91;
+  background: #e8f0f8;
+}
+.rule-branch-then span {
+  color: #16805a;
+  background: #e8f6f0;
+}
+.rule-branch-when small,
+.rule-branch-then small,
+.rule-branch-connector,
+.rule-field-help {
+  color: #8a95a5;
+  font-size: 10px;
+}
+.rule-branch-action {
+  margin-top: 4px;
+}
+.rule-field-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #38485b;
+  font-size: 11px;
+  font-weight: 650;
+}
+.rule-field-help {
+  display: block;
+  margin-top: 5px;
+}
+.rule-branch-connector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(104, 126, 151, .12);
+}
+.rule-branch-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
