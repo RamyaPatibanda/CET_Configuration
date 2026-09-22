@@ -72,14 +72,21 @@ namespace api.DataAccess
                     DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
                     IsAdmin = reader.GetBoolean(reader.GetOrdinal("bIsAdmin")),
                     IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
-                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("dtCreatedDate"))
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("dtCreatedDate")),
+                    PermissionCount = reader.GetInt32(reader.GetOrdinal("nPermissionCount"))
                 });
             }
 
             return users;
         }
 
-        public async Task<int> CreateUserAsync(string username, string encryptedPassword, string displayName, bool isAdmin, bool isActive)
+        public async Task<int> CreateUserAsync(
+            string username,
+            string encryptedPassword,
+            string displayName,
+            bool isAdmin,
+            bool isActive,
+            IReadOnlyCollection<api.Models.UserManagement.UserPermissionRequest> permissions)
         {
             await using var connection = new SqlConnection(DBConnectionStr);
             await using var command = new SqlCommand("sproc_CreateUser", connection)
@@ -93,10 +100,55 @@ namespace api.DataAccess
             command.Parameters.Add("@tDisplayName", SqlDbType.NVarChar, 200).Value = displayName;
             command.Parameters.Add("@bIsAdmin", SqlDbType.Bit).Value = isAdmin;
             command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = isActive;
+            command.Parameters.Add("@tPermissionsJson", SqlDbType.NVarChar, -1).Value =
+                System.Text.Json.JsonSerializer.Serialize(permissions);
 
             await connection.OpenAsync();
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
+        }
+
+        public async Task<IReadOnlyList<api.Models.UserManagement.UserPermission>> GetUserPermissionsAsync(int userId)
+        {
+            var permissions = new List<api.Models.UserManagement.UserPermission>();
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_GetUserPermissions", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                permissions.Add(new api.Models.UserManagement.UserPermission
+                {
+                    ModuleCode = reader.GetString(reader.GetOrdinal("tModuleCode")),
+                    ModuleName = reader.GetString(reader.GetOrdinal("tModuleName")),
+                    CanRead = reader.GetBoolean(reader.GetOrdinal("bCanRead")),
+                    CanWrite = reader.GetBoolean(reader.GetOrdinal("bCanWrite"))
+                });
+            }
+
+            return permissions;
+        }
+
+        public async Task<bool> HasUserPermissionAsync(int userId, string moduleCode, bool write)
+        {
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_CheckUserPermission", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+            command.Parameters.Add("@tModuleCode", SqlDbType.NVarChar, 50).Value = moduleCode;
+            command.Parameters.Add("@bCheckWrite", SqlDbType.Bit).Value = write;
+
+            await connection.OpenAsync();
+            return Convert.ToBoolean(await command.ExecuteScalarAsync());
         }
 
     }
