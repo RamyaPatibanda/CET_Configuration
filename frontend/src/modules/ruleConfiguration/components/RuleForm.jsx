@@ -1097,7 +1097,7 @@ function RuleForm({
               </div>
             )}
           </div>
-        </section>section>
+        </section>
       </form>
     </Dialog>
   );
