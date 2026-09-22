@@ -58,8 +58,10 @@ namespace api.Controllers
         }
 
         [HttpGet("decision-options")]
-        public ActionResult<List<RuleDecisionOption>> GetDecisionOptions()
+        public async Task<ActionResult<List<RuleDecisionOption>>> GetDecisionOptions()
         {
+            if (!await _permissions.HasReadAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             return Ok(_businessLogic.GetDecisionOptions());
         }
 
