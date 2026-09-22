@@ -377,7 +377,8 @@ BEGIN
             ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tDecisionRowsJson,
-        (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId) AS nConditionCount,
+        (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId)
+        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rb CROSS APPLY OPENJSON(rb.tConditionsJson) bc WHERE rb.aRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate
     FROM dbo.tblRule r
@@ -418,7 +419,8 @@ BEGIN
             ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tDecisionRowsJson,
-        (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId) AS nConditionCount,
+        (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId)
+        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rbCount CROSS APPLY OPENJSON(rbCount.tConditionsJson) bcCount WHERE rbCount.aRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate
     FROM dbo.tblRule r
