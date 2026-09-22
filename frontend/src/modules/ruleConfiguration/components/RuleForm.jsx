@@ -501,7 +501,7 @@ function RuleForm({
               <FiPlus size={13} /><span>Add condition</span>
             </Button>
           </div>
-
+</div>
         <div className="condition-selection-note">
           {selectedRows.length
             ? `${selectedRows.length} condition${selectedRows.length === 1 ? "" : "s"} selected for grouping`
