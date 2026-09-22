@@ -18,6 +18,9 @@ public sealed class UserManagementBL : IUserManagementBL
     public Task<IReadOnlyList<UserDefinition>> GetUsersAsync()
         => _dataAccess.GetUsersAsync();
 
+    public Task<IReadOnlyList<UserPermission>> GetUserPermissionsAsync(int userId)
+        => _dataAccess.GetUserPermissionsAsync(userId);
+
     public Task<int> CreateUserAsync(CreateUserRequest request)
     {
         if (request is null)
