@@ -693,13 +693,15 @@ BEGIN
             FROM OPENJSON(@tPermissionsJson) j
             WHERE UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode'))))
                   IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')
-              AND COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 0) = 1
-               OR
-                  (
-                      UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode'))))
-                      IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')
-                      AND COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1
-                  );
+              AND
+              (
+                  COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 0) = 1
+                  OR COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1
+              )
+            GROUP BY
+                UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode')))),
+                TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')),
+                TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite'));
 
             IF EXISTS
             (
