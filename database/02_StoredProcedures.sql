@@ -195,7 +195,8 @@ CREATE OR ALTER PROCEDURE dbo.sproc_SaveAllocationRunHistory
     @dtCompletedAtUtc DATETIME2 = NULL,
     @nCandidateCount INT = 0,
     @nDecisionCount INT = 0,
-    @tErrorMessage NVARCHAR(2000) = N''
+    @tErrorMessage NVARCHAR(2000) = N'',
+    @aRunByUserId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -211,7 +212,8 @@ BEGIN
         dtCompletedAtUtc = @dtCompletedAtUtc,
         nCandidateCount = @nCandidateCount,
         nDecisionCount = @nDecisionCount,
-        tErrorMessage = @tErrorMessage
+        tErrorMessage = @tErrorMessage,
+        aRunByUserId = @aRunByUserId
     WHERE aAllocationRunId = @aAllocationRunId;
 
     IF @@ROWCOUNT = 0
@@ -220,13 +222,13 @@ BEGIN
         (
             aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
             tStatus, tRuleGroupsJson, dtCreatedAtUtc, dtStartedAtUtc,
-            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage
+            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, aRunByUserId
         )
         VALUES
         (
             @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
             @tStatus, @tRuleGroupsJson, @dtCreatedAtUtc, @dtStartedAtUtc,
-            @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage
+            @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage, @aRunByUserId
         );
     END;
 END;
@@ -268,8 +270,11 @@ BEGIN
         dtCompletedAtUtc,
         nCandidateCount,
         nDecisionCount,
-        tErrorMessage
-    FROM dbo.tblAllocationRunHistory
+        tErrorMessage,
+        h.aRunByUserId,
+        COALESCE(u.tDisplayName,N'') AS tRunBy
+    FROM dbo.tblAllocationRunHistory h
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=h.aRunByUserId
     ORDER BY dtCreatedAtUtc DESC;
 END;
 GO
