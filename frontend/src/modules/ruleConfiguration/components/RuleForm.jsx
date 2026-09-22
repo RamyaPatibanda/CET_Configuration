@@ -56,10 +56,10 @@ const optionsForType = (type) => OPERATORS[type] || OPERATORS.Text;
 const getResponseItems = (response) =>
   Array.isArray(response) ? response : response?.data || [];
 
-function createCondition(groupId = null) {
+function createCondition(groupPath = []) {
   return {
     id: `condition-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    groupId,
+    groupPath,
     fieldId: "",
     conditionLogicalOperator: "AND",
     operator: "Equals",
@@ -80,7 +80,9 @@ function toRows(conditions) {
     )
     .map((condition, index) => ({
       id: `condition-${condition.fieldId}-${condition.conditionOrder}-${index}`,
-      groupId: `group-${condition.groupOrder ?? 1}`,
+      groupPath: condition.groupPath
+        ? String(condition.groupPath).split("/").filter(Boolean)
+        : condition.groupPathArray || (condition.groupOrder ? [`group-${condition.groupOrder}`] : []),
       fieldId: condition.fieldId,
       conditionLogicalOperator:
         condition.conditionLogicalOperator ||
@@ -211,48 +213,13 @@ function RuleForm({
       setError("Select at least two conditions to create a group.");
       return;
     }
-
     setRows((current) => {
-      const selectedIndexes = current
-        .map((row, index) => (selectedRows.includes(row.id) ? index : -1))
-        .filter((index) => index >= 0)
-        .sort((a, b) => a - b);
-
-      const firstSelectedIndex = selectedIndexes[0];
-      const lastSelectedIndex = selectedIndexes[selectedIndexes.length - 1];
-      const selected = current.slice(firstSelectedIndex, lastSelectedIndex + 1);
-      const selectedSet = new Set(selected.map((row) => row.id));
-
-      if (selected.length < 2 || firstSelectedIndex < 0) {
-        return current;
-      }
-
-      const existingGroupIds = new Set(
-        selected.map((row) => row.groupId).filter(Boolean)
-      );
-
-      if (
-        existingGroupIds.size === 1 &&
-        selected.every((row) => row.groupId)
-      ) {
-        setError("The selected conditions are already in the same group.");
-        return current;
-      }
-
-      const groupId = `group-${Date.now()}`;
-      const remaining = current.filter(
-        (row) => !selectedSet.has(row.id)
-      );
-
-      remaining.splice(
-        firstSelectedIndex,
-        0,
-        ...selected.map((row) => ({ ...row, groupId }))
-      );
-
-      return remaining;
+      const indexes = current.map((row, index) => selectedRows.includes(row.id) ? index : -1).filter((index) => index >= 0).sort((a, b) => a - b);
+      if (indexes.length < 2) return current;
+      const start = indexes[0], end = indexes[indexes.length - 1];
+      const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      return current.map((row, index) => index < start || index > end ? row : { ...row, groupPath: [...(row.groupPath || []), groupId] });
     });
-
     setSelectedRows([]);
     setError("");
   };
@@ -262,32 +229,18 @@ function RuleForm({
       setError("Select at least one condition to ungroup.");
       return;
     }
-
     setRows((current) => {
-      const selectedSet = new Set(selectedRows);
-      const groupedSelection = current.filter(
-        (row) =>
-          selectedSet.has(row.id) &&
-          current.filter(
-            (item) => item.groupId && item.groupId === row.groupId
-          ).length > 1
-      );
-
-      if (!groupedSelection.length) {
-        setError(
-          "Select a condition that belongs to a group before ungrouping."
-        );
+      const selected = current.filter((row) => selectedRows.includes(row.id));
+      const groups = [...new Set(selected.flatMap((row) => row.groupPath || []))];
+      if (!groups.length) {
+        setError("Select a condition that belongs to a group before ungrouping.");
         return current;
       }
-
-      return current.map((row) =>
-        selectedSet.has(row.id) &&
-        groupedSelection.some((item) => item.id === row.id)
-          ? { ...row, groupId: null }
-          : row
-      );
+      const depth = new Map();
+      current.forEach((row) => (row.groupPath || []).forEach((id, d) => depth.set(id, Math.max(depth.get(id) ?? -1, d))));
+      const target = groups.sort((a, b) => (depth.get(b) ?? 0) - (depth.get(a) ?? 0))[0];
+      return current.map((row) => ({ ...row, groupPath: (row.groupPath || []).filter((id) => id !== target) }));
     });
-
     setSelectedRows([]);
     setError("");
   };
@@ -318,55 +271,21 @@ function RuleForm({
     setDraggedRow(null);
   };
 
-  const groupedRows = useMemo(() => {
+  const groupRanges = useMemo(() => {
     const groups = new Map();
-
-    rows.forEach((row) => {
-      const groupId = row.groupId || `ungrouped-${row.id}`;
-
-      if (!groups.has(groupId)) {
-        groups.set(groupId, []);
-      }
-
-      groups.get(groupId).push(row);
-    });
-
+    rows.forEach((row, index) => (row.groupPath || []).forEach((groupId, depth) => {
+      const existing = groups.get(groupId);
+      groups.set(groupId, existing ? { ...existing, start: Math.min(existing.start, index), end: Math.max(existing.end, index) } : { start: index, end: index, depth });
+    }));
     return groups;
   }, [rows]);
 
-  const getBracePosition = (row) => {
-    if (!row.groupId) {
-      return "single";
-    }
+  const getGroupMarkers = (rowIndex, row) => (row.groupPath || []).map((groupId, depth) => {
+    const range = groupRanges.get(groupId);
+    return range ? { groupId, depth, start: range.start === rowIndex, end: range.end === rowIndex } : null;
+  }).filter(Boolean);
 
-    const group = groupedRows.get(row.groupId) || [];
-    const groupIndex = group.findIndex(
-      (item) => item.id === row.id
-    );
-
-    if (group.length === 1) {
-      return "single";
-    }
-
-    if (groupIndex === 0) {
-      return "start";
-    }
-
-    if (groupIndex === group.length - 1) {
-      return "end";
-    }
-
-    return "middle";
-  };
-
-  const getGroupColor = (row) => {
-    if (!row.groupId) {
-      return "blue";
-    }
-
-    const groupIndex = [...groupedRows.keys()].indexOf(row.groupId);
-    return GROUP_COLORS[groupIndex % GROUP_COLORS.length];
-  };
+  const getGroupColor = (depth) => GROUP_COLORS[depth % GROUP_COLORS.length];
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -414,6 +333,7 @@ function RuleForm({
         value: row.value,
         conditionOrder: index + 1,
         groupOrder,
+        groupPath: (row.groupPath || []).join("/"),
       });
     }
 
@@ -548,14 +468,13 @@ function RuleForm({
             </thead>
 
             <tbody>
-              {rows.map((row) => {
+              {rows.map((row, rowIndex) => {
                 const field = fields.find(
                   (item) =>
                     String(item.fieldId) === String(row.fieldId)
                 );
                 const operators = optionsForType(field?.fieldType);
-                const bracePosition = getBracePosition(row);
-                const groupColor = getGroupColor(row);
+                const groupMarkers = getGroupMarkers(rowIndex, row);
                 const isSelected = selectedRows.includes(row.id);
 
                 return (
@@ -587,11 +506,11 @@ function RuleForm({
                         }
                         aria-hidden="true"
                       >
-                        {bracePosition === "start"
-                          ? "{"
-                          : bracePosition === "end"
-                            ? "}"
-                            : ""}
+                        {groupMarkers.map((marker) => (
+                          <span key={marker.groupId} className={"condition-group-brace " + getGroupColor(marker.depth)}>
+                            {marker.start ? "(" : marker.end ? ")" : ""}
+                          </span>
+                        ))}
                       </span>
                     </td>
 
