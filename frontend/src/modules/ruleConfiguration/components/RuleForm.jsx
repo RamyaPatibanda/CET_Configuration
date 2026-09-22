@@ -254,6 +254,8 @@ function RuleForm({
   }));
 
   const addDecisionRow = () => {
+    const definitions = decisionOptions.find((item) => item.value === form.decisionAreaCode)?.results || [];
+    const allocationType = definitions.find((item) => item.supportingValue === "allocatedType");
     setForm((current) => ({
       ...current,
       decisionRows: [
@@ -264,343 +266,30 @@ function RuleForm({
           decisionName: "",
           decisionOrder: (current.decisionRows || []).length + 1,
           isActive: true,
-          conditions: [
-            {
-              ruleDecisionConditionId: 0,
-              operandType: "CONTEXT",
-              operandKey: "",
-              logicalOperator: "AND",
-              operator: "=",
-              value: "",
-              conditionOrder: 1,
-            },
-          ],
-          results: [
-            {
-              ruleDecisionResultId: 0,
-              resultKey: "",
-              resultValue: "",
-              valueKind: "text",
-              resultOrder: 1,
-            },
-          ],
+          allocationType: allocationType?.values?.[0]?.value || "",
+          sequence: (current.decisionRows || []).length + 1,
         },
       ],
     }));
   };
 
-  const updateDecisionRow = (rowIndex, name, value) => {
+  const updateDecisionRow = (index, name, value) => {
     setForm((current) => ({
       ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index === rowIndex ? { ...row, [name]: value } : row
+      decisionRows: (current.decisionRows || []).map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [name]: value } : row
       ),
     }));
   };
 
-  const removeDecisionRow = (rowIndex) => {
+  const removeDecisionRow = (index) => {
     setForm((current) => ({
       ...current,
       decisionRows: (current.decisionRows || [])
-        .filter((_, index) => index !== rowIndex)
-        .map((row, index) => ({ ...row, decisionOrder: index + 1 })),
+        .filter((_, rowIndex) => rowIndex !== index)
+        .map((row, rowIndex) => ({ ...row, decisionOrder: rowIndex + 1 })),
     }));
   };
-
-  const addDecisionCondition = (rowIndex) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              conditions: [
-                ...(row.conditions || []),
-                {
-                  ruleDecisionConditionId: 0,
-                  operandType: "CONTEXT",
-                  operandKey: "",
-                  logicalOperator: "AND",
-                  operator: "=",
-                  value: "",
-                  conditionOrder: (row.conditions || []).length + 1,
-                },
-              ],
-            }
-      ),
-    }));
-  };
-
-  const updateDecisionCondition = (rowIndex, conditionIndex, name, value) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              conditions: (row.conditions || []).map((condition, cIndex) =>
-                cIndex === conditionIndex ? { ...condition, [name]: value } : condition
-              ),
-            }
-      ),
-    }));
-  };
-
-  const removeDecisionCondition = (rowIndex, conditionIndex) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              conditions: (row.conditions || [])
-                .filter((_, cIndex) => cIndex !== conditionIndex)
-                .map((condition, cIndex) => ({ ...condition, conditionOrder: cIndex + 1 })),
-            }
-      ),
-    }));
-  };
-
-  const addDecisionResult = (rowIndex) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              results: [
-                ...(row.results || []),
-                {
-                  ruleDecisionResultId: 0,
-                  resultKey: "",
-                  resultValue: "",
-                  valueKind: "text",
-                  resultOrder: (row.results || []).length + 1,
-                },
-              ],
-            }
-      ),
-    }));
-  };
-
-  const updateDecisionResult = (rowIndex, resultIndex, name, value) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              results: (row.results || []).map((result, rIndex) =>
-                rIndex === resultIndex ? { ...result, [name]: value } : result
-              ),
-            }
-      ),
-    }));
-  };
-
-  const removeDecisionResult = (rowIndex, resultIndex) => {
-    setForm((current) => ({
-      ...current,
-      decisionRows: (current.decisionRows || []).map((row, index) =>
-        index !== rowIndex
-          ? row
-          : {
-              ...row,
-              results: (row.results || [])
-                .filter((_, rIndex) => rIndex !== resultIndex)
-                .map((result, rIndex) => ({ ...result, resultOrder: rIndex + 1 })),
-            }
-      ),
-    }));
-  };
-
-  const addRow = () => {
-    setRows((current) => [...current, createCondition()]);
-    setError("");
-  };
-
-  const removeRow = (rowId) => {
-    setRows((current) => current.filter((row) => row.id !== rowId));
-    setSelectedRows((current) =>
-      current.filter((id) => id !== rowId)
-    );
-  };
-
-  const updateRow = (rowId, name, value) => {
-    setRows((current) =>
-      current.map((row) =>
-        row.id === rowId ? { ...row, [name]: value } : row
-      )
-    );
-    setError("");
-  };
-
-  const changeField = (rowId, value) => {
-    const field = fields.find(
-      (item) => String(item.fieldId) === String(value)
-    );
-    const firstOperator =
-      optionsForType(field?.fieldType)[0]?.value || "Equals";
-
-    setRows((current) =>
-      current.map((row) =>
-        row.id === rowId
-          ? {
-              ...row,
-              fieldId: value,
-              operator: firstOperator,
-              value: "",
-            }
-          : row
-      )
-    );
-    setError("");
-  };
-
-  const toggleSelected = (rowId) => {
-    setSelectedRows((current) =>
-      current.includes(rowId)
-        ? current.filter((id) => id !== rowId)
-        : [...current, rowId]
-    );
-    setError("");
-  };
-
-  const selectAll = () =>
-    setSelectedRows((current) =>
-      current.length === rows.length
-        ? []
-        : rows.map((row) => row.id)
-    );
-
-  const groupSelected = () => {
-    if (selectedRows.length < 2) {
-      setError("Select at least two conditions to create a group.");
-      return;
-    }
-
-    setRows((current) => {
-      const selectedSet = new Set(selectedRows);
-      const selected = current.filter((row) => selectedSet.has(row.id));
-      const firstSelectedIndex = current.findIndex((row) =>
-        selectedSet.has(row.id)
-      );
-
-      if (selected.length < 2 || firstSelectedIndex < 0) {
-        return current;
-      }
-
-      const existingGroupIds = new Set(
-        selected.map((row) => row.groupId).filter(Boolean)
-      );
-
-      if (
-        existingGroupIds.size === 1 &&
-        selected.every((row) => row.groupId)
-      ) {
-        setError("The selected conditions are already in the same group.");
-        return current;
-      }
-
-      const groupId = `group-${Date.now()}`;
-      const remaining = current.filter(
-        (row) => !selectedSet.has(row.id)
-      );
-
-      remaining.splice(
-        firstSelectedIndex,
-        0,
-        ...selected.map((row) => ({ ...row, groupId }))
-      );
-
-      return remaining;
-    });
-
-    setSelectedRows([]);
-    setError("");
-  };
-
-  const ungroupSelected = () => {
-    if (!selectedRows.length) {
-      setError("Select at least one condition to ungroup.");
-      return;
-    }
-
-    setRows((current) => {
-      const selectedSet = new Set(selectedRows);
-      const groupedSelection = current.filter(
-        (row) =>
-          selectedSet.has(row.id) &&
-          current.filter(
-            (item) => item.groupId && item.groupId === row.groupId
-          ).length > 1
-      );
-
-      if (!groupedSelection.length) {
-        setError(
-          "Select a condition that belongs to a group before ungrouping."
-        );
-        return current;
-      }
-
-      return current.map((row) =>
-        selectedSet.has(row.id) &&
-        groupedSelection.some((item) => item.id === row.id)
-          ? { ...row, groupId: null }
-          : row
-      );
-    });
-
-    setSelectedRows([]);
-    setError("");
-  };
-
-  const moveRow = (targetId) => {
-    if (!draggedRow || draggedRow === targetId) {
-      return;
-    }
-
-    setRows((current) => {
-      const next = [...current];
-      const sourceIndex = next.findIndex(
-        (row) => row.id === draggedRow
-      );
-      const targetIndex = next.findIndex(
-        (row) => row.id === targetId
-      );
-
-      if (sourceIndex < 0 || targetIndex < 0) {
-        return current;
-      }
-
-      const [moved] = next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, moved);
-      return next;
-    });
-
-    setDraggedRow(null);
-  };
-
-  const groupedRows = useMemo(() => {
-    const groups = new Map();
-
-    rows.forEach((row) => {
-      const groupId = row.groupId || `ungrouped-${row.id}`;
-
-      if (!groups.has(groupId)) {
-        groups.set(groupId, []);
-      }
-
-      groups.get(groupId).push(row);
-    });
-
-    return groups;
-  }, [rows]);
 
   const getBracePosition = (row) => {
     if (!row.groupId) {
@@ -694,10 +383,11 @@ function RuleForm({
       outcome: normalizeOutcome(form.outcome),
       conditions,
       decisionRows: (form.decisionRows || []).map((decision, index) => ({
-        ...decision,
+        decisionName: decision.decisionName,
         decisionOrder: index + 1,
-        conditions: (decision.conditions || []).map((condition, conditionIndex) => ({ ...condition, conditionOrder: conditionIndex + 1 })),
-        results: (decision.results || []).map((result, resultIndex) => ({ ...result, resultOrder: resultIndex + 1 })),
+        isActive: decision.isActive !== false,
+        allocationType: decision.allocationType,
+        sequence: Number(decision.sequence || index + 1),
       })),
     });
   };
@@ -975,9 +665,9 @@ function RuleForm({
         <section className="rule-decision-configuration">
           <div className="rule-outcome-title">
             <div>
-              <span className="conditions-kicker">Allocation logic</span>
+              <span className="conditions-kicker">Allocation outcome</span>
               <h3>Decision Rows</h3>
-              <p>Define the ordered IF / THEN branches for this rule. Supporting values are no longer a separate rule field.</p>
+              <p>For this allocation step, configure only the values the allocation service needs.</p>
             </div>
             <Button type="button" variant="secondary" onClick={addDecisionRow}>
               <FiPlus size={13} /> Add decision
@@ -985,119 +675,56 @@ function RuleForm({
           </div>
 
           <div className="decision-row-editor-list">
-            {(form.decisionRows || []).map((decision, rowIndex) => (
-              <div className="decision-row-editor" key={decision.ruleDecisionId || `new-${rowIndex}`}>
-                <div className="decision-row-editor-header">
-                  <div>
-                    <span>Decision {rowIndex + 1}</span>
+            {(form.decisionRows || []).map((decision, rowIndex) => {
+              const definition = decisionOptions.find((item) => item.value === form.decisionAreaCode);
+              const allocationTypeField = definition?.results?.find((item) => item.supportingValue === "allocatedType");
+              const allocationOptions = allocationTypeField?.values || [];
+
+              return (
+                <div className="decision-row-editor" key={decision.ruleDecisionId || `new-${rowIndex}`}>
+                  <div className="decision-row-editor-header">
+                    <div>
+                      <span>Decision {rowIndex + 1}</span>
+                      <TextBox
+                        value={decision.decisionName}
+                        placeholder="Decision name"
+                        onChange={(event) => updateDecisionRow(rowIndex, "decisionName", event.target.value)}
+                      />
+                    </div>
+                    <button type="button" className="condition-remove" onClick={() => removeDecisionRow(rowIndex)} title="Delete decision">
+                      <FiTrash2 />
+                    </button>
+                  </div>
+
+                  <div className="decision-simple-grid">
+                    <SearchableSelect
+                      value={decision.allocationType}
+                      options={allocationOptions.map((item) => ({ value: item.value, label: item.label }))}
+                      placeholder="Select allocation type"
+                      disabled={loadingDecisionOptions}
+                      onChange={(value) => updateDecisionRow(rowIndex, "allocationType", value)}
+                    />
                     <TextBox
-                      value={decision.decisionName}
-                      placeholder="Decision name"
-                      onChange={(event) => updateDecisionRow(rowIndex, "decisionName", event.target.value)}
+                      label="Sequence"
+                      value={decision.sequence}
+                      type="number"
+                      min="1"
+                      placeholder="Sequence"
+                      onChange={(event) => updateDecisionRow(rowIndex, "sequence", Number(event.target.value))}
                     />
                   </div>
-                  <button type="button" className="condition-remove" onClick={() => removeDecisionRow(rowIndex)} title="Delete decision">
-                    <FiTrash2 />
-                  </button>
                 </div>
+              );
+            })}
 
-                <div className="decision-branch-editor">
-                  <div className="decision-branch-label">IF</div>
-                  <div className="decision-condition-editor-list">
-                    {(decision.conditions || []).map((condition, conditionIndex) => (
-                      <div className="decision-condition-editor-row" key={condition.ruleDecisionConditionId || `new-condition-${conditionIndex}`}>
-                        <Select
-                          value={condition.operandType}
-                          options={[
-                            { value: "FIELD", label: "Field" },
-                            { value: "CONTEXT", label: "Context" },
-                          ]}
-                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operandType", event.target.value)}
-                        />
-                        <TextBox
-                          value={condition.operandKey}
-                          placeholder="Operand (e.g. Gender, Fem, Vacancy)"
-                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operandKey", event.target.value)}
-                        />
-                        <Select
-                          value={condition.operator}
-                          options={[
-                            { value: "=", label: "=" },
-                            { value: "!=", label: "!=" },
-                            { value: ">", label: ">" },
-                            { value: "<", label: "<" },
-                            { value: ">=", label: ">=" },
-                            { value: "<=", label: "<=" },
-                          ]}
-                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operator", event.target.value)}
-                        />
-                        <TextBox
-                          value={condition.value}
-                          placeholder="Value"
-                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "value", event.target.value)}
-                        />
-                        {conditionIndex > 0 ? (
-                          <Select
-                            value={condition.logicalOperator}
-                            options={LOGICAL_OPTIONS}
-                            onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "logicalOperator", event.target.value)}
-                          />
-                        ) : <span className="decision-condition-and">AND</span>}
-                        <button type="button" className="condition-remove" onClick={() => removeDecisionCondition(rowIndex, conditionIndex)} title="Delete condition">
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    ))}
-                    <Button type="button" variant="secondary" onClick={() => addDecisionCondition(rowIndex)}>
-                      <FiPlus size={12} /> Add condition
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="decision-branch-editor">
-                  <div className="decision-branch-label then">THEN</div>
-                  <div className="decision-result-editor-list">
-                    {(decision.results || []).map((result, resultIndex) => (
-                      <div className="decision-result-editor-row" key={result.ruleDecisionResultId || `new-result-${resultIndex}`}>
-                        <TextBox
-                          value={result.resultKey}
-                          placeholder="Result key (e.g. AllocatedType, SeqId)"
-                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "resultKey", event.target.value)}
-                        />
-                        <TextBox
-                          value={result.resultValue}
-                          placeholder="Result value"
-                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "resultValue", event.target.value)}
-                        />
-                        <Select
-                          value={result.valueKind}
-                          options={[
-                            { value: "text", label: "Text" },
-                            { value: "number", label: "Number" },
-                            { value: "boolean", label: "Boolean" },
-                          ]}
-                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "valueKind", event.target.value)}
-                        />
-                        <button type="button" className="condition-remove" onClick={() => removeDecisionResult(rowIndex, resultIndex)} title="Delete result">
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    ))}
-                    <Button type="button" variant="secondary" onClick={() => addDecisionResult(rowIndex)}>
-                      <FiPlus size={12} /> Add result
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
             {!(form.decisionRows || []).length && (
               <div className="decision-rows-empty">
                 <strong>No decision rows configured.</strong>
-                <span>Add a decision row to model the stored-procedure IF / ELSE IF / ELSE branches.</span>
+                <span>Add a decision to define the Step 0 allocation outcome.</span>
               </div>
             )}
           </div>
-        </section>
+        </section>section>
       </form>
     </Dialog>
   );
