@@ -6,6 +6,7 @@ import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAr
 import Button from "../../../components/common/Button/Button";
 import allocationService from "../services/allocationService";
 import ruleConfigurationService from "../../ruleConfiguration/services/ruleConfigurationService";
+import authService from "../../../services/authService";
 import "../allocation.css";
 
 const getItems = (response) => Array.isArray(response) ? response : response?.data || [];
@@ -70,7 +71,7 @@ function Allocation() {
   );
 
   const isLocked = lockedStatuses.has(status);
-  const canEdit = editableStatuses.has(status) && !running;
+  const canEdit = editableStatuses.has(status) && !running && canWrite;
 
   useEffect(() => {
     const load = async () => {
