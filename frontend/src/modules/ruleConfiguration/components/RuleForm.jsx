@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiArrowDown, FiArrowUp, FiLink, FiPlus, FiTrash2, FiUnlink } from "react-icons/fi";
+import { FiArrowDown, FiArrowUp, FiLink, FiPlus, FiTrash2, FiLink2 } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import Select from "../../../components/common/Select/Select";
@@ -523,7 +523,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                                   title="Ungroup this condition"
                                   onClick={() => ungroupCondition(condition.id)}
                                 >
-                                  <FiUnlink />
+                                  <FiLink2 />
                                 </button>
                               )}
                               <button
