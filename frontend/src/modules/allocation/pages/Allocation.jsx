@@ -420,8 +420,8 @@ function Allocation() {
             </Button>
             {status === "Completed" && (
               <>
-                <Button onClick={cloneRun}><FiCopy size={16} /> Clone Run</Button>
-                <Button onClick={archiveRun} disabled={running}><FiArchive size={16} /> Archive</Button>
+                <Button onClick={cloneRun} disabled={!canWrite}><FiCopy size={16} /> Clone Run</Button>
+                <Button onClick={archiveRun} disabled={running || !canWrite}><FiArchive size={16} /> Archive</Button>
               </>
             )}
           </div>
