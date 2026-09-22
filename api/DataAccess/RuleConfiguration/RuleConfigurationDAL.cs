@@ -241,15 +241,15 @@ namespace api.DataAccess.RuleConfiguration
 
                     await using var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleBranch
-                            (aRuleId, tBranchName, nBranchOrder, tAllocationType, nSequence, bIsActive, bIsElse, tConditionsJson)
+                            (aRuleId, tBranchName, nBranchOrder, tAllocatedType, nSequence, bIsActive, bIsElse, tConditionsJson)
                         VALUES
-                            (@aRuleId, @tBranchName, @nBranchOrder, @tAllocationType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
+                            (@aRuleId, @tBranchName, @nBranchOrder, @tAllocatedType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
                         connection, transaction);
 
                     decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
                     decision.Parameters.Add("@tBranchName", SqlDbType.NVarChar, 200).Value = row.BranchName.Trim();
                     decision.Parameters.Add("@nBranchOrder", SqlDbType.Int).Value = row.BranchOrder;
-                    decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
+                    decision.Parameters.Add("@tAllocatedType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
                     decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
                     decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
                     decision.Parameters.Add("@bIsElse", SqlDbType.Bit).Value = row.IsElse;
