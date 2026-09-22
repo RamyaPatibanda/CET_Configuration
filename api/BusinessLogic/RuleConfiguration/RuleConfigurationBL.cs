@@ -105,8 +105,14 @@ namespace api.BusinessLogic.RuleConfiguration
                 throw new ArgumentException("A valid decision area is required.", nameof(decisionAreaCode));
 
             var ruleBranches = branches ?? new List<RuleBranchRequest>();
+
+            // Decisions are optional. A rule may contain only conditions.
             if (ruleBranches.Count == 0)
-                throw new ArgumentException("At least one IF branch is required.", nameof(branches));
+            {
+                if (conditions is { Count: > 0 })
+                    ValidateRootConditions(conditions);
+                return;
+            }
 
             var elseBranches = ruleBranches.Where(b => b.IsElse).ToList();
             if (elseBranches.Count > 1)
@@ -149,6 +155,31 @@ namespace api.BusinessLogic.RuleConfiguration
             // The branch conditions are the source of truth for the new single-rule model.
             _ = conditions;
             _ = outcome;
+        }
+
+        private static void ValidateRootConditions(List<RuleConditionRequest> conditions)
+        {
+            var groupOrders = conditions.Select(c => c.GroupOrder).Distinct().OrderBy(o => o).ToList();
+            if (!groupOrders.Any() || groupOrders.First() != 1 ||
+                groupOrders.Select((order, index) => order == index + 1).Any(valid => !valid))
+                throw new ArgumentException("Condition groups must be sequential.", nameof(conditions));
+
+            var conditionOrders = conditions.Select(c => c.ConditionOrder).OrderBy(o => o).ToList();
+            if (conditionOrders.Any(o => o < 1) ||
+                conditionOrders.Select((order, index) => order == index + 1).Any(valid => !valid))
+                throw new ArgumentException("Condition order must be sequential.", nameof(conditions));
+
+            foreach (var condition in conditions)
+            {
+                if (condition.FieldId <= 0)
+                    throw new ArgumentException("A condition contains an invalid field.", nameof(conditions));
+                if (string.IsNullOrWhiteSpace(condition.Operator))
+                    throw new ArgumentException("A condition is missing an operator.", nameof(conditions));
+                if (string.IsNullOrWhiteSpace(condition.Value))
+                    throw new ArgumentException("A condition is missing a value.", nameof(conditions));
+                if (condition.ConditionLogicalOperator is not ("AND" or "OR"))
+                    throw new ArgumentException("Condition logical operator must be AND or OR.", nameof(conditions));
+            }
         }
 
         private static void ValidateBranchConditions(List<RuleConditionRequest> conditions, string branchName)
