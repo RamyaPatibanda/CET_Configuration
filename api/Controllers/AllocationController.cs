@@ -423,7 +423,7 @@ public sealed class AllocationController : ControllerBase
             Code = rule.RuleName,
             StageCode = decisionArea,
             DisplayOrder = rule.Priority,
-            AllocatedType = outcome.AllocatedType ?? string.Empty,
+            AllocatedType = string.Equals(decisionArea, AllocationConfiguration.Step0Sequence, StringComparison.OrdinalIgnoreCase) ? string.Empty : outcome.AllocatedType ?? string.Empty,
             VacancyType = outcome.VacancyType ?? string.Empty,
             SeatCategory = outcome.SeatCategory ?? string.Empty,
             ReservationType = outcome.ReservationType ?? string.Empty,
