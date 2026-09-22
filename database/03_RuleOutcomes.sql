@@ -9,6 +9,19 @@
     Allocation Run only selects rules by decision area.
 */
 
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'tConditionsJson') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD tConditionsJson NVARCHAR(MAX) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'bIsElse') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD bIsElse BIT NOT NULL CONSTRAINT DF_tblRuleDecision_bIsElse DEFAULT (0);
+GO
+
+UPDATE dbo.tblRuleDecision
+SET tConditionsJson = COALESCE(NULLIF(tConditionsJson, N''), N'[]')
+WHERE tConditionsJson IS NULL OR tConditionsJson = N'';
+GO
+
 IF COL_LENGTH(N'dbo.tblRule', N'tDecisionAreaCode') IS NULL
     ALTER TABLE dbo.tblRule ADD tDecisionAreaCode NVARCHAR(100) NOT NULL CONSTRAINT DF_tblRule_tDecisionAreaCode DEFAULT (N'');
 GO
