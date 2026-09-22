@@ -500,14 +500,12 @@ function RuleForm({
                     </td>
 
                     <td>
-                      <span
-                        className={
-                          `condition-group-brace ${groupColor} ${bracePosition}`
-                        }
-                        aria-hidden="true"
-                      >
+                      <span className="condition-group-braces" aria-hidden="true">
                         {groupMarkers.map((marker) => (
-                          <span key={marker.groupId} className={"condition-group-brace " + getGroupColor(marker.depth)}>
+                          <span
+                            key={marker.groupId}
+                            className={"condition-group-brace " + getGroupColor(marker.depth)}
+                          >
                             {marker.start ? "(" : marker.end ? ")" : ""}
                           </span>
                         ))}
