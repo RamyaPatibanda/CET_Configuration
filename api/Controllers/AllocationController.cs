@@ -2,6 +2,7 @@ using api.BusinessLogic.RuleConfiguration;
 using api.DataAccess.Allocation;
 using api.Models.Allocation;
 using api.Models.RuleConfiguration;
+using api.BusinessLogic.UserManagement;
 using api.Services.Allocation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,29 +20,38 @@ public sealed class AllocationController : ControllerBase
     private readonly AllocationRunHistoryDAL _runHistory;
     private readonly LegacyAllocationDAL _legacyAllocation;
     private readonly Step0CandidateRepository _step0CandidateRepository;
+    private readonly UserPermissionService _permissions;
 
     public AllocationController(
         IRuleConfigurationBL ruleConfiguration,
         ILogger<AllocationController> logger,
         AllocationRunHistoryDAL runHistory,
         LegacyAllocationDAL legacyAllocation,
-        Step0CandidateRepository step0CandidateRepository)
+        Step0CandidateRepository step0CandidateRepository,
+        UserPermissionService permissions)
     {
         _ruleConfiguration = ruleConfiguration;
         _logger = logger;
         _runHistory = runHistory;
         _legacyAllocation = legacyAllocation;
         _step0CandidateRepository = step0CandidateRepository;
+        _permissions = permissions;
     }
 
     [HttpGet("steps")]
-    public ActionResult<IReadOnlyList<AllocationStepDefinition>> GetSteps() =>
-        Ok(AllocationConfiguration.GetSteps());
+    public async Task<ActionResult<IReadOnlyList<AllocationStepDefinition>>> GetSteps()
+    {
+        if (!await _permissions.HasReadAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
+        return Ok(AllocationConfiguration.GetSteps());
+    }
 
     [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<AllocationRunHistory>>> GetHistory(
         CancellationToken cancellationToken)
     {
+        if (!await _permissions.HasReadAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
         return Ok(await _runHistory.GetRecentAsync());
     }
 
@@ -50,6 +60,8 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await _permissions.HasWriteAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
         var prepared = await PrepareAsync(request, allowIncompleteDraft: true, cancellationToken);
         if (prepared.Error is not null)
             return BadRequest(new { message = prepared.Error });
@@ -65,6 +77,8 @@ public sealed class AllocationController : ControllerBase
         [FromBody] AllocationRunRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await _permissions.HasWriteAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
         var prepared = await PrepareAsync(request, cancellationToken: cancellationToken);
         if (prepared.Error is not null)
             return BadRequest(new { message = prepared.Error });
@@ -145,6 +159,8 @@ public sealed class AllocationController : ControllerBase
         Guid runId,
         CancellationToken cancellationToken)
     {
+        if (!await _permissions.HasWriteAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
         var history = (await _runHistory.GetRecentAsync(200))
             .FirstOrDefault(item => item.AllocationRunId == runId);
 
@@ -163,6 +179,8 @@ public sealed class AllocationController : ControllerBase
         Guid runId,
         CancellationToken cancellationToken)
     {
+        if (!await _permissions.HasWriteAsync(User, UserPermissionModules.AllocationRun))
+            return Forbid();
         var history = (await _runHistory.GetRecentAsync(200))
             .FirstOrDefault(item => item.AllocationRunId == runId);
 
