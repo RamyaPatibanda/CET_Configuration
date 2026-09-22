@@ -367,7 +367,7 @@ BEGIN
                 d.tBranchName AS BranchName,
                 d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
-                COALESCE(d.tAllocationType, N'') AS AllocationType,
+                COALESCE(d.tAllocatedType, N'') AS AllocationType,
                 COALESCE(d.nSequence, 1) AS Sequence,
                 d.bIsElse AS IsElse,
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
@@ -409,7 +409,7 @@ BEGIN
                 d.tBranchName AS BranchName,
                 d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
-                d.tAllocationType AS AllocationType,
+                d.tAllocatedType AS AllocationType,
                 d.nSequence AS Sequence,
                 d.bIsElse AS IsElse,
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
