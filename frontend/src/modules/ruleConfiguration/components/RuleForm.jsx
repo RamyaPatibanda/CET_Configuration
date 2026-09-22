@@ -14,7 +14,7 @@ const EMPTY_RULE = {
   description: "",
   priority: 1,
   isActive: true,
-  decisionAreaCode: "CANDIDATE_QUALIFICATION",
+  decisionAreaCode: "",
   outcome: {
     values: [],
   },
@@ -102,9 +102,7 @@ function RuleForm({
   const [form, setForm] = useState(EMPTY_RULE);
   const [rows, setRows] = useState([]);
   const [fields, setFields] = useState([]);
-  const [decisionOptions, setDecisionOptions] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
-  const [loadingDecisionOptions, setLoadingDecisionOptions] = useState(false);
   const [error, setError] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   const [draggedRow, setDraggedRow] = useState(null);
@@ -119,7 +117,7 @@ function RuleForm({
         ? {
             ...EMPTY_RULE,
             ...rule,
-            decisionAreaCode: rule.decisionAreaCode || "CANDIDATE_QUALIFICATION",
+            decisionAreaCode: "",
           }
         : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
@@ -130,18 +128,12 @@ function RuleForm({
     const loadConfiguration = async () => {
       try {
         setLoadingFields(true);
-        setLoadingDecisionOptions(true);
-        const [fieldsResponse, decisionResponse] = await Promise.all([
-          ruleConfigurationService.getFields(),
-          ruleConfigurationService.getDecisionOptions(),
-        ]);
-        setFields(getResponseItems(fieldsResponse));
+        const fieldsResponse = await ruleConfigurationService.getFields();
         setDecisionOptions(getResponseItems(decisionResponse));
       } catch (loadError) {
         setError(loadError.message || "Unable to load rule configuration options.");
       } finally {
         setLoadingFields(false);
-        setLoadingDecisionOptions(false);
       }
     };
 
@@ -426,7 +418,6 @@ function RuleForm({
     await onSave({
       ...form,
       priority: Number(form.priority || 1),
-      decisionAreaCode: form.decisionAreaCode,
       outcome: { values: [] },
       conditions,
     });
@@ -488,22 +479,7 @@ function RuleForm({
               update("description", event.target.value)
             }
           />
-          <div className="rule-form-field">
-            <label htmlFor="rule-area">Rule Area</label>
-            <Select
-              value={form.decisionAreaCode}
-              options={decisionOptions.map((item) => ({
-                value: item.value,
-                label: item.label,
-              }))}
-              disabled={loadingDecisionOptions}
-              onChange={(event) =>
-                update("decisionAreaCode", event.target.value)
-              }
-            />
-          </div>
-        </div>
-        <div className="conditions-header">
+          <div className="conditions-header">
           <div className="conditions-header-copy">
             <span className="conditions-kicker">Rule logic</span>
             <h3>Conditions</h3>
