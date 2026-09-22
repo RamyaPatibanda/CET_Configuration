@@ -416,6 +416,31 @@ public sealed class AllocationController : ControllerBase
                     condition.ConditionLogicalOperator,
                     condition.GroupOrder,
                     condition.ConditionOrder))
+                .ToList(),
+            DecisionRows = rule.DecisionRows
+                .Where(decision => decision.IsActive)
+                .OrderBy(decision => decision.DecisionOrder)
+                .Select(decision => new api.Services.Allocation.AllocationDecisionRow
+                {
+                    DecisionOrder = decision.DecisionOrder,
+                    DecisionName = decision.DecisionName,
+                    Conditions = decision.Conditions
+                        .OrderBy(condition => condition.ConditionOrder)
+                        .Select((condition, index) => new api.Services.Allocation.RuleCondition(
+                            condition.OperandKey,
+                            condition.Operator,
+                            condition.Value,
+                            condition.LogicalOperator,
+                            1,
+                            index + 1))
+                        .ToList(),
+                    Results = decision.Results
+                        .OrderBy(result => result.ResultOrder)
+                        .ToDictionary(
+                            result => result.ResultKey,
+                            result => result.ResultValue,
+                            StringComparer.OrdinalIgnoreCase)
+                })
                 .ToList()
         };
     }
