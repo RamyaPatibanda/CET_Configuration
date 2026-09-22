@@ -101,26 +101,14 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     if (!open) return;
 
     const existingRows = normalizeBranches(rule?.branches);
-    const fallbackRows = existingRows.length
-      ? existingRows
-      : [{
-          ruleBranchId: 0,
-          ruleId: rule?.ruleId || nextRuleId,
-          branchName: "",
-          branchOrder: 1,
-          isActive: true,
-          allocationType: "",
-          sequence: 1,
-          isElse: false,
-          conditions: normalizeConditions(rule?.conditions),
-        }];
 
     setForm({
       ...EMPTY_RULE,
       ...(rule || {}),
       ruleId: rule?.ruleId ?? nextRuleId,
       decisionAreaCode: rule?.decisionAreaCode || "SEAT_ALLOCATION",
-      branches: fallbackRows,
+      conditions: normalizeConditions(rule?.conditions),
+      branches: existingRows,
     });
     setSelectedByBranch({});
     setError("");
@@ -380,11 +368,6 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
     }
 
     const branches = form.branches || [];
-    if (!branches.length) {
-      setError("Add at least one IF branch.");
-      return;
-    }
-
     let hasValidIfBranch = false;
     const normalizedBranches = branches.map((branch, branchIndex) => {
       if (!branch.isElse) {
@@ -408,15 +391,15 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       }
 
       if (!branch.isElse && conditions.length === 0) {
-        throw new Error(`IF branch ${branchIndex + 1} needs at least one condition.`);
+        throw new Error(`Decision ${branchIndex + 1} needs at least one condition.`);
       }
 
       if (!branch.allocationType) {
-        throw new Error(`Select an Allocation Type for branch ${branchIndex + 1}.`);
+        throw new Error(`Select an Allocation Type for decision ${branchIndex + 1}.`);
       }
 
       return {
-        branchName: branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF",
+        branchName: branch.isElse ? "Fallback" : "Decision " + (branchIndex + 1),
         branchOrder: branchIndex + 1,
         isActive: branch.isActive !== false,
         allocationType: branch.allocationType,
@@ -426,8 +409,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       };
     });
 
-    if (!hasValidIfBranch) {
-      setError("Add at least one IF branch with conditions.");
+    if (branches.length > 0 && !hasValidIfBranch && !branches.some((branch) => branch.isElse)) {
+      setError("Add at least one condition to a decision.");
       return;
     }
 
@@ -488,10 +471,10 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
         <div className="conditions-header">
           <div className="conditions-header-copy">
-            <span className="conditions-kicker">Single rule flow</span>
-            <h3>IF / ELSE IF / ELSE</h3>
+            <span className="conditions-kicker">Rule logic</span>
+            <h3>Conditions &amp; Decisions</h3>
             <p>
-              Keep the complete allocation logic inside one rule. Each branch has its own conditions and the allocation action to execute when that branch matches.
+              Add the conditions that define this rule. Decisions are optional and can be added only when an allocation action is required.
             </p>
           </div>
         </div>
@@ -508,7 +491,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
               <section className={`rule-branch-card ${branch.isElse ? "rule-branch-else" : ""}`} key={branch.ruleBranchId || `branch-${branchIndex}`}>
                 <div className="rule-branch-header">
                   <div className="rule-branch-title">
-                    <span className="rule-branch-badge">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
+                    <span className="rule-branch-badge">{branch.isElse ? "Fallback" : "Decision " + (branchIndex + 1)}</span>
                   </div>
                   <button
                     type="button"
@@ -524,8 +507,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 {!branch.isElse && (
                   <>
                     <div className="rule-branch-when">
-                      <span>WHEN</span>
-                      <small>This branch is evaluated before the branches below it.</small>
+                      <span>Conditions</span>
+                      <small>Conditions that must match for this decision.</small>
                     </div>
 
                     <div className="condition-toolbar-actions">
@@ -630,8 +613,8 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 )}
 
                 <div className="rule-branch-then">
-                  <span>THEN</span>
-                  <small>What should happen when this branch matches?</small>
+                  <span>Action</span>
+                  <small>Optional allocation action for this decision.</small>
                 </div>
 
                 <div className="decision-simple-grid rule-branch-action">
@@ -657,7 +640,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                   />
                 </div>
 
-                {hasLaterBranch && <div className="rule-branch-connector"><FiGitBranch size={14} /> If this branch does not match, continue to the next branch.</div>}
+                {hasLaterBranch && <div className="rule-branch-connector"><FiGitBranch size={14} /> Evaluation continues with the next decision when this one does not match.</div>}
               </section>
             );
           })}
@@ -665,7 +648,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
 
         <div className="rule-branch-actions">
           <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.branches || []).some((branch) => branch.isElse)}>
-            <FiPlus size={13} /> Add ELSE IF
+            <FiPlus size={13} /> Add decision
           </Button>
           <Button
             type="button"
@@ -673,7 +656,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             onClick={addElseBranch}
             disabled={(form.branches || []).some((branch) => branch.isElse)}
           >
-            <FiPlus size={13} /> Add ELSE
+            <FiPlus size={13} /> Add fallback
           </Button>
         </div>
 
