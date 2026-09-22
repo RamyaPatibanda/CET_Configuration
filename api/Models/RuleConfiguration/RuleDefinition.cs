@@ -16,7 +16,7 @@ namespace api.Models.RuleConfiguration
         public DateTime? ModifiedDate { get; set; }
     }
 
-    public class RuleDecision
+    public class RuleBranch
     {
         public int RuleBranchId { get; set; }
         public int RuleId { get; set; }
