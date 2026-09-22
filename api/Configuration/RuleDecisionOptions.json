@@ -13,11 +13,26 @@
         "label": "Allocation Type",
         "valueKind": "text",
         "values": [
-          { "value": "Fem", "label": "Female seat (Fem)" },
-          { "value": "Gen", "label": "General seat (Gen)" },
-          { "value": "PH", "label": "PH seat (PH)" },
-          { "value": "Def", "label": "Defence seat (Def)" },
-          { "value": "Orp", "label": "Orphan seat (Orp)" }
+          {
+            "value": "Fem",
+            "label": "Female seat (Fem)"
+          },
+          {
+            "value": "Gen",
+            "label": "General seat (Gen)"
+          },
+          {
+            "value": "PH",
+            "label": "PH seat (PH)"
+          },
+          {
+            "value": "Def",
+            "label": "Defence seat (Def)"
+          },
+          {
+            "value": "Orp",
+            "label": "Orphan seat (Orp)"
+          }
         ]
       },
       {
@@ -25,6 +40,42 @@
         "label": "Sequence",
         "valueKind": "number",
         "values": []
+      }
+    ]
+  },
+  {
+    "value": "SPECIAL_RESERVATION_ELIGIBILITY",
+    "label": "Special Reservation Eligibility",
+    "results": [
+      {
+        "supportingValue": "vacancySource",
+        "label": "Vacancy Source",
+        "valueKind": "text",
+        "values": [
+          {
+            "value": "Allocation_SeatDistribution_PH",
+            "label": "Special reservation vacancy"
+          }
+        ]
+      },
+      {
+        "supportingValue": "vacancyType",
+        "label": "Vacancy Type",
+        "valueKind": "text",
+        "values": [
+          {
+            "value": "PH",
+            "label": "PH"
+          },
+          {
+            "value": "Def",
+            "label": "Defence"
+          },
+          {
+            "value": "Orp",
+            "label": "Orphan"
+          }
+        ]
       }
     ]
   }
