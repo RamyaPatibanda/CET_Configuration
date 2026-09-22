@@ -6,6 +6,11 @@ public sealed class AllocationRunRequest
     public string AllocationRunName { get; set; } = string.Empty;
     public int CapRound { get; set; }
     public string AllocationStep { get; set; } = AllocationConfiguration.Step0;
+    // Step-specific rule selections. The Allocation Run never defines conditions; it only selects configured rules.
+    public List<int> CandidateEligibilityRuleIds { get; set; } = [];
+    public List<int> SequenceRuleIds { get; set; } = [];
+
+    // Retained for backward compatibility with older saved drafts/clients.
     public List<AllocationRuleGroupRequest> RuleGroups { get; set; } = [];
 }
 
