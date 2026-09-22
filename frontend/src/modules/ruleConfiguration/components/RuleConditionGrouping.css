@@ -357,3 +357,13 @@
     align-self: flex-start;
   }
 }
+
+
+.condition-group-braces {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 12px;
+  min-height: 26px;
+}
