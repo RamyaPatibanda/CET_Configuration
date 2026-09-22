@@ -130,18 +130,29 @@
 .condition-group-brace.indigo { color: #6674a7; }
 
 .condition-single-table .condition-select,
-.condition-single-table select {
+.condition-single-table select,
+.condition-single-table .searchable-select-trigger {
   width: 100%;
   min-width: 0;
-  min-height: 30px;
-  height: 30px;
+  min-height: 28px;
+  height: 28px;
   font-size: 10px;
+}
+.condition-single-table .searchable-select-trigger {
+  padding: 5px 8px;
+  border-radius: 8px;
+  gap: 5px;
+}
+.condition-single-table .searchable-select-trigger svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
 }
 .condition-single-table input:not([type="checkbox"]) {
   width: 100%;
   min-width: 0;
-  min-height: 30px;
-  height: 30px;
+  min-height: 28px;
+  height: 28px;
   box-sizing: border-box;
   padding: 5px 9px;
   border-radius: 9px;
@@ -510,10 +521,14 @@
   margin: 0 0 8px;
 }
 .condition-empty-state {
-  min-height: 82px;
-  padding: 16px 18px;
+  min-height: 70px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   border: 1px dashed rgba(124, 145, 168, 0.30);
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.38);
 }
 .condition-empty-copy {
@@ -523,25 +538,26 @@
 }
 .condition-empty-copy strong {
   color: #46566e;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 750;
 }
 .condition-empty-copy span {
   color: #929cab;
-  font-size: 10px;
+  font-size: 9px;
 }
 .condition-empty-add-button {
   flex: 0 0 auto;
-  height: 36px;
-  min-height: 36px;
-  padding: 0 14px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 11px !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  border-radius: 10px;
-  font-size: 11px;
+  gap: 6px;
+  border-radius: 8px !important;
+  font-size: 10px !important;
   font-weight: 700;
+  box-shadow: none;
 }
 @media (max-width: 620px) {
   .condition-toolbar-actions-right {
@@ -550,5 +566,8 @@
   .condition-empty-state {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .condition-empty-add-button {
+    align-self: flex-start;
   }
 }
