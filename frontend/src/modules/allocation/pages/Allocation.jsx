@@ -168,34 +168,6 @@ function Allocation() {
     markEdited();
   };
 
- (ruleId, property, value) => {
-    if (!canEdit) return;
-    setAllocationDecisions((current) => current.map((item) => item.ruleId === ruleId ? { ...item, [property]: value } : item));
-    markEdited();
-  };
-
-  const moveAllocationDecision = (from, to) => {
-    if (!canEdit || from < 0 || to < 0 || from >= allocationDecisions.length || to >= allocationDecisions.length) return;
-    setAllocationDecisions((current) => {
-      const next = [...current]; const [moved] = next.splice(from, 1); next.splice(to, 0, moved);
-      return next.map((item, index) => ({ ...item, displayOrder: index + 1 }));
-    });
-    markEdited();
-  };
-
-  const saveAllocationDecisionConfiguration = async () => {
-    if (allocationStep !== "STEP_0") return;
-    const selected = ruleGroups.find((group) => group.type === "SEAT_ALLOCATION")?.ruleIds || [];
-    if (!selected.length) return;
-    if (allocationDecisions.length !== selected.length || allocationDecisions.some((item) => !item.allocatedType)) {
-      throw new Error("Configure an allocation result for every Seat Allocation rule.");
-    }
-    await allocationService.saveDecisionConfigurations({
-      stepCode: "STEP_0", decisionAreaCode: "SEAT_ALLOCATION",
-      decisions: allocationDecisions.map((item, index) => ({ ...item, displayOrder: index + 1 }))
-    });
-  };
-
   const buildRequest = () => ({
     allocationRunId: runId,
     allocationRunName: runName.trim(),
