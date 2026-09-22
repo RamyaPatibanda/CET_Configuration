@@ -105,7 +105,7 @@ public sealed class LegacyAllocationDAL
                             await DeactivateAllocationAsync(connection, transaction, existing.AllocationId, cancellationToken);
                         }
 
-                        var seqId = allocationRule.DisplayOrder;
+                        var seqId = allocationRule.SequenceId > 0 ? allocationRule.SequenceId : allocationRule.DisplayOrder;
                         var inserted = await InsertAllocationAsync(
                             connection, transaction, candidate, preference, vacancyType, vacancyRow,
                             allocatedType, seqId, cancellationToken);
@@ -242,8 +242,59 @@ public sealed class LegacyAllocationDAL
             !seatEligibilityRules.Any(rule => _ruleEvaluator.Matches(rule, values)))
             return null;
 
-        return rules.OrderBy(r => r.DisplayOrder)
-            .FirstOrDefault(rule => _ruleEvaluator.Matches(rule, values) && !string.IsNullOrWhiteSpace(rule.AllocatedType));
+        foreach (var rule in rules.OrderBy(r => r.DisplayOrder))
+        {
+            if (!_ruleEvaluator.Matches(rule, values))
+                continue;
+
+            // Decision rows replace the old hard-coded IF / ELSE IF branches.
+            // They are evaluated strictly by nDecisionOrder and the first
+            // matching branch supplies the allocation result.
+            foreach (var decision in rule.DecisionRows.OrderBy(d => d.DecisionOrder))
+            {
+                if (!_ruleEvaluator.MatchesDecision(decision, values))
+                    continue;
+
+                var allocatedType = decision.Results.TryGetValue("AllocatedType", out var configuredType)
+                    ? configuredType
+                    : string.Empty;
+
+                if (string.IsNullOrWhiteSpace(allocatedType))
+                    continue;
+
+                var sequenceId = decision.Results.TryGetValue("SeqId", out var configuredSeq)
+                    && int.TryParse(configuredSeq, out var parsedSeq)
+                        ? parsedSeq
+                        : rule.DisplayOrder;
+
+                return new AllocationRule
+                {
+                    Code = rule.Code,
+                    StageCode = rule.StageCode,
+                    LogicalOperator = rule.LogicalOperator,
+                    AllocatedType = allocatedType,
+                    VacancyType = decision.Results.TryGetValue("VacancyType", out var configuredVacancyType)
+                        ? configuredVacancyType
+                        : rule.VacancyType,
+                    SeatCategory = rule.SeatCategory,
+                    ReservationType = rule.ReservationType,
+                    CandidateStatus = rule.CandidateStatus,
+                    PreferenceMode = rule.PreferenceMode,
+                    AllowBetterment = rule.AllowBetterment,
+                    DisplayOrder = rule.DisplayOrder,
+                    SequenceId = sequenceId,
+                    Conditions = rule.Conditions,
+                    DecisionRows = rule.DecisionRows
+                };
+            }
+
+            // Keep compatibility for existing rules that have not yet been
+            // converted to decision rows.
+            if (rule.DecisionRows.Count == 0 && !string.IsNullOrWhiteSpace(rule.AllocatedType))
+                return rule;
+        }
+
+        return null;
     }
 
     private static async Task<LegacyAllocationRow?> GetActiveAllocationAsync(SqlConnection connection, SqlTransaction transaction, long candidateId, CancellationToken cancellationToken)
