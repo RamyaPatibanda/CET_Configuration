@@ -142,6 +142,60 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const updateForm = (name, value) =>
     setForm((current) => ({ ...current, [name]: value }));
 
+
+  const addRootCondition = () => {
+    setForm((current) => {
+      const conditions = current.conditions || [];
+      return {
+        ...current,
+        conditions: [
+          ...conditions,
+          {
+            id: `root-condition-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            fieldId: "",
+            conditionLogicalOperator: conditions.length ? "AND" : "AND",
+            operator: "Equals",
+            value: "",
+            conditionOrder: conditions.length + 1,
+            groupOrder: 1,
+          },
+        ],
+      };
+    });
+  };
+
+  const updateRootCondition = (conditionId, name, value) => {
+    setForm((current) => ({
+      ...current,
+      conditions: (current.conditions || []).map((condition) =>
+        condition.id === conditionId ? { ...condition, [name]: value } : condition
+      ),
+    }));
+  };
+
+  const changeRootField = (conditionId, value) => {
+    const field = fields.find((item) => String(item.fieldId) === String(value));
+    const operators = optionsForType(field?.fieldType);
+    updateRootCondition(conditionId, "fieldId", value);
+    setForm((current) => ({
+      ...current,
+      conditions: (current.conditions || []).map((condition) =>
+        condition.id === conditionId
+          ? { ...condition, fieldId: value, operator: operators[0]?.value || "Equals", value: "" }
+          : condition
+      ),
+    }));
+  };
+
+  const removeRootCondition = (conditionId) => {
+    setForm((current) => ({
+      ...current,
+      conditions: (current.conditions || [])
+        .filter((condition) => condition.id !== conditionId)
+        .map((condition, index) => ({ ...condition, conditionOrder: index + 1 })),
+    }));
+  };
+
   const addBranch = () => {
     setForm((current) => {
       const rows = current.branches || [];
@@ -479,6 +533,104 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           </div>
         </div>
 
+
+        <section className="rule-conditions-section">
+          <div className="rule-section-heading">
+            <div>
+              <span className="conditions-kicker">Rule criteria</span>
+              <h3>Conditions</h3>
+              <p>Conditions are independent of decisions. One decision can use multiple conditions.</p>
+            </div>
+            <Button type="button" variant="secondary" onClick={addRootCondition}>
+              <FiPlus size={13} /> Add condition
+            </Button>
+          </div>
+
+          {(form.conditions || []).length > 0 ? (
+            <div className="condition-single-table-wrapper">
+              <table className="condition-single-table">
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Operator</th>
+                    <th>Value</th>
+                    <th>Logic</th>
+                    <th className="condition-action-column" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(form.conditions || []).map((condition) => {
+                    const field = fields.find((item) => String(item.fieldId) === String(condition.fieldId));
+                    const operators = optionsForType(field?.fieldType);
+                    return (
+                      <tr key={condition.id}>
+                        <td>
+                          <SearchableSelect
+                            value={condition.fieldId}
+                            options={fields.map((item) => ({ value: item.fieldId, label: item.displayName }))}
+                            placeholder={loadingFields ? "Loading fields..." : "Select field"}
+                            disabled={loadingFields}
+                            onChange={(value) => changeRootField(condition.id, value)}
+                          />
+                        </td>
+                        <td>
+                          <Select
+                            value={condition.operator}
+                            options={operators}
+                            onChange={(event) => updateRootCondition(condition.id, "operator", event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <TextBox
+                            value={condition.value}
+                            placeholder="Enter value"
+                            onChange={(event) => updateRootCondition(condition.id, "value", event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <Select
+                            value={condition.conditionLogicalOperator}
+                            options={LOGICAL_OPTIONS}
+                            onChange={(event) => updateRootCondition(condition.id, "conditionLogicalOperator", event.target.value)}
+                          />
+                        </td>
+                        <td className="condition-action-cell">
+                          <button type="button" className="condition-remove" onClick={() => removeRootCondition(condition.id)} title="Delete condition">
+                            <FiTrash2 />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rule-conditions-empty">
+              <span>No conditions added yet.</span>
+              <Button type="button" variant="secondary" onClick={addRootCondition}>
+                <FiPlus size={13} /> Add condition
+              </Button>
+            </div>
+          )}
+        </section>
+
+        <div className="rule-decision-section-heading">
+          <div>
+            <span className="conditions-kicker">Optional</span>
+            <h3>Decisions</h3>
+            <p>Only add a decision when this rule needs a specific allocation result.</p>
+          </div>
+          <div className="rule-branch-actions">
+            <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.branches || []).some((branch) => branch.isElse)}>
+              <FiPlus size={13} /> Add decision
+            </Button>
+            <Button type="button" variant="secondary" onClick={addElseBranch} disabled={(form.branches || []).some((branch) => branch.isElse)}>
+              <FiPlus size={13} /> Add fallback
+            </Button>
+          </div>
+        </div>
+
         <div className="rule-branch-list">
           {(form.branches || []).map((branch, branchIndex) => {
             const selected = selectedByBranch[branchIndex] || [];
@@ -645,21 +797,6 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             );
           })}
         </div>
-
-        <div className="rule-branch-actions">
-          <Button type="button" variant="secondary" onClick={addBranch} disabled={(form.branches || []).some((branch) => branch.isElse)}>
-            <FiPlus size={13} /> Add decision
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={addElseBranch}
-            disabled={(form.branches || []).some((branch) => branch.isElse)}
-          >
-            <FiPlus size={13} /> Add fallback
-          </Button>
-        </div>
-
         {!isNaN(0) && isLastBranchPlaceholder(form) && null}
       </form>
     </Dialog>
