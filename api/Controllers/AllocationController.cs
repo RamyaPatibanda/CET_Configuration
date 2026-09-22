@@ -445,6 +445,28 @@ public sealed class AllocationController : ControllerBase
         };
     }
 
+    private static string GetBranchOutcome(RuleBranch branch, string key)
+    {
+        if (string.IsNullOrWhiteSpace(branch.OutcomeJson))
+            return string.Empty;
+
+        try
+        {
+            using var document = JsonDocument.Parse(branch.OutcomeJson);
+            if (document.RootElement.TryGetProperty(key, out var value))
+                return value.GetString() ?? string.Empty;
+
+            var pascalKey = char.ToUpperInvariant(key[0]) + key[1..];
+            return document.RootElement.TryGetProperty(pascalKey, out value)
+                ? value.GetString() ?? string.Empty
+                : string.Empty;
+        }
+        catch (JsonException)
+        {
+            throw new InvalidOperationException($"Rule branch contains invalid outcome configuration for '{key}'.");
+        }
+    }
+
     private static RuleOutcome ResolveOutcome(RuleOutcome outcome)
     {
         if (outcome.Values is null || outcome.Values.Count == 0)
