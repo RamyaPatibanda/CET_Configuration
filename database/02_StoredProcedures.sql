@@ -83,7 +83,7 @@ GO
 IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetActiveRuleFields
-AS BEGIN SET NOCOUNT ON; SELECT aFieldId,tDisplayName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT aFieldId,tDisplayName,tFieldName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_CreateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateRule;
