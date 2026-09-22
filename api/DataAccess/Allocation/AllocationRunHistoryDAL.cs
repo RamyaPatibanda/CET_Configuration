@@ -40,7 +40,8 @@ public sealed class AllocationRunHistoryDAL
             command.Parameters.Add("@dtCompletedAtUtc", SqlDbType.DateTime2).Value = (object?)history.CompletedAtUtc ?? DBNull.Value;
             command.Parameters.Add("@nCandidateCount", SqlDbType.Int).Value = history.CandidateCount;
             command.Parameters.Add("@nDecisionCount", SqlDbType.Int).Value = history.DecisionCount;
-            command.Parameters.Add("@tErrorMessage", SqlDbType.NVarChar, 2000).Value = history.ErrorMessage;\n            command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = (object?)history.CreatedByUserId ?? DBNull.Value;
+            command.Parameters.Add("@tErrorMessage", SqlDbType.NVarChar, 2000).Value = history.ErrorMessage;
+            command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = (object?)history.CreatedByUserId ?? DBNull.Value;
 
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
