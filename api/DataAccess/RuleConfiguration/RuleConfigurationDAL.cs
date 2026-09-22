@@ -355,6 +355,7 @@ namespace api.DataAccess.RuleConfiguration
                 Value = reader.GetString(reader.GetOrdinal("tValue")),
                 ConditionOrder = reader.GetInt32(reader.GetOrdinal("nConditionOrder")),
                 GroupOrder = reader.GetInt32(reader.GetOrdinal("nGroupOrder")),
+                GroupPath = reader["tGroupPath"]?.ToString() ?? string.Empty,
             };
         }
 
