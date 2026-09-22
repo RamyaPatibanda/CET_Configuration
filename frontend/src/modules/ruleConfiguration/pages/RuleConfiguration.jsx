@@ -20,6 +20,7 @@ function RuleConfiguration() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const canWrite = authService.hasPermission("RULES", "write");
 
   const loadRules = async () => {
     try {
