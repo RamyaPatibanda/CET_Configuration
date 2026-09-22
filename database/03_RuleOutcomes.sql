@@ -50,8 +50,8 @@ BEGIN
                 d.tDecisionName AS DecisionName,
                 d.nDecisionOrder AS DecisionOrder,
                 d.bIsActive AS IsActive,
-                d.tAllocationType AS AllocationType,
-                d.nSequence AS Sequence
+                COALESCE(d.tAllocationType, N'') AS AllocationType,
+                COALESCE(d.nSequence, 1) AS Sequence
             FROM dbo.tblRuleDecision d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
