@@ -416,7 +416,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       }
 
       return {
-        branchName: branch.isElse ? (branch.branchName || "Else") : (branch.branchName || `Decision ${branchIndex + 1}`),
+        branchName: branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF",
         branchOrder: branchIndex + 1,
         isActive: branch.isActive !== false,
         allocationType: branch.allocationType,
@@ -509,11 +509,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 <div className="rule-branch-header">
                   <div className="rule-branch-title">
                     <span className="rule-branch-badge">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
-                    <TextBox
-                      value={branch.branchName}
-                      placeholder={branch.isElse ? "Else decision" : "Decision name"}
-                      onChange={(event) => updateBranch(branchIndex, "branchName", event.target.value)}
-                    />
+                    <span className="rule-branch-badge-text">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
                   </div>
                   <button
                     type="button"
