@@ -8,4 +8,5 @@ public sealed class UserDefinition
     public bool IsAdmin { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedDate { get; set; }
+    public int PermissionCount { get; set; }
 }
