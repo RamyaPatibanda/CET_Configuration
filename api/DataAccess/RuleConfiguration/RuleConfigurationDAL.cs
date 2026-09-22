@@ -96,7 +96,7 @@ namespace api.DataAccess.RuleConfiguration
                 command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
                 await connection.OpenAsync();
                 var ruleId = Convert.ToInt32(await command.ExecuteScalarAsync());
-                await SaveDecisionRowsAsync(ruleId, request.DecisionRows);
+                await SaveBranchesAsync(ruleId, request.Branches);
                 return ruleId;
             }
             catch (Exception ex)
@@ -119,7 +119,7 @@ namespace api.DataAccess.RuleConfiguration
                 await connection.OpenAsync();
                 var updated = Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
                 if (updated)
-                    await SaveDecisionRowsAsync(request.RuleId, request.DecisionRows);
+                    await SaveBranchesAsync(request.RuleId, request.Branches);
                 return updated;
             }
             catch (Exception ex)
@@ -211,7 +211,7 @@ namespace api.DataAccess.RuleConfiguration
             }
         }
 
-        private async Task SaveDecisionRowsAsync(int ruleId, List<RuleDecisionRequest>? decisionRows)
+        private async Task SaveBranchesAsync(int ruleId, List<RuleBranchRequest>? decisionRows)
         {
             await using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -220,34 +220,34 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using (var delete = new SqlCommand(
-                    "DELETE FROM dbo.tblRuleDecision WHERE aRuleId = @aRuleId",
+                    "DELETE FROM dbo.tblRuleBranch WHERE aRuleId = @aRuleId",
                     connection, transaction))
                 {
                     delete.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
                     await delete.ExecuteNonQueryAsync();
                 }
 
-                foreach (var row in (decisionRows ?? new List<RuleDecisionRequest>()).OrderBy(x => x.DecisionOrder))
+                foreach (var row in (decisionRows ?? new List<RuleBranchRequest>()).OrderBy(x => x.BranchOrder))
                 {
-                    if (string.IsNullOrWhiteSpace(row.DecisionName))
+                    if (string.IsNullOrWhiteSpace(row.BranchName))
                         throw new ArgumentException("Each decision row must have a name.");
                     if (string.IsNullOrWhiteSpace(row.AllocationType))
-                        throw new ArgumentException($"Decision '{row.DecisionName}' must have an allocation type.");
+                        throw new ArgumentException($"Decision '{row.BranchName}' must have an allocation type.");
                     if (!row.IsElse && row.Conditions.Count == 0)
-                        throw new ArgumentException($"Decision '{row.DecisionName}' must have at least one IF condition unless it is ELSE.");
+                        throw new ArgumentException($"Decision '{row.BranchName}' must have at least one IF condition unless it is ELSE.");
                     if (row.Sequence < 1)
-                        throw new ArgumentException($"Decision '{row.DecisionName}' must have a sequence greater than zero.");
+                        throw new ArgumentException($"Decision '{row.BranchName}' must have a sequence greater than zero.");
 
                     await using var decision = new SqlCommand(@"
-                        INSERT INTO dbo.tblRuleDecision
-                            (aRuleId, tDecisionName, nDecisionOrder, tAllocationType, nSequence, bIsActive, bIsElse, tConditionsJson)
+                        INSERT INTO dbo.tblRuleBranch
+                            (aRuleId, tBranchName, nBranchOrder, tAllocationType, nSequence, bIsActive, bIsElse, tConditionsJson)
                         VALUES
-                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
+                            (@aRuleId, @tBranchName, @nBranchOrder, @tAllocationType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson);",
                         connection, transaction);
 
                     decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
-                    decision.Parameters.Add("@tDecisionName", SqlDbType.NVarChar, 200).Value = row.DecisionName.Trim();
-                    decision.Parameters.Add("@nDecisionOrder", SqlDbType.Int).Value = row.DecisionOrder;
+                    decision.Parameters.Add("@tBranchName", SqlDbType.NVarChar, 200).Value = row.BranchName.Trim();
+                    decision.Parameters.Add("@nBranchOrder", SqlDbType.Int).Value = row.BranchOrder;
                     decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
                     decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
                     decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
@@ -314,27 +314,27 @@ namespace api.DataAccess.RuleConfiguration
                 ConditionCount = reader.GetInt32(reader.GetOrdinal("nConditionCount")),
                 DecisionAreaCode = reader.GetString(reader.GetOrdinal("tDecisionAreaCode")),
                 OutcomeJson = reader.IsDBNull(reader.GetOrdinal("tOutcomeJson")) ? "{}" : reader.GetString(reader.GetOrdinal("tOutcomeJson")),
-                DecisionRows = DeserializeDecisionRows(reader.IsDBNull(reader.GetOrdinal("tDecisionRowsJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tDecisionRowsJson"))),
+                Branches = DeserializeBranches(reader.IsDBNull(reader.GetOrdinal("tBranchesJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tBranchesJson"))),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate")
             };
         }
 
 
-        private static List<RuleDecision> DeserializeDecisionRows(string json)
+        private static List<RuleBranch> DeserializeBranches(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
-                return new List<RuleDecision>();
+                return new List<RuleBranch>();
 
             try
             {
-                return JsonSerializer.Deserialize<List<RuleDecision>>(json,
+                return JsonSerializer.Deserialize<List<RuleBranch>>(json,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                    ?? new List<RuleDecision>();
+                    ?? new List<RuleBranch>();
             }
             catch (JsonException)
             {
-                return new List<RuleDecision>();
+                return new List<RuleBranch>();
             }
         }
 
