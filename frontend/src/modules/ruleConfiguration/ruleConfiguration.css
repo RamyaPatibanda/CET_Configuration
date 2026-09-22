@@ -1024,3 +1024,66 @@
   gap: 8px;
   margin-top: 12px;
 }
+
+/* Refined rule editor: conditions are independent; decisions are optional. */
+.rule-conditions-section {
+  padding: 16px;
+  border: 1px solid rgba(104, 126, 151, .18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .58);
+  box-shadow: inset 0 1px rgba(255,255,255,.85), 0 10px 28px rgba(43,57,83,.04);
+}
+.rule-section-heading,
+.rule-decision-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.rule-section-heading h3,
+.rule-decision-section-heading h3 {
+  margin: 3px 0 4px;
+  color: #26354c;
+  font-size: 16px;
+}
+.rule-section-heading p,
+.rule-decision-section-heading p {
+  margin: 0;
+  color: #8792a3;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.rule-decision-section-heading {
+  margin-top: 2px;
+  margin-bottom: 0;
+  padding: 2px 2px 0;
+}
+.rule-conditions-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px dashed rgba(124,145,168,.28);
+  border-radius: 12px;
+  background: rgba(255,255,255,.34);
+  color: #8792a3;
+  font-size: 10px;
+}
+.rule-decision-section-heading .rule-branch-actions {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+.rule-branch-list:empty::before {
+  content: "No decisions added. Add a decision only if this rule needs an allocation result.";
+  display: block;
+  padding: 22px;
+  border: 1px dashed rgba(124,145,168,.24);
+  border-radius: 14px;
+  color: #8a95a5;
+  background: rgba(255,255,255,.30);
+  text-align: center;
+  font-size: 10px;
+}
