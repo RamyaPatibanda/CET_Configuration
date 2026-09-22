@@ -222,7 +222,7 @@ BEGIN
         (
             aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
             tStatus, tRuleGroupsJson, dtCreatedAtUtc, dtStartedAtUtc,
-            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, aRunByUserId
+            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, aCreatedByUserId
         )
         VALUES
         (
