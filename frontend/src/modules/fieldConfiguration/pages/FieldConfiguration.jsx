@@ -117,9 +117,9 @@ function FieldConfiguration() {
     <div className="field-configuration-page">
       <div className="field-page-header">
         <div><h1>Field Configuration</h1><p>Define and manage the fields used across your CET rules.</p></div>
-        {canWrite && <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field">
+        {canWrite && {canWrite && <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field">
           <FiPlus size={18} strokeWidth={2.2} />
-        </Button>}
+        </Button>}}
       </div>
       {error && <div className="field-page-error">{error}</div>}
       <div className="field-list-toolbar"><div className="field-search-box"><FiSearch size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search fields..." aria-label="Search fields" /></div><div className="field-page-size"><span>Rows</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select></div></div>
