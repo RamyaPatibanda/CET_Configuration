@@ -24,12 +24,23 @@ public sealed class AllocationRule
     public bool? AllowBetterment { get; set; }
     public int DisplayOrder { get; set; }
     public List<RuleCondition> Conditions { get; set; } = [];
+    public List<AllocationDecisionRow> DecisionRows { get; set; } = [];
+    public int SequenceId { get; set; }
 }
 
 public interface IRuleEvaluator
 {
     bool Matches(AllocationRule rule, AllocationCandidate candidate);
     bool Matches(AllocationRule rule, IReadOnlyDictionary<string, string?> values);
+    bool MatchesDecision(AllocationDecisionRow decision, IReadOnlyDictionary<string, string?> values);
+}
+
+public sealed class AllocationDecisionRow
+{
+    public int DecisionOrder { get; set; }
+    public string DecisionName { get; set; } = string.Empty;
+    public List<RuleCondition> Conditions { get; set; } = [];
+    public Dictionary<string, string> Results { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class RuleEvaluator : IRuleEvaluator
@@ -55,6 +66,13 @@ public sealed class RuleEvaluator : IRuleEvaluator
         if (rule.Conditions.Count == 0) return false;
         var groups = rule.Conditions.GroupBy(c => c.GroupOrder).OrderBy(g => g.Key).ToList();
         return groups.All(group => EvaluateGroup(group.ToList(), values));
+    }
+
+    public bool MatchesDecision(AllocationDecisionRow decision, IReadOnlyDictionary<string, string?> values)
+    {
+        if (decision.Conditions.Count == 0) return false;
+        var groups = decision.Conditions.GroupBy(c => c.GroupOrder).OrderBy(g => g.Key).ToList();
+        return groups.All(group => EvaluateGroup(group.OrderBy(c => c.ConditionOrder).ToList(), values));
     }
 
     private static bool EvaluateGroup(
