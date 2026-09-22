@@ -26,7 +26,7 @@ namespace api.Models.RuleConfiguration
         public int GroupOrder { get; set; } = 1;
     }
 
-    public class RuleDecisionRequest
+    public class RuleBranchRequest
     {
         public string BranchName { get; set; } = string.Empty;
         public int BranchOrder { get; set; }
