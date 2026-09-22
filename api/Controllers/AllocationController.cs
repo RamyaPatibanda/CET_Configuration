@@ -425,6 +425,8 @@ public sealed class AllocationController : ControllerBase
                     BranchOrder = branch.BranchOrder,
                     BranchName = branch.BranchName,
                     AllocationType = branch.AllocationType,
+                    VacancySource = GetBranchOutcome(branch, "vacancySource"),
+                    VacancyType = GetBranchOutcome(branch, "vacancyType"),
                     Sequence = branch.Sequence,
                     IsElse = branch.IsElse,
                     Conditions = branch.Conditions
