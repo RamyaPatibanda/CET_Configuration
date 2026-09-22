@@ -665,3 +665,28 @@ BEGIN
         ON dbo.tblUserPermission(aUserId, tModuleCode);
 END;
 GO
+
+
+/* Audit ownership: every configuration/run action is attributable to a CET user. */
+IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.tblFieldConfiguration', N'aCreatedByUserId') IS NULL
+        ALTER TABLE dbo.tblFieldConfiguration ADD aCreatedByUserId INT NULL;
+
+    IF COL_LENGTH(N'dbo.tblRule', N'aCreatedByUserId') IS NULL
+        ALTER TABLE dbo.tblRule ADD aCreatedByUserId INT NULL;
+
+    IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'aRunByUserId') IS NULL
+        ALTER TABLE dbo.tblAllocationRunHistory ADD aRunByUserId INT NULL;
+
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblFieldConfiguration_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblFieldConfiguration'))
+        ALTER TABLE dbo.tblFieldConfiguration ADD CONSTRAINT FK_tblFieldConfiguration_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
+
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblRule_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblRule'))
+        ALTER TABLE dbo.tblRule ADD CONSTRAINT FK_tblRule_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
+
+    IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblAllocationRunHistory_RunBy' AND parent_object_id = OBJECT_ID(N'dbo.tblAllocationRunHistory'))
+        ALTER TABLE dbo.tblAllocationRunHistory ADD CONSTRAINT FK_tblAllocationRunHistory_RunBy FOREIGN KEY (aRunByUserId) REFERENCES dbo.tblUsers(aUserId);
+END;
+GO
