@@ -368,21 +368,7 @@ prepared:
             AllocationStep = run.AllocationStep,
             Status = run.Status.ToString(),
             RuleGroupsJson = JsonSerializer.Serialize(
-                string.Equals(run.AllocationStep, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase)
-                    ? new
-                    {
-                        candidateEligibilityRules = request.CandidateEligibilityRuleIds.Select(id => new
-                        {
-                            ruleId = id,
-                            ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                        }),
-                        sequenceRules = request.SequenceRuleIds.Select(id => new
-                        {
-                            ruleId = id,
-                            ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                        })
-                    }
-                    : request.RuleGroups),
+                BuildRuleGroupsHistoryPayload(run.AllocationStep, request, rules)),
             CreatedAtUtc = run.CreatedAtUtc,
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
             CompletedAtUtc = run.CompletedAtUtc,
@@ -390,6 +376,31 @@ prepared:
             DecisionCount = decisionCount,
             ErrorMessage = errorMessage
         });
+    }
+
+    private static object BuildRuleGroupsHistoryPayload(
+        string allocationStep,
+        AllocationRunRequest request,
+        IReadOnlyDictionary<int, RuleDefinition> rules)
+    {
+        if (string.Equals(allocationStep, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase))
+        {
+            return new
+            {
+                candidateEligibilityRules = request.CandidateEligibilityRuleIds.Select(id => new
+                {
+                    ruleId = id,
+                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
+                }).ToList(),
+                sequenceRules = request.SequenceRuleIds.Select(id => new
+                {
+                    ruleId = id,
+                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
+                }).ToList()
+            };
+        }
+
+        return request.RuleGroups;
     }
 
     private IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
