@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiEdit2, FiMenu, FiTrash2 } from "react-icons/fi";
 import Switch from "../../../components/common/Switch/Switch";
 
-function FieldList({ fields, loading, onEdit, onDelete, onReorder, onToggleRequired, onToggleActive }) {
+function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onToggleRequired, onToggleActive }) {
   const [draggedId, setDraggedId] = useState(null);
 
   if (loading) return <div className="field-list-message">Loading fields…</div>;
@@ -32,7 +32,7 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder, onToggleRequi
           {fields.map((field) => (
             <tr
               key={field.fieldId}
-              draggable
+              draggable={Boolean(canWrite)}
               className={draggedId === field.fieldId ? "field-row-dragging" : ""}
               onDragStart={(event) => {
                 setDraggedId(field.fieldId);
@@ -43,13 +43,14 @@ function FieldList({ fields, loading, onEdit, onDelete, onReorder, onToggleRequi
               onDragEnd={() => setDraggedId(null)}
             >
               <td className="field-order-column">
-                <button
+                {canWrite && <button
                   type="button"
                   className="field-drag-handle"
                   title="Drag to rearrange"
                   aria-label={`Reorder ${field.displayName}`}
                   draggable
                   onDragStart={(event) => {
+                  if (!canWrite) return;
                     event.stopPropagation();
                     setDraggedId(field.fieldId);
                     event.dataTransfer.effectAllowed = "move";
