@@ -227,55 +227,29 @@ namespace api.DataAccess.RuleConfiguration
                     await delete.ExecuteNonQueryAsync();
                 }
 
-                foreach (var row in (decisionRows ?? new List<RuleDecisionRequest>())
-                    .OrderBy(x => x.DecisionOrder))
+                foreach (var row in (decisionRows ?? new List<RuleDecisionRequest>()).OrderBy(x => x.DecisionOrder))
                 {
                     if (string.IsNullOrWhiteSpace(row.DecisionName))
                         throw new ArgumentException("Each decision row must have a name.");
-                    if (row.Conditions is null || row.Conditions.Count == 0)
-                        throw new ArgumentException($"Decision '{row.DecisionName}' must contain at least one condition.");
                     if (string.IsNullOrWhiteSpace(row.AllocationType))
                         throw new ArgumentException($"Decision '{row.DecisionName}' must have an allocation type.");
                     if (row.Sequence < 1)
                         throw new ArgumentException($"Decision '{row.DecisionName}' must have a sequence greater than zero.");
 
-                    int decisionId;
-                    await using (var decision = new SqlCommand(@"
+                    await using var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleDecision
                             (aRuleId, tDecisionName, nDecisionOrder, tAllocationType, nSequence, bIsActive)
                         VALUES
-                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive);
-                        SELECT CAST(SCOPE_IDENTITY() AS INT);",
-                        connection, transaction))
-                    {
-                        decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
-                        decision.Parameters.Add("@tDecisionName", SqlDbType.NVarChar, 200).Value = row.DecisionName.Trim();
-                        decision.Parameters.Add("@nDecisionOrder", SqlDbType.Int).Value = row.DecisionOrder;
-                        decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
-                        decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
-                        decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
-                        decisionId = Convert.ToInt32(await decision.ExecuteScalarAsync());
-                    }
+                            (@aRuleId, @tDecisionName, @nDecisionOrder, @tAllocationType, @nSequence, @bIsActive);",
+                        connection, transaction);
 
-                    foreach (var condition in row.Conditions.OrderBy(x => x.ConditionOrder))
-                    {
-                        await using var command = new SqlCommand(@"
-                            INSERT INTO dbo.tblRuleDecisionCondition
-                                (aRuleDecisionId, tOperandType, tOperandKey, tLogicalOperator, tOperator, tValue, nConditionOrder)
-                            VALUES
-                                (@aRuleDecisionId, @tOperandType, @tOperandKey, @tLogicalOperator, @tOperator, @tValue, @nConditionOrder);",
-                            connection, transaction);
-                        command.Parameters.Add("@aRuleDecisionId", SqlDbType.Int).Value = decisionId;
-                        command.Parameters.Add("@tOperandType", SqlDbType.NVarChar, 30).Value = condition.OperandType;
-                        command.Parameters.Add("@tOperandKey", SqlDbType.NVarChar, 200).Value = condition.OperandKey.Trim();
-                        command.Parameters.Add("@tLogicalOperator", SqlDbType.NVarChar, 10).Value = condition.LogicalOperator.ToUpperInvariant();
-                        command.Parameters.Add("@tOperator", SqlDbType.NVarChar, 50).Value = condition.Operator;
-                        command.Parameters.Add("@tValue", SqlDbType.NVarChar, 1000).Value = condition.Value;
-                        command.Parameters.Add("@nConditionOrder", SqlDbType.Int).Value = condition.ConditionOrder;
-                        await command.ExecuteNonQueryAsync();
-                    }
-
-                }
+                    decision.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
+                    decision.Parameters.Add("@tDecisionName", SqlDbType.NVarChar, 200).Value = row.DecisionName.Trim();
+                    decision.Parameters.Add("@nDecisionOrder", SqlDbType.Int).Value = row.DecisionOrder;
+                    decision.Parameters.Add("@tAllocationType", SqlDbType.NVarChar, 100).Value = row.AllocationType.Trim();
+                    decision.Parameters.Add("@nSequence", SqlDbType.Int).Value = row.Sequence;
+                    decision.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = row.IsActive;
+                    await decision.ExecuteNonQueryAsync();
                 }
 
                 await transaction.CommitAsync();
