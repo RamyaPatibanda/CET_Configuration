@@ -87,7 +87,8 @@ namespace api.Models.RuleConfiguration
         public int DecisionOrder { get; set; }
         public bool IsActive { get; set; } = true;
         public List<RuleDecisionConditionRequest> Conditions { get; set; } = new();
-        public List<RuleDecisionResultRequest> Results { get; set; } = new();
+        public string AllocationType { get; set; } = string.Empty;
+        public int Sequence { get; set; }
     }
 
     public class RuleDecisionConditionRequest
