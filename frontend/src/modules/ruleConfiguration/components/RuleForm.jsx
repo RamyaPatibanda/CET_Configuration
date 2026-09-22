@@ -419,17 +419,17 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                           onDrop={() => handleConditionDrop(condition.id)}
                           onDragEnd={() => setDraggedConditionId(null)}
                         >
-                          <td
-                            className="condition-brace-cell"
-                            rowSpan={showGroupBrace ? groupConditions.length : undefined}
-                            aria-label={showGroupBrace ? `Condition group ${groupOrder}` : undefined}
-                          >
-                            {showGroupBrace && (
-                              <span className={`condition-group-brace ${["blue", "violet", "teal", "amber", "rose", "indigo"][groupIndex % 6]}`} aria-hidden="true">
+                          {showGroupBrace && (
+                            <td
+                              className="condition-brace-cell"
+                              rowSpan={groupConditions.length}
+                              aria-label={`Condition group ${groupOrder}`}
+                            >
+                              <span className={`condition-group-brace ${["blue", "violet", "teal", "amber", "rose", "indigo"][groupIndex % 6]}`}>
                                 {"{"}
                               </span>
-                            )}
-                          </td>
+                            </td>
+                          )}
                           <td className="condition-check-cell">
                             <button type="button" className="condition-drag-handle" title="Drag to rearrange" aria-label="Drag to rearrange">
                               <FiMenu size={16} />
