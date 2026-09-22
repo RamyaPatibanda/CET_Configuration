@@ -635,3 +635,33 @@ GO
 IF OBJECT_ID(N'dbo.tblRuleDecision', N'U') IS NOT NULL
     DROP TABLE dbo.tblRuleDecision;
 GO
+
+
+/* User access permissions. Permissions are module-level and separate Read/Write. */
+IF OBJECT_ID(N'dbo.tblUserPermission', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tblUserPermission
+    (
+        aUserPermissionId INT IDENTITY(1,1) NOT NULL,
+        aUserId           INT NOT NULL,
+        tModuleCode       NVARCHAR(50) NOT NULL,
+        bCanRead          BIT NOT NULL CONSTRAINT DF_tblUserPermission_bCanRead DEFAULT (0),
+        bCanWrite         BIT NOT NULL CONSTRAINT DF_tblUserPermission_bCanWrite DEFAULT (0),
+        dtCreatedDate     DATETIME NOT NULL CONSTRAINT DF_tblUserPermission_dtCreatedDate DEFAULT (GETDATE()),
+        dtModifiedDate    DATETIME NULL,
+
+        CONSTRAINT PK_tblUserPermission PRIMARY KEY (aUserPermissionId),
+        CONSTRAINT FK_tblUserPermission_tblUsers
+            FOREIGN KEY (aUserId) REFERENCES dbo.tblUsers(aUserId) ON DELETE CASCADE,
+        CONSTRAINT CK_tblUserPermission_tModuleCode
+            CHECK (tModuleCode IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')),
+        CONSTRAINT CK_tblUserPermission_WriteRequiresRead
+            CHECK (bCanWrite = 0 OR bCanRead = 1),
+        CONSTRAINT UQ_tblUserPermission_User_Module
+            UNIQUE (aUserId, tModuleCode)
+    );
+
+    CREATE INDEX IX_tblUserPermission_User
+        ON dbo.tblUserPermission(aUserId, tModuleCode);
+END;
+GO
