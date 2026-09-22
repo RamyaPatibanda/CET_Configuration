@@ -10,7 +10,8 @@ namespace api.Models.RuleConfiguration
         public string DecisionAreaCode { get; set; } = string.Empty;
         public RuleOutcome Outcome { get; set; } = new();
         public List<RuleConditionRequest> Conditions { get; set; } = new();
-        public List<RuleBranchRequest> Branches { get; set; } = new();\n        public int CreatedByUserId { get; set; }
+        public List<RuleBranchRequest> Branches { get; set; } = new();
+        public int CreatedByUserId { get; set; }
     }
 
     public class UpdateRuleRequest : CreateRuleRequest { }

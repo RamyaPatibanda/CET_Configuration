@@ -9,6 +9,7 @@ namespace api.Models.FieldConfiguration
         public string FieldType { get; set; } = string.Empty;
         public bool IsRequired { get; set; }
         public bool IsActive { get; set; } = true;
-        public int DisplayOrder { get; set; }\n        public int CreatedByUserId { get; set; }
+        public int DisplayOrder { get; set; }
+        public int CreatedByUserId { get; set; }
     }
 }
