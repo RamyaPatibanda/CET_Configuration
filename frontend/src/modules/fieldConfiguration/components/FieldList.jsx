@@ -64,24 +64,26 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
               <td>{field.displayName}</td>
               <td>{field.fieldType}</td>
               <td>
-                <Switch
+                {canWrite ? <Switch
                   name={`required-${field.fieldId}`}
                   label=""
                   checked={field.isRequired}
                   onChange={(event) => onToggleRequired?.(field, event.target.checked)}
-                />
+                /> : <span className="field-readonly-value">{field.isRequired ? "Yes" : "No"}</span>}
               </td>
               <td>
-                <Switch
+                {canWrite ? <Switch
                   name={`active-${field.fieldId}`}
                   label=""
                   checked={field.isActive}
                   onChange={(event) => onToggleActive?.(field, event.target.checked)}
-                />
+                /> : <span className="field-readonly-value">{field.isActive ? "Yes" : "No"}</span>}
               </td>
               <td className="field-actions">
-                <button type="button" className="icon-button" title={`Edit ${field.displayName}`} aria-label={`Edit ${field.displayName}`} onClick={() => onEdit(field)}><FiEdit2 size={16} /></button>
-                <button type="button" className="icon-button delete-icon" title={`Delete ${field.displayName}`} aria-label={`Delete ${field.displayName}`} onClick={() => onDelete(field)}><FiTrash2 size={16} /></button>
+                {canWrite && <>
+                  <button type="button" className="icon-button" title={`Edit ${field.displayName}`} aria-label={`Edit ${field.displayName}`} onClick={() => onEdit(field)}><FiEdit2 size={16} /></button>
+                  <button type="button" className="icon-button delete-icon" title={`Delete ${field.displayName}`} aria-label={`Delete ${field.displayName}`} onClick={() => onDelete(field)}><FiTrash2 size={16} /></button>
+                </>}
               </td>
             </tr>
           ))}
