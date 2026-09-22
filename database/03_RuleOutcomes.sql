@@ -64,7 +64,9 @@ BEGIN
                 d.nDecisionOrder AS DecisionOrder,
                 d.bIsActive AS IsActive,
                 COALESCE(d.tAllocationType, N'') AS AllocationType,
-                COALESCE(d.nSequence, 1) AS Sequence
+                COALESCE(d.nSequence, 1) AS Sequence,
+                d.bIsElse AS IsElse,
+                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
             FROM dbo.tblRuleDecision d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
@@ -103,7 +105,9 @@ BEGIN
                 d.nDecisionOrder AS DecisionOrder,
                 d.bIsActive AS IsActive,
                 d.tAllocationType AS AllocationType,
-                d.nSequence AS Sequence
+                d.nSequence AS Sequence,
+                d.bIsElse AS IsElse,
+                JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
             FROM dbo.tblRuleDecision d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
