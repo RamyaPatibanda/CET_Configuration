@@ -425,7 +425,19 @@ public sealed class AllocationController : ControllerBase
                     DecisionOrder = decision.DecisionOrder,
                     DecisionName = decision.DecisionName,
                     AllocationType = decision.AllocationType,
-                    Sequence = decision.Sequence
+                    Sequence = decision.Sequence,
+                    IsElse = decision.IsElse,
+                    Conditions = decision.Conditions
+                        .OrderBy(condition => condition.GroupOrder)
+                        .ThenBy(condition => condition.ConditionOrder)
+                        .Select(condition => new api.Services.Allocation.RuleCondition(
+                            condition.FieldName,
+                            condition.Operator,
+                            condition.Value,
+                            condition.ConditionLogicalOperator,
+                            condition.GroupOrder,
+                            condition.ConditionOrder))
+                        .ToList()
                 })
                 .ToList()
         };
