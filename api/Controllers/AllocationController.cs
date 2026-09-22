@@ -2,6 +2,7 @@ using api.BusinessLogic.RuleConfiguration;
 using api.DataAccess.Allocation;
 using api.Models.Allocation;
 using api.Models.RuleConfiguration;
+using api.Models.UserManagement;
 using api.BusinessLogic.UserManagement;
 using api.Services.Allocation;
 using Microsoft.AspNetCore.Authorization;
