@@ -11,17 +11,17 @@ namespace api.Models.RuleConfiguration
         public string OutcomeJson { get; set; } = "{}";
         public int ConditionCount { get; set; }
         public List<RuleCondition> Conditions { get; set; } = new();
-        public List<RuleDecision> DecisionRows { get; set; } = new();
+        public List<RuleBranch> Branches { get; set; } = new();
         public DateTime? CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
     }
 
     public class RuleDecision
     {
-        public int RuleDecisionId { get; set; }
+        public int RuleBranchId { get; set; }
         public int RuleId { get; set; }
-        public string DecisionName { get; set; } = string.Empty;
-        public int DecisionOrder { get; set; }
+        public string BranchName { get; set; } = string.Empty;
+        public int BranchOrder { get; set; }
         public bool IsActive { get; set; }
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
