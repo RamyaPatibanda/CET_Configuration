@@ -424,16 +424,10 @@ public sealed class AllocationController : ControllerBase
                 {
                     DecisionOrder = decision.DecisionOrder,
                     DecisionName = decision.DecisionName,
-                    Conditions = decision.Conditions
-                        .OrderBy(condition => condition.ConditionOrder)
-                        .Select((condition, index) => new api.Services.Allocation.RuleCondition(
-                            condition.OperandKey,
-                            condition.Operator,
-                            condition.Value,
-                            condition.LogicalOperator,
-                            1,
-                            index + 1))
-                        .ToList(),
+                    AllocationType = decision.AllocationType,
+                    Sequence = decision.Sequence
+                })
+                .ToList()       .ToList(),
                     Results = decision.Results
                         .OrderBy(result => result.ResultOrder)
                         .ToDictionary(
