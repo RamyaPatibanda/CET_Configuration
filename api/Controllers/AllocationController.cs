@@ -367,7 +367,7 @@ prepared:
             CapRound = run.CapRound,
             AllocationStep = run.AllocationStep,
             Status = run.Status.ToString(),
-            RuleGroupsJson = JsonSerializer.Serialize(
+            RuleGroupsJson = JsonSerializer.Serialize<object>(
                 BuildRuleGroupsHistoryPayload(run.AllocationStep, request, rules)),
             CreatedAtUtc = run.CreatedAtUtc,
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
