@@ -60,6 +60,7 @@ namespace api.Models.RuleConfiguration
     {
         public int FieldId { get; set; }
         public string DisplayName { get; set; } = string.Empty;
+        public string FieldName { get; set; } = string.Empty;
         public string FieldType { get; set; } = string.Empty;
     }
 
