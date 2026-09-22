@@ -548,6 +548,7 @@ BEGIN
         bIsElse BIT NOT NULL CONSTRAINT DF_tblRuleBranch_bIsElse DEFAULT (0),
         bIsActive BIT NOT NULL CONSTRAINT DF_tblRuleBranch_bIsActive DEFAULT (1),
         tConditionsJson NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRuleBranch_tConditionsJson DEFAULT (N'[]'),
+        tOutcomeJson NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRuleBranch_tOutcomeJson DEFAULT (N'{}'),
         dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblRuleBranch_dtCreatedDate DEFAULT (GETDATE()),
         dtModifiedDate DATETIME NULL,
 
@@ -568,6 +569,13 @@ GO
    This preserves existing configured rules while changing the model
    to Rule -> Branches. */
 IF OBJECT_ID(N'dbo.tblRuleBranch', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleBranch', N'tOutcomeJson') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblRuleBranch ADD tOutcomeJson NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRuleBranch_tOutcomeJson DEFAULT (N'{}');
+END;
+GO
+
+IF OBJECT_ID(N'dbo.tblRuleBranch', N'U') IS NOT NULL
    AND OBJECT_ID(N'dbo.tblRuleDecision', N'U') IS NOT NULL
 BEGIN
     INSERT INTO dbo.tblRuleBranch
@@ -580,6 +588,7 @@ BEGIN
         bIsElse,
         bIsActive,
         tConditionsJson,
+        tOutcomeJson,
         dtCreatedDate,
         dtModifiedDate
     )
@@ -592,6 +601,7 @@ BEGIN
         d.bIsElse,
         d.bIsActive,
         COALESCE(NULLIF(d.tConditionsJson, N''), N'[]'),
+        COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}'),
         d.dtCreatedDate,
         d.dtModifiedDate
     FROM dbo.tblRuleDecision d
