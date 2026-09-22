@@ -367,19 +367,22 @@ prepared:
             CapRound = run.CapRound,
             AllocationStep = run.AllocationStep,
             Status = run.Status.ToString(),
-            RuleGroupsJson = JsonSerializer.Serialize(new
-            {
-                candidateEligibilityRules = request.CandidateEligibilityRuleIds.Select(id => new
-                {
-                    ruleId = id,
-                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                }),
-                sequenceRules = request.SequenceRuleIds.Select(id => new
-                {
-                    ruleId = id,
-                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                })
-            }),
+            RuleGroupsJson = JsonSerializer.Serialize(
+                string.Equals(run.AllocationStep, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase)
+                    ? new
+                    {
+                        candidateEligibilityRules = request.CandidateEligibilityRuleIds.Select(id => new
+                        {
+                            ruleId = id,
+                            ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
+                        }),
+                        sequenceRules = request.SequenceRuleIds.Select(id => new
+                        {
+                            ruleId = id,
+                            ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
+                        })
+                    }
+                    : request.RuleGroups),
             CreatedAtUtc = run.CreatedAtUtc,
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
             CompletedAtUtc = run.CompletedAtUtc,
