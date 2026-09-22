@@ -93,7 +93,8 @@ namespace api.DataAccess.RuleConfiguration
                 AddRuleParameters(command, request.RuleId, request.RuleName, request.Description, request.Priority, request.IsActive);
                 command.Parameters.Add("@tDecisionAreaCode", SqlDbType.NVarChar, 100).Value = request.DecisionAreaCode ?? string.Empty;
                 command.Parameters.Add("@tOutcomeJson", SqlDbType.NVarChar, -1).Value = SerializeOutcome(request.Outcome);
-                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);\n                command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = request.CreatedByUserId;
+                command.Parameters.Add("@tConditionsJson", SqlDbType.NVarChar, -1).Value = SerializeConditions(request.Conditions);
+                command.Parameters.Add("@aCreatedByUserId", SqlDbType.Int).Value = request.CreatedByUserId;
                 await connection.OpenAsync();
                 var ruleId = Convert.ToInt32(await command.ExecuteScalarAsync());
                 await SaveBranchesAsync(ruleId, request.Branches);
