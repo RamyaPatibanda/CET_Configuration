@@ -318,7 +318,9 @@ namespace api.DataAccess.RuleConfiguration
                 OutcomeJson = reader.IsDBNull(reader.GetOrdinal("tOutcomeJson")) ? "{}" : reader.GetString(reader.GetOrdinal("tOutcomeJson")),
                 Branches = DeserializeBranches(reader.IsDBNull(reader.GetOrdinal("tBranchesJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tBranchesJson"))),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
-                ModifiedDate = GetDate(reader, "dtModifiedDate")
+                ModifiedDate = GetDate(reader, "dtModifiedDate"),
+                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),
+                CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
             };
         }
 
