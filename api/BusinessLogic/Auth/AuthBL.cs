@@ -39,6 +39,8 @@ namespace api.BusinessLogic.Auth
                 if (!string.Equals(request.Password, storedPassword, StringComparison.Ordinal))
                     return new LoginResult { Success = false, StatusCode = StatusCodes.Status401Unauthorized, Message = "Invalid username or password." };
 
+                var permissions = await _dataAccess.GetUserPermissionsAsync(user.UserId);
+
                 var secret = _configuration["JwtSettings:Secret"];
                 if (string.IsNullOrWhiteSpace(secret))
                     return new LoginResult { Success = false, StatusCode = StatusCodes.Status500InternalServerError, Message = "Authentication is not configured." };
@@ -67,7 +69,8 @@ namespace api.BusinessLogic.Auth
                         Username = user.Username,
                         DisplayName = user.DisplayName,
                         IsAdmin = user.IsAdmin,
-                        ExpiresAt = expiresAt
+                        ExpiresAt = expiresAt,
+                        Permissions = permissions
                     }
                 };
             }
