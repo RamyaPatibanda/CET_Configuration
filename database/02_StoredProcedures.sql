@@ -476,9 +476,6 @@ BEGIN
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
             THROW 50105, 'Rule outcome must be valid JSON.', 1;
 
-        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson))
-            THROW 50106, 'At least one rule condition is required.', 1;
-
         INSERT INTO dbo.tblRule
         (
             aRuleId, tRuleName, tDescription, nPriority, bIsActive,
@@ -557,9 +554,6 @@ BEGIN
 
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
             THROW 50111, 'Rule outcome must be valid JSON.', 1;
-
-        IF NOT EXISTS (SELECT 1 FROM OPENJSON(@tConditionsJson))
-            THROW 50112, 'At least one rule condition is required.', 1;
 
         UPDATE dbo.tblRule
         SET
