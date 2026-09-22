@@ -84,6 +84,7 @@
 .condition-brace-column,
 .condition-brace-cell {
   width: 42px;
+  min-width: 42px;
   padding-left: 2px !important;
   padding-right: 2px !important;
   text-align: center !important;
@@ -114,6 +115,7 @@
 .condition-group-brace {
   display: inline-flex;
   width: 24px;
+  height: 100%;
   min-height: 36px;
   align-items: center;
   justify-content: center;
