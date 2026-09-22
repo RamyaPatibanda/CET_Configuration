@@ -1,5 +1,6 @@
 using api.BusinessLogic.RuleConfiguration;
 using api.Models.RuleConfiguration;
+using api.BusinessLogic.UserManagement;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,18 +13,23 @@ namespace api.Controllers
     {
         private readonly IRuleConfigurationBL _businessLogic;
         private readonly ILogger<RuleConfigurationController> _logger;
+        private readonly UserPermissionService _permissions;
 
         public RuleConfigurationController(
             IRuleConfigurationBL businessLogic,
-            ILogger<RuleConfigurationController> logger)
+            ILogger<RuleConfigurationController> logger,
+            UserPermissionService permissions)
         {
             _businessLogic = businessLogic;
             _logger = logger;
+            _permissions = permissions;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<RuleDefinition>>> GetRules()
         {
+            if (!await _permissions.HasReadAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 return Ok(await _businessLogic.GetRulesAsync());
@@ -38,6 +44,8 @@ namespace api.Controllers
         [HttpGet("fields")]
         public async Task<ActionResult<List<RuleFieldOption>>> GetFields()
         {
+            if (!await _permissions.HasReadAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 return Ok(await _businessLogic.GetActiveFieldsAsync());
@@ -58,6 +66,8 @@ namespace api.Controllers
         [HttpGet("{ruleId:int}")]
         public async Task<ActionResult<RuleDefinition>> GetRule(int ruleId)
         {
+            if (!await _permissions.HasReadAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 var rule = await _businessLogic.GetRuleAsync(ruleId);
@@ -80,6 +90,8 @@ namespace api.Controllers
         [HttpPost]
         public async Task<ActionResult<int>> CreateRule([FromBody] CreateRuleRequest request)
         {
+            if (!await _permissions.HasWriteAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 var ruleId = await _businessLogic.CreateRuleAsync(request);
@@ -106,6 +118,8 @@ namespace api.Controllers
             int ruleId,
             [FromBody] UpdateRuleRequest request)
         {
+            if (!await _permissions.HasWriteAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 request.RuleId = ruleId;
@@ -132,6 +146,8 @@ namespace api.Controllers
             int ruleId,
             [FromBody] bool isActive)
         {
+            if (!await _permissions.HasWriteAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 var updated = await _businessLogic.SetRuleActiveAsync(ruleId, isActive);
@@ -155,6 +171,8 @@ namespace api.Controllers
         public async Task<IActionResult> ReorderRules(
             [FromBody] ReorderRulesRequest request)
         {
+            if (!await _permissions.HasWriteAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 await _businessLogic.ReorderRulesAsync(request.RuleIds);
@@ -174,6 +192,8 @@ namespace api.Controllers
         [HttpDelete("{ruleId:int}")]
         public async Task<IActionResult> DeleteRule(int ruleId)
         {
+            if (!await _permissions.HasWriteAsync(User, UserPermissionModules.Rules))
+                return Forbid();
             try
             {
                 var deleted = await _businessLogic.DeleteRuleAsync(ruleId);
