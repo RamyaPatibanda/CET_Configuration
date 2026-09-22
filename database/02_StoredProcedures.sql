@@ -213,7 +213,7 @@ BEGIN
         nCandidateCount = @nCandidateCount,
         nDecisionCount = @nDecisionCount,
         tErrorMessage = @tErrorMessage,
-        aCreatedByUserId = @aRunByUserId
+        aCreatedByUserId = @aCreatedByUserId
     WHERE aAllocationRunId = @aAllocationRunId;
 
     IF @@ROWCOUNT = 0
@@ -228,7 +228,7 @@ BEGIN
         (
             @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
             @tStatus, @tRuleGroupsJson, @dtCreatedAtUtc, @dtStartedAtUtc,
-            @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage, @aRunByUserId
+            @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage, @aCreatedByUserId
         );
     END;
 END;
@@ -271,10 +271,10 @@ BEGIN
         nCandidateCount,
         nDecisionCount,
         tErrorMessage,
-        h.aRunByUserId,
+        h.aCreatedByUserId,
         COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblAllocationRunHistory h
-    LEFT JOIN dbo.tblUsers u ON u.aUserId=h.aRunByUserId
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=h.aCreatedByUserId
     ORDER BY dtCreatedAtUtc DESC;
 END;
 GO
