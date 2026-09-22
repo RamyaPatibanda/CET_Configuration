@@ -664,6 +664,7 @@ function RuleForm({
             {(form.decisionRows || []).map((decision, rowIndex) => {
               const definition = decisionOptions.find((item) => item.value === form.decisionAreaCode);
               const allocationTypeField = definition?.results?.find((item) => item.supportingValue === "allocatedType");
+              const sequenceField = definition?.results?.find((item) => item.supportingValue === "sequence");
               const allocationOptions = allocationTypeField?.values || [];
 
               return (
@@ -693,7 +694,7 @@ function RuleForm({
                     <TextBox
                       label="Sequence"
                       value={decision.sequence}
-                      type="number"
+                      type={sequenceField?.valueKind === "number" ? "number" : "text"}
                       min="1"
                       placeholder="Sequence"
                       onChange={(event) => updateDecisionRow(rowIndex, "sequence", Number(event.target.value))}
