@@ -583,13 +583,11 @@ function RuleForm({
                         }
                         aria-hidden="true"
                       >
-                        {bracePosition !== "single"
-                          ? bracePosition === "start"
-                            ? "⎧"
-                            : bracePosition === "middle"
-                              ? "⎪"
-                              : "⎩"
-                          : ""}
+                        {bracePosition === "start"
+                          ? "{"
+                          : bracePosition === "end"
+                            ? "}"
+                            : ""}
                       </span>
                     </td>
 
