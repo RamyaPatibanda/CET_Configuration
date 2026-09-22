@@ -5,7 +5,9 @@ import { useNavigate } from "react-router-dom";
 import FieldConfiguration from "../modules/fieldConfiguration/pages/FieldConfiguration";
 import RuleConfiguration from "../modules/ruleConfiguration/pages/RuleConfiguration";
 import Allocation from "../modules/allocation/pages/Allocation";
+import UserManagement from "../modules/userManagement/pages/UserManagement";
 import allocationService from "../modules/allocation/services/allocationService";
+import authService from "../services/authService";
 
 const stepLabels = {
   STEP_0: "Step 0 — Special Reservation",
@@ -176,15 +178,23 @@ function ProtectedRoutes({ authenticated }) {
   return <Outlet />;
 }
 
+function ModuleRoute({ moduleCode, children }) {
+  if (!authService.hasPermission(moduleCode)) {
+    return <Navigate to={authService.getDefaultPath()} replace />;
+  }
+  return children;
+}
+
 function AppRoutes({ authenticated }) {
   return (
     <Routes>
       <Route element={<ProtectedRoutes authenticated={authenticated} />}>
-        <Route path="/" element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={<Overview />} />
-        <Route path="/fields" element={<FieldConfiguration />} />
-        <Route path="/rules" element={<RuleConfiguration />} />
-        <Route path="/allocation" element={<Allocation />} />
+        <Route path="/" element={<Navigate to={authService.getDefaultPath()} replace />} />
+        <Route path="/overview" element={<ModuleRoute moduleCode="ALLOCATION_RUN"><Overview /></ModuleRoute>} />
+        <Route path="/fields" element={<ModuleRoute moduleCode="FIELDS"><FieldConfiguration /></ModuleRoute>} />
+        <Route path="/rules" element={<ModuleRoute moduleCode="RULES"><RuleConfiguration /></ModuleRoute>} />
+        <Route path="/allocation" element={<ModuleRoute moduleCode="ALLOCATION_RUN"><Allocation /></ModuleRoute>} />
+        <Route path="/users" element={authService.getUser()?.isAdmin ? <UserManagement /> : <Navigate to={authService.getDefaultPath()} replace />} />
       </Route>
       <Route path="*" element={<Navigate to={authenticated ? "/overview" : "/login"} replace />} />
     </Routes>
