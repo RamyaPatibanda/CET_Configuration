@@ -250,14 +250,14 @@ public sealed class LegacyAllocationDAL
             // Decision rows replace the old hard-coded IF / ELSE IF branches.
             // They are evaluated strictly by nDecisionOrder and the first
             // matching branch supplies the allocation result.
-            foreach (var decision in rule.DecisionRows.OrderBy(d => d.DecisionOrder))
+            foreach (var decision in rule.Branches.OrderBy(d => d.DecisionOrder))
             {
-                if (string.IsNullOrWhiteSpace(decision.AllocationType))
+                if (string.IsNullOrWhiteSpace(branch.AllocationType))
                     continue;
 
-                var branchMatches = decision.IsElse ||
-                    (decision.Conditions.Count > 0 &&
-                     _ruleEvaluator.MatchesConditions(decision.Conditions, values));
+                var branchMatches = branch.IsElse ||
+                    (branch.Conditions.Count > 0 &&
+                     _ruleEvaluator.MatchesConditions(branch.Conditions, values));
 
                 if (!branchMatches)
                     continue;
@@ -267,7 +267,7 @@ public sealed class LegacyAllocationDAL
                     Code = rule.Code,
                     StageCode = rule.StageCode,
                     LogicalOperator = rule.LogicalOperator,
-                    AllocatedType = decision.AllocationType,
+                    AllocatedType = branch.AllocationType,
                     VacancyType = rule.VacancyType,
                     SeatCategory = rule.SeatCategory,
                     ReservationType = rule.ReservationType,
@@ -275,15 +275,15 @@ public sealed class LegacyAllocationDAL
                     PreferenceMode = rule.PreferenceMode,
                     AllowBetterment = rule.AllowBetterment,
                     DisplayOrder = rule.DisplayOrder,
-                    SequenceId = decision.Sequence,
-                    Conditions = decision.Conditions,
-                    DecisionRows = rule.DecisionRows
+                    SequenceId = branch.Sequence,
+                    Conditions = branch.Conditions,
+                    Branches = rule.Branches
                 };
             }
 
             // Keep compatibility for existing rules that have not yet been
             // converted to decision rows.
-            if (rule.DecisionRows.Count == 0 && !string.IsNullOrWhiteSpace(rule.AllocatedType))
+            if (rule.Branches.Count == 0 && !string.IsNullOrWhiteSpace(rule.AllocatedType))
                 return rule;
         }
 
