@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiPlus, FiSearch, FiShield, FiUser, FiX } from "react-icons/fi";
+import { FiCheck, FiPlus, FiSearch, FiShield, FiUser, FiX } from "react-icons/fi";
 import userManagementService from "../services/userManagementService";
 import "./userManagement.css";
 
@@ -10,10 +10,12 @@ const emptyForm = {
   confirmPassword: "",
   isAdmin: false,
   isActive: true,
+  permissions: {},
 };
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
+  const [permissionCatalog, setPermissionCatalog] = useState([]);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -35,6 +37,25 @@ function UserManagement() {
     }
   };
 
+  const loadPermissionCatalog = async () => {
+    try {
+      const response = await userManagementService.getPermissionCatalog();
+      const catalog = Array.isArray(response) ? response : response?.data || [];
+      setPermissionCatalog(catalog);
+      setForm((current) => ({
+        ...current,
+        permissions: Object.fromEntries(
+          catalog.map((item) => [
+            item.moduleCode,
+            { canRead: false, canWrite: false },
+          ])
+        ),
+      }));
+    } catch (err) {
+      setFormError(err.message || "Unable to load permission options.");
+    }
+  };
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -52,11 +73,33 @@ function UserManagement() {
   const updateForm = (name, value) =>
     setForm((current) => ({ ...current, [name]: value }));
 
+  const openCreate = async () => {
+    setShowCreate(true);
+    setForm(emptyForm);
+    setFormError("");
+    await loadPermissionCatalog();
+  };
+
   const closeCreate = () => {
     if (saving) return;
     setShowCreate(false);
     setForm(emptyForm);
     setFormError("");
+  };
+
+  const setPermission = (moduleCode, permission, checked) => {
+    setForm((current) => ({
+      ...current,
+      permissions: {
+        ...current.permissions,
+        [moduleCode]: {
+          ...(current.permissions[moduleCode] || {}),
+          [permission]: checked,
+          ...(permission === "canRead" && !checked ? { canWrite: false } : {}),
+          ...(permission === "canWrite" && checked ? { canRead: true } : {}),
+        },
+      },
+    }));
   };
 
   const handleCreate = async (event) => {
@@ -73,6 +116,19 @@ function UserManagement() {
       return;
     }
 
+    const permissions = form.isAdmin
+      ? []
+      : permissionCatalog.map((item) => ({
+          moduleCode: item.moduleCode,
+          canRead: Boolean(form.permissions[item.moduleCode]?.canRead),
+          canWrite: Boolean(form.permissions[item.moduleCode]?.canWrite),
+        }));
+
+    if (!form.isAdmin && !permissions.some((item) => item.canRead || item.canWrite)) {
+      setFormError("Select at least one Read permission for a non-admin user.");
+      return;
+    }
+
     try {
       setSaving(true);
       await userManagementService.createUser({
@@ -81,6 +137,7 @@ function UserManagement() {
         password: form.password,
         isAdmin: form.isAdmin,
         isActive: form.isActive,
+        permissions,
       });
       closeCreate();
       await loadUsers();
@@ -97,9 +154,9 @@ function UserManagement() {
         <div>
           <div className="page-eyebrow">ADMINISTRATION</div>
           <h1>User Management</h1>
-          <p>Create and manage users who can access the CET Configuration workspace.</p>
+          <p>Create users and control what they can read or modify in the CET workspace.</p>
         </div>
-        <button type="button" className="user-create-button" onClick={() => setShowCreate(true)}>
+        <button type="button" className="user-create-button" onClick={openCreate}>
           <FiPlus size={16} />
           Create User
         </button>
@@ -128,15 +185,16 @@ function UserManagement() {
                 <th>Username</th>
                 <th>Display Name</th>
                 <th>Role</th>
+                <th>Permissions</th>
                 <th>Status</th>
                 <th>Created</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" className="user-table-message">Loading users…</td></tr>
+                <tr><td colSpan="6" className="user-table-message">Loading users…</td></tr>
               ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan="5" className="user-table-message">No users found.</td></tr>
+                <tr><td colSpan="6" className="user-table-message">No users found.</td></tr>
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user.userId}>
@@ -146,6 +204,11 @@ function UserManagement() {
                       <span className={user.isAdmin ? "user-role admin" : "user-role"}>
                         {user.isAdmin ? <FiShield size={13} /> : <FiUser size={13} />}
                         {user.isAdmin ? "Admin" : "User"}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="user-permission-count">
+                        {user.isAdmin ? "Full access" : `${user.permissionCount || 0} module${user.permissionCount === 1 ? "" : "s"}`}
                       </span>
                     </td>
                     <td><span className={user.isActive ? "user-status active" : "user-status"}>{user.isActive ? "Active" : "Inactive"}</span></td>
@@ -160,7 +223,7 @@ function UserManagement() {
 
       {showCreate && (
         <div className="user-modal-backdrop" role="presentation">
-          <section className="user-create-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+          <section className="user-create-modal permission-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
             <div className="user-modal-header">
               <div>
                 <span>ADMINISTRATION</span>
@@ -195,13 +258,60 @@ function UserManagement() {
                 <label className="user-check">
                   <input type="checkbox" checked={form.isAdmin} onChange={(event) => updateForm("isAdmin", event.target.checked)} />
                   <span>Administrator</span>
-                  <small>Can create and manage users.</small>
+                  <small>Administrators have full access and do not need module permissions.</small>
                 </label>
                 <label className="user-check">
                   <input type="checkbox" checked={form.isActive} onChange={(event) => updateForm("isActive", event.target.checked)} />
                   <span>Active</span>
                   <small>Allow this user to sign in.</small>
                 </label>
+              </div>
+
+              <div className="permission-section">
+                <div className="permission-section-heading">
+                  <div>
+                    <span>MODULE ACCESS</span>
+                    <h3>Read &amp; Write Permissions</h3>
+                  </div>
+                  <small>Write automatically includes Read.</small>
+                </div>
+
+                <div className="permission-table">
+                  <div className="permission-row permission-head">
+                    <span>Module</span>
+                    <span>Read</span>
+                    <span>Write</span>
+                  </div>
+                  {permissionCatalog.map((item) => {
+                    const value = form.permissions[item.moduleCode] || {};
+                    return (
+                      <div className="permission-row" key={item.moduleCode}>
+                        <div>
+                          <strong>{item.moduleName}</strong>
+                          <small>{item.moduleCode === "FIELDS" ? "Field definitions and source configuration" : item.moduleCode === "RULES" ? "Business rules and conditions" : "Allocation run creation, execution and history"}</small>
+                        </div>
+                        <label className="permission-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(value.canRead)}
+                            disabled={form.isAdmin}
+                            onChange={(event) => setPermission(item.moduleCode, "canRead", event.target.checked)}
+                          />
+                          <span><FiCheck size={13} /></span>
+                        </label>
+                        <label className="permission-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(value.canWrite)}
+                            disabled={form.isAdmin}
+                            onChange={(event) => setPermission(item.moduleCode, "canWrite", event.target.checked)}
+                          />
+                          <span><FiCheck size={13} /></span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {formError && <div className="user-form-error">{formError}</div>}
