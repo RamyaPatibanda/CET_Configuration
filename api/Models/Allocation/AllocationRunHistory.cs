@@ -13,5 +13,7 @@ public sealed class AllocationRunHistory
     public DateTime? CompletedAtUtc { get; set; }
     public int CandidateCount { get; set; }
     public int DecisionCount { get; set; }
-    public string ErrorMessage { get; set; } = string.Empty;\n    public int? CreatedByUserId { get; set; }\n    public string CreatedBy { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+    public int? CreatedByUserId { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
 }
