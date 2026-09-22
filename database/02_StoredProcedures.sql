@@ -439,7 +439,8 @@ BEGIN
         rc.tOperator,
         rc.tValue,
         rc.nConditionOrder,
-        COALESCE(rg.nGroupOrder, 1) AS nGroupOrder
+        COALESCE(rg.nGroupOrder, 1) AS nGroupOrder,
+        COALESCE(rc.tGroupPath, N'') AS tGroupPath
     FROM dbo.tblRuleCondition rc
     INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId = rc.aFieldId
     LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId = rc.aRuleConditionGroupId
@@ -501,12 +502,13 @@ BEGIN
 
         INSERT INTO dbo.tblRuleCondition
         (
-            aRuleId, aRuleConditionGroupId, aFieldId, tLogicalOperator,
+            aRuleId, aRuleConditionGroupId, aFieldId, tGroupPath, tLogicalOperator,
             tOperator, tValue, nConditionOrder
         )
         SELECT
             @aRuleId,
             rg.aRuleConditionGroupId,
+            NULLIF(JSON_VALUE(j.value, '$.GroupPath'), N''),
             TRY_CONVERT(INT, JSON_VALUE(j.value, '$.FieldId')),
             COALESCE(JSON_VALUE(j.value, '$.ConditionLogicalOperator'), 'AND'),
             JSON_VALUE(j.value, '$.Operator'),
