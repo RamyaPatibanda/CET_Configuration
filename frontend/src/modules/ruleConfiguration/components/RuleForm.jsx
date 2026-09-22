@@ -229,14 +229,10 @@ function RuleForm({
       const start = selectedIndexes[0];
       const end = selectedIndexes[selectedIndexes.length - 1];
       const rangeRows = current.slice(start, end + 1);
-      const selectedAllInRange = rangeRows.every((row) => selectedSet.has(row.id));
 
-      // Grouping is range based: selecting the first and last row includes
-      // every condition between them. This must be explicit so the user
-      // cannot accidentally create a group from a discontinuous selection.
-      if (!selectedAllInRange) {
-        // This is expected for the "first + last" interaction. Continue.
-      }
+      // Clear a previous validation message only after we know that a
+      // grouping attempt is being made.
+      setError("");
 
       const groupsInRange = new Map();
       current.forEach((row, index) => {
@@ -295,7 +291,6 @@ function RuleForm({
     });
 
     setSelectedRows([]);
-    setError("");
   };
 
   const ungroupSelected = () => {
