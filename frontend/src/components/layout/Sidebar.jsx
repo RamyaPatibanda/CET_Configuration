@@ -1,4 +1,5 @@
 import { useState } from "react";
+import authService from "../../services/authService";
 import { NavLink } from "react-router-dom";
 import {
   FiChevronLeft,
@@ -10,14 +11,16 @@ import {
   FiUser,
 } from "react-icons/fi";
 
-function Sidebar({ isAdmin = false }) {
+function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const user = authService.getUser();
+  const isAdmin = Boolean(user?.isAdmin);
 
   const items = [
-    { path: "/overview", label: "Overview", icon: FiGrid },
-    { path: "/fields", label: "Field Configuration", icon: FiSliders },
-    { path: "/rules", label: "Rule Configuration", icon: FiList },
-    { path: "/allocation", label: "Allocation Run", icon: FiPlayCircle },
+    ...(authService.hasPermission("ALLOCATION_RUN") ? [{ path: "/overview", label: "Overview", icon: FiGrid }] : []),
+    ...(authService.hasPermission("FIELDS") ? [{ path: "/fields", label: "Field Configuration", icon: FiSliders }] : []),
+    ...(authService.hasPermission("RULES") ? [{ path: "/rules", label: "Rule Configuration", icon: FiList }] : []),
+    ...(authService.hasPermission("ALLOCATION_RUN") ? [{ path: "/allocation", label: "Allocation Run", icon: FiPlayCircle }] : []),
     ...(isAdmin ? [{ path: "/users", label: "User Management", icon: FiUser }] : []),
   ];
 
