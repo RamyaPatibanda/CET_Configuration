@@ -866,3 +866,54 @@
 .allocation-remove-rule { border: 0; background: transparent; cursor: pointer; padding: 6px; opacity: .7; }
 .allocation-remove-rule:hover { opacity: 1; }
 @media (max-width: 900px) { .allocation-result-controls { margin-left: 0; width: 100%; } .allocation-selected-rule { flex-wrap: wrap; } }
+
+
+/* Step 0 selected-rule sequence */
+.allocation-sequence-panel {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,.45);
+  border-radius: 18px;
+  background: rgba(255,255,255,.48);
+  box-shadow: 0 12px 30px rgba(30,41,59,.08);
+}
+.allocation-stage-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.allocation-stage-header strong { display:block; font-size: 16px; }
+.allocation-stage-header p { margin: 5px 0 0; color: #64748b; font-size: 13px; }
+.allocation-empty-inline { margin-top: 12px; }
+.allocation-sequence-list { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.allocation-sequence-item {
+  display:grid;
+  grid-template-columns: 34px minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:12px;
+  background:rgba(255,255,255,.72);
+}
+.allocation-sequence-number {
+  width:30px; height:30px; border-radius:50%;
+  display:grid; place-items:center; font-weight:700;
+  background:rgba(99,102,241,.12); color:#4338ca;
+}
+.allocation-sequence-rule { display:flex; flex-direction:column; min-width:0; }
+.allocation-sequence-rule strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.allocation-sequence-rule span { margin-top:3px; color:#64748b; font-size:12px; }
+.allocation-sequence-actions { display:flex; gap:5px; }
+.allocation-sequence-actions button {
+  width:30px; height:30px; border:1px solid rgba(148,163,184,.3);
+  border-radius:8px; background:#fff; cursor:pointer; font-size:15px;
+}
+.allocation-sequence-actions button:disabled { opacity:.4; cursor:not-allowed; }
+.allocation-sequence-add { margin-top:12px; }
+.allocation-sequence-add select { width:100%; }
+@media (max-width: 720px) {
+  .allocation-sequence-item { grid-template-columns: 34px minmax(0,1fr); }
+  .allocation-sequence-actions { grid-column:2; }
+}
