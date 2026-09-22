@@ -13,7 +13,7 @@ namespace api.Models.RuleConfiguration
         public List<RuleCondition> Conditions { get; set; } = new();
         public List<RuleBranch> Branches { get; set; } = new();
         public DateTime? CreatedDate { get; set; }
-        public DateTime? ModifiedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }\n        public int? CreatedByUserId { get; set; }\n        public string CreatedBy { get; set; } = string.Empty;
     }
 
     public class RuleBranch
