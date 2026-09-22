@@ -67,6 +67,21 @@ public sealed class RuleEvaluator : IRuleEvaluator
         return groups.All(group => EvaluateGroup(group.ToList(), values));
     }
 
+    public bool MatchesConditions(
+        IReadOnlyList<RuleCondition> conditions,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        if (conditions.Count == 0)
+            return false;
+
+        var groups = conditions
+            .GroupBy(condition => condition.GroupOrder)
+            .OrderBy(group => group.Key)
+            .ToList();
+
+        return groups.All(group => EvaluateGroup(group.ToList(), values));
+    }
+
     private static bool EvaluateGroup(
         IReadOnlyList<RuleCondition> conditions,
         IReadOnlyDictionary<string, string?> values)
