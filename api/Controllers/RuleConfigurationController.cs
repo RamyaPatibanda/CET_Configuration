@@ -97,6 +97,8 @@ namespace api.Controllers
                 return Forbid();
             try
             {
+                if (!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var currentUserId)) return Unauthorized();
+                request.CreatedByUserId = currentUserId;
                 var ruleId = await _businessLogic.CreateRuleAsync(request);
 
                 return Ok(new
