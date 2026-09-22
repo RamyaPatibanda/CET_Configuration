@@ -200,55 +200,103 @@ public sealed class AllocationController : ControllerBase
 
         var candidateRuleIds = request.CandidateEligibilityRuleIds.Distinct().ToList();
         var sequenceRuleIds = request.SequenceRuleIds.Distinct().ToList();
-
-        // Backward compatibility for older clients/drafts. New Step 0 requests use
-        // the two explicit rule selections above and do not expose decision areas.
-        if (candidateRuleIds.Count == 0 && sequenceRuleIds.Count == 0 && request.RuleGroups.Count > 0)
-        {
-            candidateRuleIds = request.RuleGroups
-                .FirstOrDefault(group => string.Equals(group.Type, AllocationConfiguration.CandidateQualification, StringComparison.OrdinalIgnoreCase))?.RuleIds
-                .Distinct().ToList() ?? [];
-            sequenceRuleIds = request.RuleGroups
-                .FirstOrDefault(group => string.Equals(group.Type, AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase))?.RuleIds
-                .Distinct().ToList() ?? [];
-        }
-
-        if (!allowIncompleteDraft && candidateRuleIds.Count == 0)
-            return PreparedAllocation.Fail("Select at least one candidate eligibility rule.");
-
-        if (!allowIncompleteDraft && sequenceRuleIds.Count == 0)
-            return PreparedAllocation.Fail("Select at least one sequence rule.");
-
-        if (allowIncompleteDraft && !string.Equals(step.Code, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase))
-        {
-            // Other steps still use the legacy rule-group contract until their UI is migrated.
-            candidateRuleIds = [];
-            sequenceRuleIds = [];
-        }
-
-        var selectedRuleIds = candidateRuleIds
-            .Concat(sequenceRuleIds)
-            .Distinct()
-            .ToList();
-
+        var selectedRuleIds = new List<int>();
         var detailedById = new Dictionary<int, RuleDefinition>();
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> builtRuleGroups;
+
+        if (string.Equals(step.Code, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase))
+        {
+            if (candidateRuleIds.Count == 0 && sequenceRuleIds.Count == 0 && request.RuleGroups.Count > 0)
+            {
+                candidateRuleIds = request.RuleGroups
+                    .FirstOrDefault(group => string.Equals(group.Type, AllocationConfiguration.CandidateQualification, StringComparison.OrdinalIgnoreCase))?.RuleIds
+                    .Distinct().ToList() ?? [];
+                sequenceRuleIds = request.RuleGroups
+                    .FirstOrDefault(group => string.Equals(group.Type, AllocationConfiguration.SeatAllocation, StringComparison.OrdinalIgnoreCase))?.RuleIds
+                    .Distinct().ToList() ?? [];
+            }
+
+            if (!allowIncompleteDraft && candidateRuleIds.Count == 0)
+                return PreparedAllocation.Fail("Select at least one candidate eligibility rule.");
+
+            if (!allowIncompleteDraft && sequenceRuleIds.Count == 0)
+                return PreparedAllocation.Fail("Select at least one sequence rule.");
+
+            selectedRuleIds = candidateRuleIds.Concat(sequenceRuleIds).Distinct().ToList();
+        }
+        else
+        {
+            var ruleGroups = request.RuleGroups
+                .Where(group => !string.IsNullOrWhiteSpace(group.Type))
+                .Select(group => new AllocationRuleGroupRequest
+                {
+                    Type = group.Type.Trim().ToUpperInvariant(),
+                    RuleIds = group.RuleIds.Distinct().ToList()
+                })
+                .Where(group => group.RuleIds.Count > 0)
+                .ToList();
+
+            if (ruleGroups.Count == 0 && !allowIncompleteDraft)
+                return PreparedAllocation.Fail("Select at least one configured rule and assign it to a decision area.");
+
+            if (!allowIncompleteDraft)
+            {
+                var invalidGroups = ruleGroups
+                    .Where(group => !AllocationConfiguration.IsDecisionAreaValid(step.Code, group.Type))
+                    .Select(group => group.Type)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (invalidGroups.Count > 0)
+                    return PreparedAllocation.Fail($"Invalid decision area(s) for {step.Name}: {string.Join(", ", invalidGroups)}.");
+            }
+
+            selectedRuleIds = ruleGroups.SelectMany(group => group.RuleIds).Distinct().ToList();
+
+            foreach (var ruleId in selectedRuleIds)
+            {
+                var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
+                if (rule is null)
+                {
+                    if (!allowIncompleteDraft) return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
+                    continue;
+                }
+                if (!rule.IsActive)
+                {
+                    if (!allowIncompleteDraft) return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
+                    continue;
+                }
+                detailedById[rule.RuleId] = rule;
+            }
+
+            if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
+                return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
+
+            try
+            {
+                builtRuleGroups = await BuildLegacyRuleGroupsAsync(step.Code, ruleGroups, detailedById, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return PreparedAllocation.Fail(ex.Message);
+            }
+
+            goto prepared;
+        }
+
         foreach (var ruleId in selectedRuleIds)
         {
             var rule = await _ruleConfiguration.GetRuleAsync(ruleId);
             if (rule is null)
             {
-                if (!allowIncompleteDraft)
-                    return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
+                if (!allowIncompleteDraft) return PreparedAllocation.Fail($"Selected rule {ruleId} could not be found.");
                 continue;
             }
-
             if (!rule.IsActive)
             {
-                if (!allowIncompleteDraft)
-                    return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
+                if (!allowIncompleteDraft) return PreparedAllocation.Fail($"Selected rule {ruleId} is inactive.");
                 continue;
             }
-
             detailedById[rule.RuleId] = rule;
         }
 
@@ -272,6 +320,16 @@ public sealed class AllocationController : ControllerBase
                 return PreparedAllocation.Fail($"Rule(s) {string.Join(", ", invalidSequenceRules)} are not configured as Sequence rules.");
         }
 
+        try
+        {
+            builtRuleGroups = await BuildRuleGroupsAsync(step.Code, candidateRuleIds, sequenceRuleIds, detailedById, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return PreparedAllocation.Fail(ex.Message);
+        }
+
+prepared:
         var run = new AllocationRun
         {
             AllocationRunId = request.AllocationRunId ?? Guid.NewGuid(),
@@ -355,6 +413,32 @@ public sealed class AllocationController : ControllerBase
             _ => throw new InvalidOperationException(
                 $"Allocation step '{allocationStep}' is not implemented.")
         };
+    }
+
+    private async Task<IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>>> BuildLegacyRuleGroupsAsync(
+        string stepCode,
+        IEnumerable<AllocationRuleGroupRequest> groups,
+        IReadOnlyDictionary<int, RuleDefinition> rules,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, IReadOnlyList<AllocationRule>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in groups)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var invalidRules = group.RuleIds
+                .Where(ruleId => rules.TryGetValue(ruleId, out var rule) &&
+                    !string.Equals(rule.DecisionAreaCode, group.Type, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (invalidRules.Count > 0)
+                throw new InvalidOperationException($"Rule(s) {string.Join(", ", invalidRules)} are configured for a different decision area.");
+
+            result[group.Type] = group.RuleIds
+                .Where(rules.ContainsKey)
+                .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
+                .OrderBy(rule => rule.DisplayOrder == 0 ? int.MaxValue : rule.DisplayOrder)
+                .ToList();
+        }
+        return result;
     }
 
     private async Task<IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>>> BuildRuleGroupsAsync(
