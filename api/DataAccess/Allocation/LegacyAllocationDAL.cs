@@ -79,13 +79,14 @@ public sealed class LegacyAllocationDAL
                         var vacancy = Math.Max(vacancyRow.Gen, vacancyRow.Fem);
 
                         // This method needs the injected rule evaluator, so it must be an instance method.
-                        var specialVacancy = await ResolveSpecialVacancyAsync(
+                        var specialVacancy = await ResolveConfiguredVacancyAsync(
                             connection, transaction, preference.ChoiceCode, candidate, vacancy, ruleGroups, cancellationToken);
 
                         if (specialVacancy is not null)
                             vacancy = specialVacancy.Value.Vacancy;
 
                         var vacancyType = specialVacancy?.VacancyType ?? string.Empty;
+                        var vacancySource = specialVacancy?.VacancySource ?? string.Empty;
                         var allocationRule = ResolveAllocationRule(ruleGroups, candidate, vacancyRow, vacancy, vacancyType);
                         if (allocationRule is null)
                             continue;
@@ -113,7 +114,7 @@ public sealed class LegacyAllocationDAL
 
                         if (!string.IsNullOrEmpty(vacancyType))
                         {
-                            await ConsumeSpecialVacancyAsync(connection, transaction, preference.ChoiceCode, vacancyType, cancellationToken);
+                            await ConsumeSpecialVacancyAsync(connection, transaction, preference.ChoiceCode, vacancySource, vacancyType, cancellationToken);
                         }
 
                         await ConsumeSeatVacancyAsync(
@@ -377,8 +378,9 @@ public sealed class LegacyAllocationDAL
         return result;
     }
 
-    // Instance method because it uses the injected _ruleEvaluator.
-    private async Task<(string VacancyType, int Vacancy)?> ResolveSpecialVacancyAsync(
+    // Resolves a vacancy using the configured rule branch outcome.
+    // The allocation engine does not know PH/Def/Orp business mappings.
+    private async Task<(string VacancySource, string VacancyType, int Vacancy)?> ResolveConfiguredVacancyAsync(
         SqlConnection connection,
         SqlTransaction transaction,
         long choiceCode,
@@ -394,44 +396,101 @@ public sealed class LegacyAllocationDAL
             reservationRules.Count == 0)
             return null;
 
-        var candidateValues = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Gender"] = candidate.Gender,
             ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
+            ["PreviousCategoryID"] = candidate.PreviousCategoryId.ToString(),
             ["FinalIsPh"] = candidate.IsPh,
             ["FinalIsExServicemen"] = candidate.IsExServicemen,
-            ["FinalIsOrphan"] = candidate.IsOrphan
+            ["FinalIsOrphan"] = candidate.IsOrphan,
+            ["IsOMS"] = candidate.IsOms,
+            ["IsNRI"] = candidate.IsNri
         };
 
         foreach (var rule in reservationRules.OrderBy(r => r.DisplayOrder))
         {
-            if (!_ruleEvaluator.Matches(rule, candidateValues))
+            if (!_ruleEvaluator.Matches(rule, values))
                 continue;
 
-            var reservationType = string.IsNullOrWhiteSpace(rule.ReservationType) ? rule.VacancyType : rule.ReservationType;
-            if (reservationType is not ("PH" or "Def" or "Orp"))
-                continue;
+            foreach (var branch in rule.Branches.OrderBy(b => b.BranchOrder))
+            {
+                var branchMatches = branch.IsElse ||
+                    (branch.Conditions.Count > 0 &&
+                     _ruleEvaluator.MatchesConditions(branch.Conditions, values));
 
-            var vacancy = await GetSpecialVacancyAsync(connection, transaction, choiceCode, reservationType, cancellationToken);
-            if (vacancy > 0)
-                return (reservationType, vacancy);
+                if (!branchMatches)
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(branch.VacancySource) ||
+                    string.IsNullOrWhiteSpace(branch.VacancyType))
+                    continue;
+
+                var vacancy = await GetConfiguredVacancyAsync(
+                    connection,
+                    transaction,
+                    choiceCode,
+                    branch.VacancySource,
+                    branch.VacancyType,
+                    cancellationToken);
+
+                if (vacancy > 0)
+                    return (branch.VacancySource, branch.VacancyType, vacancy);
+            }
         }
 
         return null;
     }
 
-    private static async Task<int> GetSpecialVacancyAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, string vacancyType, CancellationToken cancellationToken)
+    private static async Task<int> GetConfiguredVacancyAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        long choiceCode,
+        string sourceTable,
+        string vacancyColumn,
+        CancellationToken cancellationToken)
     {
-        var column = vacancyType switch
-        {
-            "PH" => "PH",
-            "Def" => "Def",
-            "Orp" => "Orp",
-            _ => throw new ArgumentOutOfRangeException(nameof(vacancyType))
-        };
-        var sql = $"SELECT {column} FROM dbo.Allocation_SeatDistribution_PH WHERE ChoiceCode = @ChoiceCode;";
-        return await ExecuteScalarIntAsync(connection, transaction, sql, cancellationToken, ("@ChoiceCode", SqlDbType.BigInt, choiceCode));
+        var source = sourceTable.Trim();
+        var column = vacancyColumn.Trim();
+
+        if (!IsSafeIdentifier(source) || !IsSafeIdentifier(column))
+            throw new InvalidOperationException("Vacancy source configuration contains an invalid identifier.");
+
+        const string metadataSql = """
+            SELECT COUNT(1)
+            FROM sys.tables t
+            INNER JOIN sys.columns c ON c.object_id = t.object_id
+            WHERE t.schema_id = SCHEMA_ID(N'dbo')
+              AND t.name = @TableName
+              AND c.name = @ColumnName;
+            """;
+
+        var exists = await ExecuteScalarIntAsync(
+            connection,
+            transaction,
+            metadataSql,
+            cancellationToken,
+            ("@TableName", SqlDbType.NVarChar, source),
+            ("@ColumnName", SqlDbType.NVarChar, column));
+
+        if (exists == 0)
+            throw new InvalidOperationException(
+                $"Configured vacancy source '{sourceTable}.{vacancyColumn}' does not exist.");
+
+        var sql = $"SELECT ISNULL({SqlSafeIdentifier(column)}, 0) FROM dbo.{SqlSafeIdentifier(source)} WHERE ChoiceCode = @ChoiceCode;";
+        return await ExecuteScalarIntAsync(
+            connection,
+            transaction,
+            sql,
+            cancellationToken,
+            ("@ChoiceCode", SqlDbType.BigInt, choiceCode));
     }
+
+    private static string SqlSafeIdentifier(string value) =>
+        $"[{value.Replace("]", "]]")}]";
+
+    private static bool IsSafeIdentifier(string value) =>
+        value.Length > 0 && value.All(ch => char.IsLetterOrDigit(ch) || ch == '_');
 
     private static async Task RestoreAllocationAsync(SqlConnection connection, SqlTransaction transaction, LegacyAllocationRow allocation, CancellationToken cancellationToken)
     {
@@ -495,11 +554,13 @@ public sealed class LegacyAllocationDAL
         return ReadAllocation(reader);
     }
 
-    private static async Task ConsumeSpecialVacancyAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, string vacancyType, CancellationToken cancellationToken)
+    private static async Task ConsumeSpecialVacancyAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, string vacancySource, string vacancyType, CancellationToken cancellationToken)
     {
-        var column = vacancyType switch { "PH" => "PH", "Def" => "Def", "Orp" => "Orp", _ => throw new ArgumentOutOfRangeException(nameof(vacancyType)) };
+        if (!IsSafeIdentifier(vacancySource) || !IsSafeIdentifier(vacancyType))
+            throw new InvalidOperationException("Vacancy source configuration contains an invalid identifier.");
+
         await ExecuteNonQueryAsync(connection, transaction,
-            $"UPDATE dbo.Allocation_SeatDistribution_PH SET {column} = {column} - 1 WHERE ChoiceCode = @ChoiceCode;",
+            $"UPDATE dbo.{SqlSafeIdentifier(vacancySource)} SET {SqlSafeIdentifier(vacancyType)} = {SqlSafeIdentifier(vacancyType)} - 1 WHERE ChoiceCode = @ChoiceCode;",
             cancellationToken, ("@ChoiceCode", SqlDbType.BigInt, choiceCode));
     }
 
