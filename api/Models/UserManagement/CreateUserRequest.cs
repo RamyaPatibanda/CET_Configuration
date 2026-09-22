@@ -7,4 +7,5 @@ public sealed class CreateUserRequest
     public string Password { get; set; } = string.Empty;
     public bool IsAdmin { get; set; }
     public bool IsActive { get; set; } = true;
+    public List<UserPermissionRequest> Permissions { get; set; } = [];
 }
