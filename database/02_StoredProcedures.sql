@@ -362,19 +362,19 @@ BEGIN
         r.tOutcomeJson,
         COALESCE((
             SELECT
-                d.aRuleDecisionId AS RuleDecisionId,
+                d.aRuleBranchId AS RuleBranchId,
                 d.aRuleId AS RuleId,
-                d.tDecisionName AS DecisionName,
-                d.nDecisionOrder AS DecisionOrder,
+                d.tBranchName AS BranchName,
+                d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
                 COALESCE(d.tAllocationType, N'') AS AllocationType,
                 COALESCE(d.nSequence, 1) AS Sequence,
                 d.bIsElse AS IsElse,
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
-            FROM dbo.tblRuleDecision d
+            FROM dbo.tblRuleBranch d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
-            ORDER BY d.nDecisionOrder, d.aRuleDecisionId
+            ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tDecisionRowsJson,
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId) AS nConditionCount,
@@ -403,19 +403,19 @@ BEGIN
         r.tOutcomeJson,
         COALESCE((
             SELECT
-                d.aRuleDecisionId AS RuleDecisionId,
+                d.aRuleBranchId AS RuleBranchId,
                 d.aRuleId AS RuleId,
-                d.tDecisionName AS DecisionName,
-                d.nDecisionOrder AS DecisionOrder,
+                d.tBranchName AS BranchName,
+                d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
                 d.tAllocationType AS AllocationType,
                 d.nSequence AS Sequence,
                 d.bIsElse AS IsElse,
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions
-            FROM dbo.tblRuleDecision d
+            FROM dbo.tblRuleBranch d
             WHERE d.aRuleId = r.aRuleId
               AND d.bIsActive = 1
-            ORDER BY d.nDecisionOrder, d.aRuleDecisionId
+            ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tDecisionRowsJson,
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId) AS nConditionCount,
