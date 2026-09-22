@@ -70,6 +70,8 @@ namespace api.Controllers
                 return Forbid();
             try
             {
+                if (!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var currentUserId)) return Unauthorized();
+                request.CreatedByUserId = currentUserId;
                 var fieldId = await _businessLogic.CreateFieldAsync(request);
                 return Ok(new { fieldId, message = "Field created successfully." });
             }
