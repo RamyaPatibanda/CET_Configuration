@@ -3,6 +3,7 @@ import { FiPlus, FiSearch } from "react-icons/fi";
 import Button from "../../../components/common/Button/Button";
 import Dialog from "../../../components/common/Dialog/Dialog";
 import fieldConfigurationService from "../services/fieldConfigurationService";
+import authService from "../../../services/authService";
 import FieldForm from "../components/FieldForm";
 import FieldList from "../components/FieldList";
 import "../fieldConfiguration.css";
@@ -116,20 +117,21 @@ function FieldConfiguration() {
     <div className="field-configuration-page">
       <div className="field-page-header">
         <div><h1>Field Configuration</h1><p>Define and manage the fields used across your CET rules.</p></div>
-        <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field">
+        {canWrite && <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field">
           <FiPlus size={18} strokeWidth={2.2} />
-        </Button>
+        </Button>}
       </div>
       {error && <div className="field-page-error">{error}</div>}
       <div className="field-list-toolbar"><div className="field-search-box"><FiSearch size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search fields..." aria-label="Search fields" /></div><div className="field-page-size"><span>Rows</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select></div></div>
       <FieldList
         fields={pagedFields}
         loading={loading}
-        onEdit={openEdit}
-        onDelete={setDeleteField}
-        onReorder={handleReorder}
-        onToggleRequired={(field, value) => updateFieldStatus(field, "isRequired", value)}
-        onToggleActive={(field, value) => updateFieldStatus(field, "isActive", value)}
+        canWrite={canWrite}
+        onEdit={canWrite ? openEdit : undefined}
+        onDelete={canWrite ? setDeleteField : undefined}
+        onReorder={canWrite ? handleReorder : undefined}
+        onToggleRequired={canWrite ? (field, value) => updateFieldStatus(field, "isRequired", value) : undefined}
+        onToggleActive={canWrite ? (field, value) => updateFieldStatus(field, "isActive", value) : undefined}
       />
       {filteredFields.length > 0 && <div className="field-pagination"><span>Showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredFields.length)} of {filteredFields.length}</span><div><button type="button" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>Previous</button><span>Page {safePage} of {totalPages}</span><button type="button" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>Next</button></div></div>}
       <FieldForm
