@@ -154,8 +154,10 @@ public sealed class LegacyAllocationDAL
         AllocationCandidate candidate,
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups)
     {
-        return MatchesArea(ruleGroups, AllocationConfiguration.CandidateQualification, candidate)
-               && MatchesOptionalArea(ruleGroups, AllocationConfiguration.SpecialReservationEligibility, candidate);
+        // Candidate eligibility is the only rule set used to build the Step 0 candidate pool.
+        // Sequence rules are evaluated later for each college/preference. There is no second
+        // eligibility gate in the Allocation Run.
+        return MatchesArea(ruleGroups, AllocationConfiguration.CandidateQualification, candidate);
     }
 
     private bool MatchesOptionalArea(
@@ -217,7 +219,7 @@ public sealed class LegacyAllocationDAL
         int vacancy,
         string vacancyType)
     {
-        if (!ruleGroups.TryGetValue(AllocationConfiguration.SeatAllocation, out var rules) || rules.Count == 0)
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0Sequence, out var rules) || rules.Count == 0)
             return null;
 
         var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
@@ -243,53 +245,63 @@ public sealed class LegacyAllocationDAL
             !seatEligibilityRules.Any(rule => _ruleEvaluator.Matches(rule, values)))
             return null;
 
-        foreach (var rule in rules.OrderBy(r => r.DisplayOrder))
+        // Sequence rules are evaluated strictly in the order selected in the Allocation Run.
+        // The first matching rule supplies SeqId = its selected position. Rule Priority is ignored.
+        for (var index = 0; index < rules.Count; index++)
         {
+            var rule = rules[index];
             if (!_ruleEvaluator.Matches(rule, values))
                 continue;
 
-            // Decision rows replace the old hard-coded IF / ELSE IF branches.
-            // They are evaluated strictly by nDecisionOrder and the first
-            // matching branch supplies the allocation result.
-            foreach (var branch in rule.Branches.OrderBy(d => d.BranchOrder))
+            var allocatedType = ResolveAllocatedType(rule, values, vacancyRow);
+            if (string.IsNullOrWhiteSpace(allocatedType))
+                continue;
+
+            return new AllocationRule
             {
-                if (string.IsNullOrWhiteSpace(branch.AllocationType))
-                    continue;
-
-                var branchMatches = branch.IsElse ||
-                    (branch.Conditions.Count > 0 &&
-                     _ruleEvaluator.MatchesConditions(branch.Conditions, values));
-
-                if (!branchMatches)
-                    continue;
-
-                return new AllocationRule
-                {
-                    Code = rule.Code,
-                    StageCode = rule.StageCode,
-                    LogicalOperator = rule.LogicalOperator,
-                    AllocatedType = branch.AllocationType,
-                    VacancySource = branch.VacancySource,
-                    VacancyType = branch.VacancyType,
-                    SeatCategory = rule.SeatCategory,
-                    ReservationType = rule.ReservationType,
-                    CandidateStatus = rule.CandidateStatus,
-                    PreferenceMode = rule.PreferenceMode,
-                    AllowBetterment = rule.AllowBetterment,
-                    DisplayOrder = rule.DisplayOrder,
-                    SequenceId = branch.Sequence,
-                    Conditions = branch.Conditions,
-                    Branches = rule.Branches
-                };
-            }
-
-            // Keep compatibility for existing rules that have not yet been
-            // converted to decision rows.
-            if (rule.Branches.Count == 0 && !string.IsNullOrWhiteSpace(rule.AllocatedType))
-                return rule;
+                Code = rule.Code,
+                StageCode = rule.StageCode,
+                LogicalOperator = rule.LogicalOperator,
+                AllocatedType = allocatedType,
+                VacancySource = rule.VacancySource,
+                VacancyType = rule.VacancyType,
+                SeatCategory = rule.SeatCategory,
+                ReservationType = rule.ReservationType,
+                CandidateStatus = rule.CandidateStatus,
+                PreferenceMode = rule.PreferenceMode,
+                AllowBetterment = rule.AllowBetterment,
+                DisplayOrder = index + 1,
+                SequenceId = index + 1,
+                Conditions = rule.Conditions,
+                Branches = rule.Branches
+            };
         }
 
         return null;
+    }
+
+    private string ResolveAllocatedType(
+        AllocationRule rule,
+        IReadOnlyDictionary<string, string?> values,
+        VacancyRow vacancyRow)
+    {
+        // AllocatedType is no longer configured. When a sequence rule explicitly
+        // checks Fem/Gen, use the seat column represented by that matching condition.
+        if (rule.Conditions.Any(condition =>
+            condition.Field.Equals("Fem", StringComparison.OrdinalIgnoreCase) &&
+            _ruleEvaluator.MatchesConditions(new[] { condition }, values)))
+            return vacancyRow.Fem > 0 ? "Fem" : string.Empty;
+
+        if (rule.Conditions.Any(condition =>
+            condition.Field.Equals("Gen", StringComparison.OrdinalIgnoreCase) &&
+            _ruleEvaluator.MatchesConditions(new[] { condition }, values)))
+            return vacancyRow.Gen > 0 ? "Gen" : string.Empty;
+
+        // Backward-compatible fallback for rules that do not explicitly mention
+        // a seat column: prefer the candidate's female seat when applicable.
+        if (string.Equals(values.GetValueOrDefault("Gender"), "F", StringComparison.OrdinalIgnoreCase) && vacancyRow.Fem > 0)
+            return "Fem";
+        return vacancyRow.Gen > 0 ? "Gen" : string.Empty;
     }
 
     private static async Task<LegacyAllocationRow?> GetActiveAllocationAsync(SqlConnection connection, SqlTransaction transaction, long candidateId, CancellationToken cancellationToken)
