@@ -38,11 +38,17 @@ builder.Services.AddScoped<Step0CandidateRepository>();
 builder.Services.AddScoped<AllocationDecisionConfigurationDAL>();
 
 builder.Services.AddAuthorization();
+
+var allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
