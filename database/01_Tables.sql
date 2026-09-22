@@ -107,6 +107,7 @@ BEGIN
         aRuleId           INT NOT NULL,
         aRuleConditionGroupId INT NULL,
         aFieldId          INT NOT NULL,
+        tGroupPath        NVARCHAR(1000) NULL,
         tLogicalOperator  NVARCHAR(10) NOT NULL CONSTRAINT DF_tblRuleCondition_tLogicalOperator DEFAULT ('AND'),
         tOperator         NVARCHAR(50) NOT NULL,
         tValue            NVARCHAR(1000) NOT NULL,
@@ -123,6 +124,12 @@ BEGIN
         CONSTRAINT CK_tblRuleCondition_nConditionOrder CHECK (nConditionOrder > 0),
         CONSTRAINT UQ_tblRuleCondition_Rule_Order UNIQUE (aRuleId, nConditionOrder)
     );
+END;
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleCondition', N'tGroupPath') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblRuleCondition ADD tGroupPath NVARCHAR(1000) NULL;
 END;
 GO
 
