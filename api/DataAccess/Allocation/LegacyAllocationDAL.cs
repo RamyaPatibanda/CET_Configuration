@@ -255,6 +255,13 @@ public sealed class LegacyAllocationDAL
                 if (string.IsNullOrWhiteSpace(decision.AllocationType))
                     continue;
 
+                var branchMatches = decision.IsElse ||
+                    (decision.Conditions.Count > 0 &&
+                     _ruleEvaluator.MatchesConditions(decision.Conditions, values));
+
+                if (!branchMatches)
+                    continue;
+
                 return new AllocationRule
                 {
                     Code = rule.Code,
@@ -269,7 +276,7 @@ public sealed class LegacyAllocationDAL
                     AllowBetterment = rule.AllowBetterment,
                     DisplayOrder = rule.DisplayOrder,
                     SequenceId = decision.Sequence,
-                    Conditions = rule.Conditions,
+                    Conditions = decision.Conditions,
                     DecisionRows = rule.DecisionRows
                 };
             }
