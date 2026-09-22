@@ -257,6 +257,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       if (sourceIndex < 0 || targetIndex < 0) return current;
 
       const [moved] = conditions.splice(sourceIndex, 1);
+      moved.groupOrder = conditions[targetIndex]?.groupOrder ?? moved.groupOrder;
       conditions.splice(targetIndex, 0, moved);
       return { ...current, conditions: normalizeConditionLayout(conditions) };
     });
@@ -500,7 +501,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                               >
                                 <FiArrowDown />
                               </button>
-                              {conditionIndex > 0 && (
+                              {conditionIndex === 0 && globalIndex > 0 && (
                                 <button
                                   type="button"
                                   className="condition-row-action"
