@@ -433,3 +433,123 @@ BEGIN
         ON dbo.tblRuleDecisionCondition(tOperandType, tOperandKey);
 END;
 GO
+
+
+/* ============================================================
+   Consolidated rule outcome / decision branch schema
+   This section is intentionally kept in the single table script.
+   ============================================================ */
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'tConditionsJson') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD tConditionsJson NVARCHAR(MAX) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'bIsElse') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD bIsElse BIT NOT NULL CONSTRAINT DF_tblRuleDecision_bIsElse DEFAULT (0);
+GO
+
+UPDATE dbo.tblRuleDecision
+SET tConditionsJson = COALESCE(NULLIF(tConditionsJson, N''), N'[]')
+WHERE tConditionsJson IS NULL OR tConditionsJson = N'';
+GO
+
+IF COL_LENGTH(N'dbo.tblRule', N'tDecisionAreaCode') IS NULL
+    ALTER TABLE dbo.tblRule ADD tDecisionAreaCode NVARCHAR(100) NOT NULL CONSTRAINT DF_tblRule_tDecisionAreaCode DEFAULT (N'');
+GO
+
+IF COL_LENGTH(N'dbo.tblRule', N'tOutcomeJson') IS NULL
+    ALTER TABLE dbo.tblRule ADD tOutcomeJson NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRule_tOutcomeJson DEFAULT (N'{}');
+GO
+
+UPDATE dbo.tblRule
+SET tDecisionAreaCode = CASE
+    WHEN NULLIF(LTRIM(RTRIM(tDecisionAreaCode)), N'') IS NULL THEN N'CANDIDATE_QUALIFICATION'
+    ELSE tDecisionAreaCode
+END,
+tOutcomeJson = CASE
+    WHEN NULLIF(LTRIM(RTRIM(tOutcomeJson)), N'') IS NULL THEN N'{}'
+    ELSE tOutcomeJson
+END;
+GO
+
+/*
+ CET Configuration - Decision Row Step 0 migration
+ Adds the strongly typed Step 0 decision values.
+*/
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'tAllocationType') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD tAllocationType NVARCHAR(100) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'nSequence') IS NULL
+    ALTER TABLE dbo.tblRuleDecision ADD nSequence INT NULL;
+GO
+
+
+-- Preserve any existing Step 0 result data created by the earlier generic model.
+UPDATE d
+SET
+    d.tAllocationType = COALESCE(
+        NULLIF(d.tAllocationType, N''),
+        atype.tResultValue
+    ),
+    d.nSequence = COALESCE(
+        d.nSequence,
+        TRY_CONVERT(INT, seq.tResultValue),
+        1
+    )
+FROM dbo.tblRuleDecision d
+OUTER APPLY
+(
+    SELECT TOP (1) r.tResultValue
+    FROM dbo.tblRuleDecisionResult r
+    WHERE r.aRuleDecisionId = d.aRuleDecisionId
+      AND LOWER(r.tResultKey) IN (N'allocatedtype', N'allocationtype')
+    ORDER BY r.nResultOrder
+) atype
+OUTER APPLY
+(
+    SELECT TOP (1) r.tResultValue
+    FROM dbo.tblRuleDecisionResult r
+    WHERE r.aRuleDecisionId = d.aRuleDecisionId
+      AND LOWER(r.tResultKey) IN (N'seqid', N'sequence')
+    ORDER BY r.nResultOrder
+) seq
+WHERE d.tAllocationType IS NULL OR d.nSequence IS NULL;
+GO
+
+
+/*
+ CET Configuration - Single Rule IF / ELSE decision branches
+
+ Each tblRuleDecision row represents one branch of a rule:
+   IF / ELSE IF -> tConditionsJson contains the branch conditions
+   ELSE         -> bIsElse = 1 and tConditionsJson is []
+
+ The branch is still linked to tblRule through aRuleId.
+*/
+
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'bIsElse') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblRuleDecision
+        ADD bIsElse BIT NOT NULL
+            CONSTRAINT DF_tblRuleDecision_bIsElse DEFAULT (0);
+END
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleDecision', N'tConditionsJson') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblRuleDecision
+        ADD tConditionsJson NVARCHAR(MAX) NULL;
+END
+GO
+
+UPDATE dbo.tblRuleDecision
+SET tConditionsJson = N'[]'
+WHERE tConditionsJson IS NULL OR LTRIM(RTRIM(tConditionsJson)) = N'';
+GO
+
+-- Existing decision rows are retained as IF branches.
+-- Their old rule-level conditions are not automatically copied here because
+-- the migration cannot safely infer which conditions belong to each branch.
+-- Open and save an existing rule once in the new Rule Configuration UI to
+-- explicitly create the linked branch conditions.
+
