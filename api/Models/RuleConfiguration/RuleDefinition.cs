@@ -25,7 +25,8 @@ namespace api.Models.RuleConfiguration
         public int DecisionOrder { get; set; }
         public bool IsActive { get; set; }
         public List<RuleDecisionCondition> Conditions { get; set; } = new();
-        public List<RuleDecisionResult> Results { get; set; } = new();
+        public string AllocationType { get; set; } = string.Empty;
+        public int Sequence { get; set; }
     }
 
     public class RuleDecisionCondition
@@ -40,13 +41,4 @@ namespace api.Models.RuleConfiguration
         public int ConditionOrder { get; set; }
     }
 
-    public class RuleDecisionResult
-    {
-        public int RuleDecisionResultId { get; set; }
-        public int RuleDecisionId { get; set; }
-        public string ResultKey { get; set; } = string.Empty;
-        public string ResultValue { get; set; } = string.Empty;
-        public string ValueKind { get; set; } = "text";
-        public int ResultOrder { get; set; }
-    }
 }
