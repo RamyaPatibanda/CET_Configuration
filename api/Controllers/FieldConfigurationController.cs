@@ -1,5 +1,6 @@
 using api.BusinessLogic.FieldConfiguration;
 using api.Models.FieldConfiguration;
+using api.BusinessLogic.UserManagement;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,16 +13,20 @@ namespace api.Controllers
     {
         private readonly IFieldConfigurationBL _businessLogic;
         private readonly ILogger<FieldConfigurationController> _logger;
+        private readonly UserPermissionService _permissions;
 
-        public FieldConfigurationController(IFieldConfigurationBL businessLogic, ILogger<FieldConfigurationController> logger)
+        public FieldConfigurationController(IFieldConfigurationBL businessLogic, ILogger<FieldConfigurationController> logger, UserPermissionService permissions)
         {
             _businessLogic = businessLogic;
             _logger = logger;
+            _permissions = permissions;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<FieldDefinition>>> GetFields()
         {
+            if (!await _permissions.HasReadAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try { return Ok(await _businessLogic.GetFieldsAsync()); }
             catch (Exception ex) { _logger.LogError(ex, "Error while getting fields."); return StatusCode(500, new { message = "Unable to get fields." }); }
         }
@@ -29,6 +34,8 @@ namespace api.Controllers
         [HttpGet("tables")]
         public async Task<ActionResult<List<FieldSourceOption>>> GetTables()
         {
+            if (!await _permissions.HasReadAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try { return Ok(await _businessLogic.GetAllowedTablesAsync()); }
             catch (Exception ex) { _logger.LogError(ex, "Error while getting configured tables."); return StatusCode(500, new { message = "Unable to get configured tables." }); }
         }
@@ -36,6 +43,8 @@ namespace api.Controllers
         [HttpGet("columns")]
         public async Task<ActionResult<List<FieldSourceOption>>> GetColumns([FromQuery] string tableName)
         {
+            if (!await _permissions.HasReadAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try { return Ok(await _businessLogic.GetColumnsAsync(tableName)); }
             catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { _logger.LogError(ex, "Error while getting columns for table {TableName}.", tableName); return StatusCode(500, new { message = "Unable to get table columns." }); }
@@ -44,6 +53,8 @@ namespace api.Controllers
         [HttpGet("{fieldId:int}")]
         public async Task<ActionResult<FieldDefinition>> GetField(int fieldId)
         {
+            if (!await _permissions.HasReadAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try
             {
                 var field = await _businessLogic.GetFieldAsync(fieldId);
@@ -55,6 +66,8 @@ namespace api.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<int>> CreateField([FromBody] CreateFieldRequest request)
         {
+            if (!await _permissions.HasWriteAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try
             {
                 var fieldId = await _businessLogic.CreateFieldAsync(request);
@@ -67,6 +80,8 @@ namespace api.Controllers
         [HttpPut("{fieldId:int}")]
         public async Task<IActionResult> UpdateField(int fieldId, [FromBody] UpdateFieldRequest request)
         {
+            if (!await _permissions.HasWriteAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try
             {
                 request.FieldId = fieldId;
@@ -80,6 +95,8 @@ namespace api.Controllers
         [HttpDelete("{fieldId:int}")]
         public async Task<IActionResult> DeleteField(int fieldId)
         {
+            if (!await _permissions.HasWriteAsync(User, api.Models.UserManagement.UserPermissionModules.Fields))
+                return Forbid();
             try
             {
                 var deleted = await _businessLogic.DeleteFieldAsync(fieldId);
