@@ -55,10 +55,6 @@ const ruleConfigurationService = {
     return fieldsRequest;
   },
 
-  async getDecisionOptions() {
-    return httpClient.get(API_ENDPOINTS.RULE_CONFIGURATION.DECISION_OPTIONS);
-  },
-
   async getRule(ruleId) {
     return httpClient.get(API_ENDPOINTS.RULE_CONFIGURATION.BY_ID(ruleId));
   },
