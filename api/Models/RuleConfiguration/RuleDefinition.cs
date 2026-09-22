@@ -26,6 +26,7 @@ namespace api.Models.RuleConfiguration
         public string AllocationType { get; set; } = string.Empty;
         public int Sequence { get; set; }
         public bool IsElse { get; set; }
+        public string OutcomeJson { get; set; } = "{}";
         public List<RuleCondition> Conditions { get; set; } = new();
     }
 }
