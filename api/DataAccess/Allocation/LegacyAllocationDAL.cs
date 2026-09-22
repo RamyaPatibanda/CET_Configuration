@@ -252,37 +252,23 @@ public sealed class LegacyAllocationDAL
             // matching branch supplies the allocation result.
             foreach (var decision in rule.DecisionRows.OrderBy(d => d.DecisionOrder))
             {
-                if (!_ruleEvaluator.MatchesDecision(decision, values))
+                if (string.IsNullOrWhiteSpace(decision.AllocationType))
                     continue;
-
-                var allocatedType = decision.Results.TryGetValue("AllocatedType", out var configuredType)
-                    ? configuredType
-                    : string.Empty;
-
-                if (string.IsNullOrWhiteSpace(allocatedType))
-                    continue;
-
-                var sequenceId = decision.Results.TryGetValue("SeqId", out var configuredSeq)
-                    && int.TryParse(configuredSeq, out var parsedSeq)
-                        ? parsedSeq
-                        : rule.DisplayOrder;
 
                 return new AllocationRule
                 {
                     Code = rule.Code,
                     StageCode = rule.StageCode,
                     LogicalOperator = rule.LogicalOperator,
-                    AllocatedType = allocatedType,
-                    VacancyType = decision.Results.TryGetValue("VacancyType", out var configuredVacancyType)
-                        ? configuredVacancyType
-                        : rule.VacancyType,
+                    AllocatedType = decision.AllocationType,
+                    VacancyType = rule.VacancyType,
                     SeatCategory = rule.SeatCategory,
                     ReservationType = rule.ReservationType,
                     CandidateStatus = rule.CandidateStatus,
                     PreferenceMode = rule.PreferenceMode,
                     AllowBetterment = rule.AllowBetterment,
                     DisplayOrder = rule.DisplayOrder,
-                    SequenceId = sequenceId,
+                    SequenceId = decision.Sequence,
                     Conditions = rule.Conditions,
                     DecisionRows = rule.DecisionRows
                 };
