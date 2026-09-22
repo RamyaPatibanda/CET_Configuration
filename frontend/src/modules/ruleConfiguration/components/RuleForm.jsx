@@ -253,6 +253,172 @@ function RuleForm({
     outcome: { values: (current.outcome?.values || []).filter((_, i) => i !== index) },
   }));
 
+  const addDecisionRow = () => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: [
+        ...(current.decisionRows || []),
+        {
+          ruleDecisionId: 0,
+          ruleId: current.ruleId,
+          decisionName: "",
+          decisionOrder: (current.decisionRows || []).length + 1,
+          isActive: true,
+          conditions: [
+            {
+              ruleDecisionConditionId: 0,
+              operandType: "CONTEXT",
+              operandKey: "",
+              logicalOperator: "AND",
+              operator: "=",
+              value: "",
+              conditionOrder: 1,
+            },
+          ],
+          results: [
+            {
+              ruleDecisionResultId: 0,
+              resultKey: "",
+              resultValue: "",
+              valueKind: "text",
+              resultOrder: 1,
+            },
+          ],
+        },
+      ],
+    }));
+  };
+
+  const updateDecisionRow = (rowIndex, name, value) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index === rowIndex ? { ...row, [name]: value } : row
+      ),
+    }));
+  };
+
+  const removeDecisionRow = (rowIndex) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || [])
+        .filter((_, index) => index !== rowIndex)
+        .map((row, index) => ({ ...row, decisionOrder: index + 1 })),
+    }));
+  };
+
+  const addDecisionCondition = (rowIndex) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              conditions: [
+                ...(row.conditions || []),
+                {
+                  ruleDecisionConditionId: 0,
+                  operandType: "CONTEXT",
+                  operandKey: "",
+                  logicalOperator: "AND",
+                  operator: "=",
+                  value: "",
+                  conditionOrder: (row.conditions || []).length + 1,
+                },
+              ],
+            }
+      ),
+    }));
+  };
+
+  const updateDecisionCondition = (rowIndex, conditionIndex, name, value) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              conditions: (row.conditions || []).map((condition, cIndex) =>
+                cIndex === conditionIndex ? { ...condition, [name]: value } : condition
+              ),
+            }
+      ),
+    }));
+  };
+
+  const removeDecisionCondition = (rowIndex, conditionIndex) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              conditions: (row.conditions || [])
+                .filter((_, cIndex) => cIndex !== conditionIndex)
+                .map((condition, cIndex) => ({ ...condition, conditionOrder: cIndex + 1 })),
+            }
+      ),
+    }));
+  };
+
+  const addDecisionResult = (rowIndex) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              results: [
+                ...(row.results || []),
+                {
+                  ruleDecisionResultId: 0,
+                  resultKey: "",
+                  resultValue: "",
+                  valueKind: "text",
+                  resultOrder: (row.results || []).length + 1,
+                },
+              ],
+            }
+      ),
+    }));
+  };
+
+  const updateDecisionResult = (rowIndex, resultIndex, name, value) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              results: (row.results || []).map((result, rIndex) =>
+                rIndex === resultIndex ? { ...result, [name]: value } : result
+              ),
+            }
+      ),
+    }));
+  };
+
+  const removeDecisionResult = (rowIndex, resultIndex) => {
+    setForm((current) => ({
+      ...current,
+      decisionRows: (current.decisionRows || []).map((row, index) =>
+        index !== rowIndex
+          ? row
+          : {
+              ...row,
+              results: (row.results || [])
+                .filter((_, rIndex) => rIndex !== resultIndex)
+                .map((result, rIndex) => ({ ...result, resultOrder: rIndex + 1 })),
+            }
+      ),
+    }));
+  };
+
   const addRow = () => {
     setRows((current) => [...current, createCondition()]);
     setError("");
@@ -527,6 +693,12 @@ function RuleForm({
       decisionAreaCode: form.decisionAreaCode,
       outcome: normalizeOutcome(form.outcome),
       conditions,
+      decisionRows: (form.decisionRows || []).map((decision, index) => ({
+        ...decision,
+        decisionOrder: index + 1,
+        conditions: (decision.conditions || []).map((condition, conditionIndex) => ({ ...condition, conditionOrder: conditionIndex + 1 })),
+        results: (decision.results || []).map((result, resultIndex) => ({ ...result, resultOrder: resultIndex + 1 })),
+      })),
     });
   };
 
@@ -800,216 +972,132 @@ function RuleForm({
           )}
         </div>
 
-        <section className="rule-outcome-section">
+        <section className="rule-decision-configuration">
           <div className="rule-outcome-title">
             <div>
-              <span className="conditions-kicker">Rule action</span>
-              <h3>Decision &amp; Result</h3>
-              <p>Define what should happen when all conditions in this rule are satisfied.</p>
+              <span className="conditions-kicker">Allocation logic</span>
+              <h3>Decision Rows</h3>
+              <p>Define the ordered IF / THEN branches for this rule. Supporting values are no longer a separate rule field.</p>
             </div>
+            <Button type="button" variant="secondary" onClick={addDecisionRow}>
+              <FiPlus size={13} /> Add decision
+            </Button>
           </div>
 
-          <div className="rule-decision-panel">
-            <div className="rule-decision-label">
-              <span>Decision</span>
-              <small>Select the action this rule belongs to.</small>
-            </div>
-            <div className="rule-decision-control">
-              <Select
-                value={form.decisionAreaCode}
-                options={decisionOptions.map((item) => ({
-                  value: item.value,
-                  label: item.label,
-                }))}
-                disabled={loadingDecisionOptions}
-                onChange={(event) => {
-                  update("decisionAreaCode", event.target.value);
-                  setForm((current) => ({ ...current, outcome: { values: [] } }));
-                }}
-              />
-            </div>
-          </div>
-
-
-          {form.decisionRows?.length > 0 && (
-            <div className="rule-decision-rows">
-              <div className="rule-result-heading">
-                <div>
-                  <span>Decision rows</span>
-                  <small>IF / THEN branches configured for this rule.</small>
-                </div>
-              </div>
-
-              <div className="rule-decision-row-list">
-                {form.decisionRows.map((decision) => (
-                  <div className="rule-decision-row" key={decision.ruleDecisionId || decision.decisionOrder}>
-                    <div className="rule-decision-row-title">
-                      <strong>{decision.decisionName || "Decision " + decision.decisionOrder}</strong>
-                    </div>
-                    <div className="rule-decision-branch">
-                      <span className="rule-decision-token">IF</span>
-                      <div className="rule-decision-conditions">
-                        {decision.conditions.map((condition, index) => (
-                          <span className="rule-decision-condition" key={condition.ruleDecisionConditionId || index}>
-                            {index > 0 && <b>{condition.logicalOperator}</b>}
-                            <span>{condition.operandKey}</span>
-                            <em>{condition.operator}</em>
-                            <strong>{condition.value}</strong>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rule-decision-branch">
-                      <span className="rule-decision-token then">THEN</span>
-                      <div className="rule-decision-results">
-                        {decision.results.map((result, index) => (
-                          <span className="rule-decision-result" key={result.ruleDecisionResultId || index}>
-                            <span>{result.resultKey}</span>
-                            <strong>{result.resultValue}</strong>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+          <div className="decision-row-editor-list">
+            {(form.decisionRows || []).map((decision, rowIndex) => (
+              <div className="decision-row-editor" key={decision.ruleDecisionId || `new-${rowIndex}`}>
+                <div className="decision-row-editor-header">
+                  <div>
+                    <span>Decision {rowIndex + 1}</span>
+                    <TextBox
+                      value={decision.decisionName}
+                      placeholder="Decision name"
+                      onChange={(event) => updateDecisionRow(rowIndex, "decisionName", event.target.value)}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {form.decisionAreaCode === "CANDIDATE_QUALIFICATION" ? (
-            <div className="rule-result-simple">
-              <div className="rule-result-icon"><FiCheckSquare size={17} /></div>
-              <div>
-                <strong>Candidate qualifies</strong>
-                <span>No additional result value is required for this decision.</span>
-              </div>
-            </div>
-          ) : (
-            <div className="rule-result-panel">
-              <div className="rule-result-heading">
-                <div>
-                  <span>Result</span>
-                  <small>Set one or more configurable values for the selected decision.</small>
+                  <button type="button" className="condition-remove" onClick={() => removeDecisionRow(rowIndex)} title="Delete decision">
+                    <FiTrash2 />
+                  </button>
                 </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="rule-add-result-button"
-                  onClick={addOutcome}
-                  disabled={loadingDecisionOptions}
-                >
-                  <FiPlus size={13} /> Add result
-                </Button>
-              </div>
 
-              {(form.outcome?.values || []).length === 0 ? (
-                <div className="rule-result-empty">
-                  <span>No result values added yet.</span>
-                  <button type="button" onClick={addOutcome}>Add a result value</button>
-                </div>
-              ) : (
-                <div className="rule-result-list">
-                  {(form.outcome?.values || []).map((item, index) => {
-                    const definitions =
-                      decisionOptions.find(
-                        (option) => option.value === form.decisionAreaCode
-                      )?.results || [];
-                    const definition = definitions.find(
-                      (option) => option.supportingValue === item.supportingValue
-                    );
-                    const valueOptions = definition?.values || [];
-
-                    return (
-                      <div className="rule-result-row" key={`${item.supportingValue || "result"}-${index}`}>
-                        <div className="rule-result-index">{index + 1}</div>
-
-                        <div className="rule-result-field">
-                          <label>Result field</label>
+                <div className="decision-branch-editor">
+                  <div className="decision-branch-label">IF</div>
+                  <div className="decision-condition-editor-list">
+                    {(decision.conditions || []).map((condition, conditionIndex) => (
+                      <div className="decision-condition-editor-row" key={condition.ruleDecisionConditionId || `new-condition-${conditionIndex}`}>
+                        <Select
+                          value={condition.operandType}
+                          options={[
+                            { value: "FIELD", label: "Field" },
+                            { value: "CONTEXT", label: "Context" },
+                          ]}
+                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operandType", event.target.value)}
+                        />
+                        <TextBox
+                          value={condition.operandKey}
+                          placeholder="Operand (e.g. Gender, Fem, Vacancy)"
+                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operandKey", event.target.value)}
+                        />
+                        <Select
+                          value={condition.operator}
+                          options={[
+                            { value: "=", label: "=" },
+                            { value: "!=", label: "!=" },
+                            { value: ">", label: ">" },
+                            { value: "<", label: "<" },
+                            { value: ">=", label: ">=" },
+                            { value: "<=", label: "<=" },
+                          ]}
+                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "operator", event.target.value)}
+                        />
+                        <TextBox
+                          value={condition.value}
+                          placeholder="Value"
+                          onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "value", event.target.value)}
+                        />
+                        {conditionIndex > 0 ? (
                           <Select
-                            value={item.supportingValue}
-                            options={[
-                              { value: "", label: "Select result field" },
-                              ...definitions.map((option) => ({
-                                value: option.supportingValue,
-                                label: option.label,
-                              })),
-                            ]}
-                            onChange={(event) => {
-                              const selected = definitions.find(
-                                (option) =>
-                                  option.supportingValue === event.target.value
-                              );
-                              setForm((current) => {
-                                const values = [...(current.outcome?.values || [])];
-                                values[index] = {
-                                  supportingValue: event.target.value,
-                                  value: "",
-                                  valueKind: selected?.valueKind || "text",
-                                };
-                                return { ...current, outcome: { values } };
-                              });
-                            }}
+                            value={condition.logicalOperator}
+                            options={LOGICAL_OPTIONS}
+                            onChange={(event) => updateDecisionCondition(rowIndex, conditionIndex, "logicalOperator", event.target.value)}
                           />
-                        </div>
-
-                        <div className="rule-result-field">
-                          <label>Result value</label>
-                          {valueOptions.length ? (
-                            <Select
-                              value={item.value}
-                              options={[
-                                { value: "", label: "Select result value" },
-                                ...valueOptions,
-                              ]}
-                              onChange={(event) =>
-                                updateOutcome(index, "value", event.target.value)
-                              }
-                            />
-                          ) : item.valueKind === "boolean" ? (
-                            <Select
-                              value={item.value}
-                              options={[
-                                { value: "", label: "Select result value" },
-                                { value: "true", label: "Yes" },
-                                { value: "false", label: "No" },
-                              ]}
-                              onChange={(event) =>
-                                updateOutcome(index, "value", event.target.value)
-                              }
-                            />
-                          ) : (
-                            <TextBox
-                              value={item.value}
-                              placeholder="Enter result value"
-                              onChange={(event) =>
-                                updateOutcome(index, "value", event.target.value)
-                              }
-                            />
-                          )}
-                        </div>
-
-                        <div className="rule-result-kind">
-                          <span>Type</span>
-                          <strong>{item.valueKind || "text"}</strong>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="condition-remove rule-result-delete"
-                          onClick={() => removeOutcome(index)}
-                          title="Delete result"
-                          aria-label="Delete result"
-                        >
+                        ) : <span className="decision-condition-and">AND</span>}
+                        <button type="button" className="condition-remove" onClick={() => removeDecisionCondition(rowIndex, conditionIndex)} title="Delete condition">
                           <FiTrash2 />
                         </button>
                       </div>
-                    );
-                  })}
+                    ))}
+                    <Button type="button" variant="secondary" onClick={() => addDecisionCondition(rowIndex)}>
+                      <FiPlus size={12} /> Add condition
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-        </section>
+
+                <div className="decision-branch-editor">
+                  <div className="decision-branch-label then">THEN</div>
+                  <div className="decision-result-editor-list">
+                    {(decision.results || []).map((result, resultIndex) => (
+                      <div className="decision-result-editor-row" key={result.ruleDecisionResultId || `new-result-${resultIndex}`}>
+                        <TextBox
+                          value={result.resultKey}
+                          placeholder="Result key (e.g. AllocatedType, SeqId)"
+                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "resultKey", event.target.value)}
+                        />
+                        <TextBox
+                          value={result.resultValue}
+                          placeholder="Result value"
+                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "resultValue", event.target.value)}
+                        />
+                        <Select
+                          value={result.valueKind}
+                          options={[
+                            { value: "text", label: "Text" },
+                            { value: "number", label: "Number" },
+                            { value: "boolean", label: "Boolean" },
+                          ]}
+                          onChange={(event) => updateDecisionResult(rowIndex, resultIndex, "valueKind", event.target.value)}
+                        />
+                        <button type="button" className="condition-remove" onClick={() => removeDecisionResult(rowIndex, resultIndex)} title="Delete result">
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    ))}
+                    <Button type="button" variant="secondary" onClick={() => addDecisionResult(rowIndex)}>
+                      <FiPlus size={12} /> Add result
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!(form.decisionRows || []).length && (
+              <div className="decision-rows-empty">
+                <strong>No decision rows configured.</strong>
+                <span>Add a decision row to model the stored-procedure IF / ELSE IF / ELSE branches.</span>
+              </div>
+            )}
+          </div>
+        </section>section>
       </form>
     </Dialog>
   );
