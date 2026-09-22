@@ -376,7 +376,7 @@ BEGIN
               AND d.bIsActive = 1
             ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
-        ), N'[]') AS tDecisionRowsJson,
+        ), N'[]') AS tBranchesJson,
         (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId)
         + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rb CROSS APPLY OPENJSON(rb.tConditionsJson) bc WHERE rb.aRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
