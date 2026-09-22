@@ -509,7 +509,6 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
                 <div className="rule-branch-header">
                   <div className="rule-branch-title">
                     <span className="rule-branch-badge">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
-                    <span className="rule-branch-badge-text">{branch.isElse ? "ELSE" : branchIndex === 0 ? "IF" : "ELSE IF"}</span>
                   </div>
                   <button
                     type="button"
