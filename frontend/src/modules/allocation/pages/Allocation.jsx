@@ -27,7 +27,9 @@ const DECISION_AREA_COMPONENTS = {
 const getDecisionAreaConfig = (stepCode) => DECISION_AREA_COMPONENTS[stepCode] || null;
 
 const createRuleGroups = (stepCode) =>
-  (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
+  stepCode === "STEP_0"
+    ? [{ type: "CANDIDATE_QUALIFICATION", ruleIds: [] }, { type: "SEQUENCE", ruleIds: [] }]
+    : (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
 const editableStatuses = new Set(["Draft", "Ready", "Failed", "Cancelled"]);
 const lockedStatuses = new Set(["Running", "Completed", "Archived"]);
@@ -103,9 +105,16 @@ function Allocation() {
 
           const savedStep = stepItems.find((step) => step.code === existingRun.allocationStep);
           const groups = createRuleGroups(existingRun.allocationStep).map((group) => {
-            const savedGroup = savedGroups.find(
-              (item) => String(item.type).toUpperCase() === String(group.type).toUpperCase()
-            );
+            if (existingRun.allocationStep === "STEP_0" && savedGroups && !Array.isArray(savedGroups)) {
+              const key = group.type === "CANDIDATE_QUALIFICATION" ? "candidateEligibilityRules" : "sequenceRules";
+              return {
+                ...group,
+                ruleIds: (savedGroups[key] || [])
+                  .map((rule) => Number(rule.ruleId))
+                  .filter((ruleId) => ruleItems.some((rule) => rule.ruleId === ruleId)),
+              };
+            }
+            const savedGroup = savedGroups.find((item) => String(item.type).toUpperCase() === String(group.type).toUpperCase());
             return {
               ...group,
               ruleIds: (savedGroup?.rules || [])
@@ -168,32 +177,55 @@ function Allocation() {
     markEdited();
   };
 
-  const buildRequest = () => ({
-    allocationRunId: runId,
-    allocationRunName: runName.trim(),
-    capRound: Number(capRound),
-    allocationStep,
-    ruleGroups: ruleGroups.filter((group) => group.ruleIds.length > 0),
-  });
+  const moveSequenceRule = (ruleId, direction) => {
+    if (!canEdit) return;
+    setRuleGroups((current) => current.map((group) => {
+      if (group.type !== "SEQUENCE") return group;
+      const index = group.ruleIds.indexOf(ruleId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= group.ruleIds.length) return group;
+      const ruleIds = [...group.ruleIds];
+      [ruleIds[index], ruleIds[target]] = [ruleIds[target], ruleIds[index]];
+      return { ...group, ruleIds };
+    }));
+    markEdited();
+  };
+
+  const buildRequest = () => {
+    if (allocationStep === "STEP_0") {
+      return {
+        allocationRunId: runId,
+        allocationRunName: runName.trim(),
+        capRound: Number(capRound),
+        allocationStep,
+        candidateEligibilityRuleIds: ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds || [],
+        sequenceRuleIds: ruleGroups.find((group) => group.type === "SEQUENCE")?.ruleIds || [],
+      };
+    }
+    return {
+      allocationRunId: runId,
+      allocationRunName: runName.trim(),
+      capRound: Number(capRound),
+      allocationStep,
+      ruleGroups: ruleGroups.filter((group) => group.ruleIds.length > 0),
+    };
+  };
 
   const validateClient = () => {
     if (!runName.trim()) return "Allocation run name is required.";
     if (!selectedStep?.enabled) return "Please select an available allocation step.";
-
+    if (allocationStep === "STEP_0") {
+      const candidateCount = ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds.length || 0;
+      const sequenceCount = ruleGroups.find((group) => group.type === "SEQUENCE")?.ruleIds.length || 0;
+      if (!candidateCount) return "Select at least one candidate eligibility rule.";
+      if (!sequenceCount) return "Select at least one sequence rule.";
+      return "";
+    }
     const configuredAreas = getDecisionAreaConfig(allocationStep)?.stages || [];
     const selectedGroups = new Map(ruleGroups.map((group) => [group.type, group]));
-
-    const missingAreas = configuredAreas
-      .filter((area) => !(selectedGroups.get(area.code)?.ruleIds?.length > 0))
-      .map((area) => area.name);
-
-    if (missingAreas.length > 0) {
-      return `Validation failed. Please select at least one rule for: ${missingAreas.join(", ")}.`;
-    }
-
-    if (!selectedRuleCount) {
-      return "Validation failed. Please assign at least one rule to a decision area.";
-    }
+    const missingAreas = configuredAreas.filter((area) => !(selectedGroups.get(area.code)?.ruleIds?.length > 0)).map((area) => area.name);
+    if (missingAreas.length > 0) return "Validation failed. Please select at least one rule for: " + missingAreas.join(", ") + ".";
+    if (!selectedRuleCount) return "Validation failed. Please assign at least one rule.";
     return "";
   };
 
@@ -328,14 +360,16 @@ function Allocation() {
       {selectedStep && (
         <section className="allocation-section">
           <div className="allocation-section-heading">
-            <div><span>Decision areas for this allocation step</span><h2>Decision Areas</h2></div>
-            <span className="allocation-count">{selectedRuleCount} assigned</span>
+            <div><span>{allocationStep === "STEP_0" ? "Step 0 configuration" : "Decision areas for this allocation step"}</span><h2>{allocationStep === "STEP_0" ? "Step 0 Rules" : "Decision Areas"}</h2></div>
+            <span className="allocation-count">{selectedRuleCount} selected</span>
           </div>
 
-          <div className="allocation-rule-note">
-            <FiCheck size={15} />
-            <span>Rules are reusable. Assign them to the decision area where they are evaluated for this allocation step.</span>
-          </div>
+          {allocationStep === "STEP_0" && (
+            <div className="allocation-rule-note">
+              <FiCheck size={15} />
+              <span>Select configured rules only. Candidate eligibility determines the candidate pool; sequence rules are evaluated in the selected order and the first match becomes the SeqId.</span>
+            </div>
+          )}
 
           {!rules.length ? (
             <div className="allocation-empty">No active rules are configured. Create and activate rules in Rule Configuration first.</div>
@@ -346,6 +380,7 @@ function Allocation() {
               openRuleGroup={openRuleGroup}
               setOpenRuleGroup={setOpenRuleGroup}
               toggleRule={toggleRule}
+              moveSequenceRule={moveSequenceRule}
               disabled={!canEdit}
             />
           )}
