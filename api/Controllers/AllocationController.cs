@@ -379,9 +379,13 @@ prepared:
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (!int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var currentUserId))
+            throw new UnauthorizedAccessException("Authenticated user id is missing.");
+
         await _runHistory.SaveAsync(new AllocationRunHistory
         {
             AllocationRunId = run.AllocationRunId,
+            RunByUserId = currentUserId,
             AllocationRunName = run.AllocationRunName,
             CapRound = run.CapRound,
             AllocationStep = run.AllocationStep,
