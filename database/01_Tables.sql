@@ -601,7 +601,7 @@ BEGIN
         d.bIsElse,
         d.bIsActive,
         COALESCE(NULLIF(d.tConditionsJson, N''), N'[]'),
-        COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}'),
+        N'{}',
         d.dtCreatedDate,
         d.dtModifiedDate
     FROM dbo.tblRuleDecision d
