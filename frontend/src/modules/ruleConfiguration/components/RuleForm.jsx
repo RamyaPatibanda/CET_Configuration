@@ -104,6 +104,7 @@ function RuleForm({
   const [fields, setFields] = useState([]);
   const [decisionOptions, setDecisionOptions] = useState([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  const [loadingDecisionOptions, setLoadingDecisionOptions] = useState(false);
   const [error, setError] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   const [draggedRow, setDraggedRow] = useState(null);
@@ -129,14 +130,17 @@ function RuleForm({
     const loadConfiguration = async () => {
       try {
         setLoadingFields(true);
+        setLoadingDecisionOptions(true);
         const [fieldsResponse, decisionResponse] = await Promise.all([
           ruleConfigurationService.getFields(),
         ]);
         setFields(getResponseItems(fieldsResponse));
+        setDecisionOptions(getResponseItems(decisionResponse));
       } catch (loadError) {
         setError(loadError.message || "Unable to load rule configuration options.");
       } finally {
         setLoadingFields(false);
+        setLoadingDecisionOptions(false);
       }
     };
 
