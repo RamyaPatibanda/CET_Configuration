@@ -152,7 +152,9 @@ public sealed class AllocationRunHistoryDAL
                     CompletedAtUtc = reader.IsDBNull(completedOrdinal) ? null : reader.GetDateTime(completedOrdinal),
                     CandidateCount = reader.GetInt32(reader.GetOrdinal("nCandidateCount")),
                     DecisionCount = reader.GetInt32(reader.GetOrdinal("nDecisionCount")),
-                    ErrorMessage = reader.IsDBNull(errorOrdinal) ? string.Empty : reader.GetString(errorOrdinal),\n                    RunByUserId = reader.IsDBNull(reader.GetOrdinal("aRunByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aRunByUserId")),\n                    CreatedBy = reader.IsDBNull(reader.GetOrdinal("tRunBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tRunBy"))
+                    ErrorMessage = reader.IsDBNull(errorOrdinal) ? string.Empty : reader.GetString(errorOrdinal),
+                    CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aRunByUserId")),
+                    CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tRunBy"))
                 });
             }
 
