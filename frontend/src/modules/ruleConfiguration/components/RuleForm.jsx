@@ -233,6 +233,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             allocationType: "",
             sequence: rows.length + 1,
             isElse: false,
+            outcome: { vacancySource: "", vacancyType: "" },
             conditions: [],
           },
         ],
@@ -257,6 +258,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
             allocationType: "",
             sequence: rows.length + 1,
             isElse: true,
+            outcome: { vacancySource: "", vacancyType: "" },
             conditions: [],
           },
         ],
@@ -451,6 +453,25 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       return;
     }
 
+    const rootConditions = (form.conditions || []).map((condition, conditionIndex) => ({
+      fieldId: Number(condition.fieldId),
+      fieldName: fields.find((field) => String(field.fieldId) === String(condition.fieldId))?.fieldName
+        || fields.find((field) => String(field.fieldId) === String(condition.fieldId))?.FieldName
+        || "",
+      conditionLogicalOperator: (condition.conditionLogicalOperator || "AND").toUpperCase(),
+      operator: condition.operator,
+      value: condition.value,
+      conditionOrder: conditionIndex + 1,
+      groupOrder: Number(condition.groupOrder || 1),
+    }));
+
+    if (rootConditions.some((condition) =>
+      !condition.fieldId || !condition.operator || !String(condition.value).trim()
+    )) {
+      setError("Complete every condition in the Conditions section.");
+      return;
+    }
+
     const branches = form.branches || [];
     let hasValidIfBranch = false;
     const normalizedBranches = branches.map((branch, branchIndex) => {
@@ -512,7 +533,7 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
       setError("");
       await onSave({
         ...form,
-        conditions: [],
+        conditions: rootConditions,
         outcome: { values: [] },
         branches: normalizedBranches,
       });
