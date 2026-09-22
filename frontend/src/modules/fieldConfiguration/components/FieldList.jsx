@@ -43,21 +43,22 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
               onDragEnd={() => setDraggedId(null)}
             >
               <td className="field-order-column">
-                {canWrite && <button
-                  type="button"
-                  className="field-drag-handle"
-                  title="Drag to rearrange"
-                  aria-label={`Reorder ${field.displayName}`}
-                  draggable
-                  onDragStart={(event) => {
-                  if (!canWrite) return;
-                    event.stopPropagation();
-                    setDraggedId(field.fieldId);
-                    event.dataTransfer.effectAllowed = "move";
-                  }}
-                >
-                  <FiMenu size={17} />
-                </button>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    className="field-drag-handle"
+                    title="Drag to rearrange"
+                    aria-label={`Reorder ${field.displayName}`}
+                    draggable
+                    onDragStart={(event) => {
+                      event.stopPropagation();
+                      setDraggedId(field.fieldId);
+                      event.dataTransfer.effectAllowed = "move";
+                    }}
+                  >
+                    <FiMenu size={17} />
+                  </button>
+                ) : null}
               </td>
               <td><strong>{field.tableName}</strong></td>
               <td>{field.fieldName}</td>
