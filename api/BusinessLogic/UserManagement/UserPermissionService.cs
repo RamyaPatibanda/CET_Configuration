@@ -24,10 +24,6 @@ public sealed class UserPermissionService
         if (user.IsInRole("admin"))
             return true;
 
-        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? user.FindFirstValue(ClaimTypes.Name)
-            ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
             return false;
 
