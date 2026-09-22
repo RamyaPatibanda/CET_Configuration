@@ -100,6 +100,9 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const addRootCondition = () => {
     setForm((current) => {
       const conditions = current.conditions || [];
+      const lastGroupOrder = conditions.length
+        ? Math.max(...conditions.map((condition) => Number(condition.groupOrder || 1)))
+        : 1;
       return {
         ...current,
         conditions: [
@@ -107,11 +110,11 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
           {
             id: `root-condition-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             fieldId: "",
-            conditionLogicalOperator: conditions.length ? "AND" : "AND",
+            conditionLogicalOperator: "AND",
             operator: "Equals",
             value: "",
             conditionOrder: conditions.length + 1,
-            groupOrder: 1,
+            groupOrder: lastGroupOrder,
           },
         ],
       };
@@ -240,11 +243,13 @@ function RuleForm({ open, rule, nextRuleId, saving, onClose, onSave }) {
   const changeGroupLogic = (groupOrder, value) => {
     setForm((current) => ({
       ...current,
-      conditions: (current.conditions || []).map((condition) =>
-        Number(condition.groupOrder || 1) === groupOrder
+      conditions: (current.conditions || []).map((condition, index, conditions) => {
+        if (Number(condition.groupOrder || 1) !== groupOrder) return condition;
+        const firstInGroup = conditions.find((item) => Number(item.groupOrder || 1) === groupOrder);
+        return condition.id === firstInGroup?.id
           ? { ...condition, conditionLogicalOperator: value }
-          : condition
-      ),
+          : condition;
+      }),
     }));
   };
 
