@@ -844,3 +844,14 @@
 @media(max-width:650px) {
   .decision-branch-editor { grid-template-columns:1fr; }
 }
+
+.decision-simple-grid {
+  display:grid;
+  grid-template-columns:minmax(220px, 1fr) 180px;
+  gap:10px;
+  align-items:end;
+}
+.decision-simple-grid > * { min-width:0; }
+@media(max-width:700px) {
+  .decision-simple-grid { grid-template-columns:1fr; }
+}
