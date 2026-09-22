@@ -417,17 +417,17 @@ public sealed class AllocationController : ControllerBase
                     condition.GroupOrder,
                     condition.ConditionOrder))
                 .ToList(),
-            DecisionRows = rule.DecisionRows
-                .Where(decision => decision.IsActive)
-                .OrderBy(decision => decision.DecisionOrder)
-                .Select(decision => new api.Services.Allocation.AllocationDecisionRow
+            Branches = rule.Branches
+                .Where(decision => branch.IsActive)
+                .OrderBy(decision => branch.BranchOrder)
+                .Select(decision => new api.Services.Allocation.AllocationRuleBranch
                 {
-                    DecisionOrder = decision.DecisionOrder,
-                    DecisionName = decision.DecisionName,
-                    AllocationType = decision.AllocationType,
-                    Sequence = decision.Sequence,
-                    IsElse = decision.IsElse,
-                    Conditions = decision.Conditions
+                    BranchOrder = branch.BranchOrder,
+                    BranchName = branch.BranchName,
+                    AllocationType = branch.AllocationType,
+                    Sequence = branch.Sequence,
+                    IsElse = branch.IsElse,
+                    Conditions = branch.Conditions
                         .OrderBy(condition => condition.GroupOrder)
                         .ThenBy(condition => condition.ConditionOrder)
                         .Select(condition => new api.Services.Allocation.RuleCondition(
