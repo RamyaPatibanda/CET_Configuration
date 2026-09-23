@@ -28,6 +28,8 @@ public static class AllocationConfiguration
     public const string SeatEligibility = "SEAT_ELIGIBILITY";
     public const string Betterment = "BETTERMENT";
     public const string Conversion = "CONVERSION";
+    public const string Step0SeatDistribution = "STEP_0_SEAT_DISTRIBUTION";
+    public const string Step0AllocationType = "STEP_0_ALLOCATION_TYPE";
     public const string Step0Sequence = "STEP_0_SEQUENCE";
 
     public static IReadOnlyList<AllocationStepDefinition> GetSteps() =>
@@ -48,9 +50,21 @@ public static class AllocationConfiguration
                 },
                 new()
                 {
-                    Code = SeatAllocation,
-                    Name = "Seat Allocation",
-                    Description = "Apply the allocation result carried by the selected rules."
+                    Code = "STEP_0_SEAT_DISTRIBUTION",
+                    Name = "Seat Distribution",
+                    Description = "Determine special reservation vacancy when the normal seat vacancy is zero."
+                },
+                new()
+                {
+                    Code = "STEP_0_ALLOCATION_TYPE",
+                    Name = "Allocation Type",
+                    Description = "Determine the seat column used for the allocation."
+                },
+                new()
+                {
+                    Code = "STEP_0_SEQUENCE",
+                    Name = "Sequence",
+                    Description = "Evaluate the selected rules in Allocation Run order and assign SeqId."
                 }
             ]
         },
