@@ -468,7 +468,6 @@ CREATE PROCEDURE dbo.sproc_CreateRuleV2
     @tDescription NVARCHAR(1000),
     @nPriority INT,
     @bIsActive BIT,
-    @tDecisionAreaCode NVARCHAR(100),
     @tOutcomeJson NVARCHAR(MAX),
     @tConditionsJson NVARCHAR(MAX),
     @aCreatedByUserId INT
@@ -486,10 +485,6 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority = @nPriority)
             THROW 50103, 'A rule with the specified Priority already exists.', 1;
 
-        IF @tDecisionAreaCode NOT IN
-            ('CANDIDATE_QUALIFICATION','SPECIAL_RESERVATION_ELIGIBILITY','PREFERENCE_EVALUATION','SEAT_ELIGIBILITY','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
-            THROW 50104, 'Invalid rule decision area.', 1;
-
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
             THROW 50105, 'Rule outcome must be valid JSON.', 1;
 
@@ -501,7 +496,7 @@ BEGIN
         VALUES
         (
             @aRuleId, @tRuleName, @tDescription, @nPriority, @bIsActive,
-            @tDecisionAreaCode, @tOutcomeJson, @aCreatedByUserId
+            N'', @tOutcomeJson, @aCreatedByUserId
         );
 
         INSERT INTO dbo.tblRuleConditionGroup (aRuleId, nGroupOrder, tLogicalOperator)
@@ -549,7 +544,6 @@ CREATE PROCEDURE dbo.sproc_UpdateRuleV2
     @tDescription NVARCHAR(1000),
     @nPriority INT,
     @bIsActive BIT,
-    @tDecisionAreaCode NVARCHAR(100),
     @tOutcomeJson NVARCHAR(MAX),
     @tConditionsJson NVARCHAR(MAX)
 AS
@@ -566,10 +560,6 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.tblRule WHERE nPriority = @nPriority AND aRuleId <> @aRuleId)
             THROW 50109, 'A different rule already uses the specified Priority.', 1;
 
-        IF @tDecisionAreaCode NOT IN
-            ('CANDIDATE_QUALIFICATION','SPECIAL_RESERVATION_ELIGIBILITY','PREFERENCE_EVALUATION','SEAT_ELIGIBILITY','SEAT_ALLOCATION','BETTERMENT','CONVERSION')
-            THROW 50110, 'Invalid rule decision area.', 1;
-
         IF ISJSON(COALESCE(@tOutcomeJson, N'{}')) <> 1
             THROW 50111, 'Rule outcome must be valid JSON.', 1;
 
@@ -579,7 +569,7 @@ BEGIN
             tDescription = @tDescription,
             nPriority = @nPriority,
             bIsActive = @bIsActive,
-            tDecisionAreaCode = @tDecisionAreaCode,
+            tDecisionAreaCode = N'',
             tOutcomeJson = @tOutcomeJson,
             dtModifiedDate = GETDATE()
         WHERE aRuleId = @aRuleId;
