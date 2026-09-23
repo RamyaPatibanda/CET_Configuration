@@ -3,6 +3,7 @@ using api.Models.FieldConfiguration;
 using api.BusinessLogic.UserManagement;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 
 namespace api.Controllers
 {
@@ -76,6 +77,10 @@ namespace api.Controllers
                 return Ok(new { fieldId, message = "Field created successfully." });
             }
             catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (SqlException ex) when (ex.Number == 50301 || ex.Number == 2601 || ex.Number == 2627)
+            {
+                return BadRequest(new { message = "Field already exists for the specified table and field name." });
+            }
             catch (Exception ex) { _logger.LogError(ex, "Error while creating field."); return StatusCode(500, new { message = "Unable to create field." }); }
         }
 
