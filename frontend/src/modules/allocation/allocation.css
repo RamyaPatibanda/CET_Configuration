@@ -1409,3 +1409,109 @@
 .allocation-portal-menu .allocation-rule-options::-webkit-scrollbar-track {
   background: transparent;
 }
+
+
+/* Compact Allocation Run decision-area selectors.
+   Selected rules stay collapsed when the dropdown is closed so the
+   decision-area cards do not grow with every selection. */
+.allocation-rule-selection .allocation-decision-area {
+  min-width: 0;
+}
+
+.allocation-rule-selection .allocation-multiselect-trigger {
+  min-height: 38px;
+  padding: 8px 11px;
+  font-size: 10px;
+}
+
+.allocation-rule-selection .allocation-multiselect-menu.allocation-portal-menu {
+  max-height: min(310px, 55vh) !important;
+  padding: 6px;
+  overflow: hidden !important;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-search {
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-options {
+  max-height: 175px !important;
+  flex: 0 0 175px;
+  overflow-y: auto !important;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-multiselect-option {
+  min-height: 34px;
+  padding: 6px 8px;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-content {
+  min-width: 0;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-content strong {
+  font-size: 10px;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-content span {
+  font-size: 8px;
+}
+
+.allocation-rule-selection .allocation-portal-menu .allocation-rule-priority {
+  font-size: 8px;
+}
+
+/* Allocation Type & Sequence keeps ordering controls inside the overlay.
+   Nothing expands the decision-area card while the menu is closed. */
+.allocation-sequence-selected {
+  flex: 0 0 auto;
+  max-height: 82px;
+  margin-bottom: 5px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.allocation-sequence-selected .allocation-sequence-item {
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  min-height: 32px;
+  padding: 4px 5px;
+  gap: 6px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.allocation-sequence-selected .allocation-sequence-number {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-size: 8px;
+}
+
+.allocation-sequence-selected .allocation-sequence-rule strong {
+  font-size: 9px;
+}
+
+.allocation-sequence-selected .allocation-sequence-actions {
+  gap: 2px;
+}
+
+.allocation-sequence-selected .allocation-sequence-actions button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.allocation-sequence-selected::-webkit-scrollbar {
+  width: 5px;
+}
+
+.allocation-sequence-selected::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.allocation-sequence-selected::-webkit-scrollbar-track {
+  background: transparent;
+}
