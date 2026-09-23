@@ -83,7 +83,7 @@ function DecisionAreaRuleSelect({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [openRuleGroup, area.code, filteredRules?.length]);
+  }, [openRuleGroup, area.code]);
 
   const areaRules = useMemo(
     () =>
