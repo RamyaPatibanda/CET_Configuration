@@ -400,10 +400,10 @@ public sealed class LegacyAllocationDAL
         {
             result.Add(new VacancyRow(
                 reader.GetByte(reader.GetOrdinal("CategoryId")),
-                reader.IsDBNull(reader.GetOrdinal("MinorityId")) ? null : reader.GetInt16(reader.GetOrdinal("MinorityId")),
+                reader.IsDBNull(reader.GetOrdinal("MinorityId")) ? null : Convert.ToInt16(reader["MinorityId"]),
                 reader.GetByte(reader.GetOrdinal("QuotaID")),
-                reader.IsDBNull(reader.GetOrdinal("Gen")) ? 0 : reader.GetInt16(reader.GetOrdinal("Gen")),
-                reader.IsDBNull(reader.GetOrdinal("Fem")) ? 0 : reader.GetInt16(reader.GetOrdinal("Fem"))));
+                reader.IsDBNull(reader.GetOrdinal("Gen")) ? 0 : Convert.ToInt32(reader["Gen"]),
+                reader.IsDBNull(reader.GetOrdinal("Fem")) ? 0 : Convert.ToInt32(reader["Fem"])));
         }
         return result;
     }
