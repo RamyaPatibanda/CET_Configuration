@@ -1302,3 +1302,41 @@
     gap:20px;
   }
 }
+
+
+/* The rule-selection section owns the dropdown stacking context.
+   It must sit above the following Run Lifecycle section while a menu is open. */
+.allocation-rule-selection {
+  position: relative;
+  z-index: 200;
+  overflow: visible;
+}
+
+.allocation-rule-selection .allocation-stage-list,
+.allocation-rule-selection .allocation-decision-areas {
+  position: relative;
+  z-index: 210;
+  overflow: visible;
+}
+
+.allocation-rule-selection .allocation-decision-area {
+  position: relative;
+  z-index: 220;
+  overflow: visible;
+}
+
+.allocation-rule-selection .allocation-multiselect {
+  position: relative;
+  z-index: 230;
+}
+
+.allocation-rule-selection .allocation-multiselect-menu {
+  z-index: 9999;
+  max-height: min(360px, 45vh);
+  overflow-y: auto;
+}
+
+.allocation-execution {
+  position: relative;
+  z-index: 1;
+}
