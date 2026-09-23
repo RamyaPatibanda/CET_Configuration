@@ -76,25 +76,36 @@ public sealed class LegacyAllocationDAL
 
                     foreach (var vacancyRow in vacancyRows)
                     {
-                        var vacancy = Math.Max(vacancyRow.Gen, vacancyRow.Fem);
+                        // Stored procedure equivalent:
+                        // @VacCatgoryId > 1 OR
+                        // (@VacCatgoryId = 1 AND @IsEligibleForOpen = 'Y')
+                        if (vacancyRow.CategoryId == 1 &&
+                            !candidate.IsEligibleForOpen.Equals("Y", StringComparison.OrdinalIgnoreCase))
+                            continue;
 
-                        // This method needs the injected rule evaluator, so it must be an instance method.
-                        var specialVacancy = await ResolveSeatDistributionVacancyAsync(
-                            connection, transaction, preference.ChoiceCode, candidate, vacancy, ruleGroups, cancellationToken);
+                        // Allocation Type & Sequence decides whether Gen or Fem is used.
+                        // Never use Math.Max(Gen, Fem) because that ignores the configured
+                        // allocation decision.
+                        var allocationRule = ResolveAllocationRule(
+                            ruleGroups, candidate, vacancyRow, string.Empty);
 
-                        if (specialVacancy is not null)
-                            vacancy = specialVacancy.Value.Vacancy;
-
-                        var vacancyType = specialVacancy?.VacancyType ?? string.Empty;
-                        var vacancySource = specialVacancy?.VacancySource ?? string.Empty;
-                        var allocationRule = ResolveAllocationRule(ruleGroups, candidate, vacancyRow, vacancy, vacancyType);
                         if (allocationRule is null)
                             continue;
 
                         var allocatedType = allocationRule.AllocatedType;
-                        // Keep the vacancy resolved by Seat Distribution. Allocation Type
-                        // only chooses the Gen/Fem seat column; it must not overwrite a
-                        // special-reservation vacancy already resolved above.
+                        var vacancy = ResolveAllocatedTypeVacancy(vacancyRow, allocatedType);
+
+                        // Special reservation distribution is considered only when the
+                        // selected allocation type has no normal vacancy.
+                        var specialVacancy = await ResolveSeatDistributionVacancyAsync(
+                            connection, transaction, preference.ChoiceCode, candidate, vacancy, ruleGroups, cancellationToken);
+
+                        var vacancyType = specialVacancy?.VacancyType ?? string.Empty;
+                        var vacancySource = specialVacancy?.VacancySource ?? string.Empty;
+
+                        if (specialVacancy is not null)
+                            vacancy = specialVacancy.Value.Vacancy;
+
                         if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
                             continue;
 
@@ -214,32 +225,33 @@ public sealed class LegacyAllocationDAL
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups,
         AllocationCandidate candidate,
         VacancyRow vacancyRow,
-        int vacancy,
         string vacancyType)
     {
         if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0AllocationTypeSequence, out var allocationRules) ||
             allocationRules.Count == 0)
             return null;
 
-        var values = BuildStep0RuleValues(candidate, vacancyRow, vacancy, vacancyType, string.Empty);
+        var baseValues = BuildStep0RuleValues(candidate, vacancyRow, 0, vacancyType, string.Empty);
 
-        // Allocation Type and Sequence are one ordered decision. The first
-        // matching rule determines AllocatedType from its outcome and its
-        // position in the Allocation Run becomes SeqId.
         for (var index = 0; index < allocationRules.Count; index++)
         {
             var rule = allocationRules[index];
+
+            // First evaluate candidate/category/seat conditions without deriving
+            // vacancy from Gen/Fem.
+            if (!_ruleEvaluator.Matches(rule, baseValues))
+                continue;
+
+            var allocatedType = ResolveAllocatedType(rule, baseValues, vacancyRow);
+            if (string.IsNullOrWhiteSpace(allocatedType))
+                continue;
+
+            // Vacancy belongs to the configured allocation type.
+            var vacancy = ResolveAllocatedTypeVacancy(vacancyRow, allocatedType);
+
+            // Re-evaluate conditions that may explicitly use Vacancy.
+            var values = BuildStep0RuleValues(candidate, vacancyRow, vacancy, vacancyType, allocatedType);
             if (!_ruleEvaluator.Matches(rule, values))
-                continue;
-
-            var allocatedType = ResolveAllocatedType(rule, values, vacancyRow);
-            if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
-                continue;
-
-            if (allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase) && vacancyRow.Fem <= 0)
-                continue;
-
-            if (allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase) && vacancyRow.Gen <= 0)
                 continue;
 
             return new AllocationRule
@@ -263,6 +275,15 @@ public sealed class LegacyAllocationDAL
         }
 
         return null;
+    }
+
+    private static int ResolveAllocatedTypeVacancy(VacancyRow vacancyRow, string allocatedType)
+    {
+        return allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase)
+            ? vacancyRow.Fem
+            : allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase)
+                ? vacancyRow.Gen
+                : 0;
     }
 
     private Dictionary<string, string?> BuildStep0RuleValues(
