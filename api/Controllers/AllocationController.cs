@@ -821,7 +821,7 @@ prepared:
         string allocationStep,
         IEnumerable<AllocationRuleGroupRequest> groups) =>
         $"{allocationStep}:{string.Join("|", groups.OrderBy(g => g.Type)
-            .Select(g => $"{g.Type}={string.Join(",", g.RuleIds.OrderBy(id => id))}"))}";
+            .Select(g => $"{g.Type}={string.Join(",", g.RuleIds)}"))}";
 
     private sealed class PreparedAllocation
     {
