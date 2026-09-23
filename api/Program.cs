@@ -36,6 +36,8 @@ builder.Services.AddScoped<IRuleEvaluator, RuleEvaluator>();
 builder.Services.AddScoped<LegacyAllocationDAL>();
 builder.Services.AddScoped<DefenceConversionService>();
 builder.Services.AddScoped<Step0CandidateRepository>();
+builder.Services.AddScoped<Step1CandidateRepository>();
+builder.Services.AddScoped<LegacyStep1AllocationDAL>();
 builder.Services.AddScoped<AllocationDecisionConfigurationDAL>();
 
 builder.Services.AddAuthorization();
