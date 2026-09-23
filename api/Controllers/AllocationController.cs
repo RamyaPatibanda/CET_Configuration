@@ -535,11 +535,27 @@ prepared:
         foreach (var group in groups)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            result[group.Type] = group.RuleIds
+            var mappedRules = group.RuleIds
                 .Where(rules.ContainsKey)
                 .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
-                .OrderBy(rule => rule.DisplayOrder == 0 ? int.MaxValue : rule.DisplayOrder)
                 .ToList();
+
+            if (string.Equals(group.Type, AllocationConfiguration.Step1AllocationTypeSequence, StringComparison.OrdinalIgnoreCase))
+            {
+                for (var index = 0; index < mappedRules.Count; index++)
+                {
+                    mappedRules[index].SequenceId = index + 1;
+                    mappedRules[index].DisplayOrder = index + 1;
+                }
+            }
+            else
+            {
+                mappedRules = mappedRules
+                    .OrderBy(rule => rule.DisplayOrder == 0 ? int.MaxValue : rule.DisplayOrder)
+                    .ToList();
+            }
+
+            result[group.Type] = mappedRules;
         }
         return result;
     }
