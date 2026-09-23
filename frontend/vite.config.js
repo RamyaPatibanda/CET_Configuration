@@ -4,6 +4,6 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // The application can be hosted under any IIS virtual application path.
-  base: "/cet-configuration/",
+  // Use a relative base so the same build can be hosted at any IIS application path.
+  base: "./",
 })
