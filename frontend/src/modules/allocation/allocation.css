@@ -868,6 +868,41 @@
 @media (max-width: 900px) { .allocation-result-controls { margin-left: 0; width: 100%; } .allocation-selected-rule { flex-wrap: wrap; } }
 
 
+/* Keep decision-area dropdowns above surrounding cards.
+   The menu is absolutely positioned by the component; the allocation
+   decision section must establish the stacking context above the run
+   lifecycle panel. */
+.allocation-stage-list,
+.allocation-decision-area,
+.allocation-multiselect {
+  position: relative;
+  z-index: 20;
+}
+
+.allocation-multiselect-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.allocation-decision-area:has(.allocation-multiselect-menu) {
+  z-index: 100;
+}
+
+.allocation-run-lifecycle,
+.allocation-run-lifecycle-card,
+.allocation-run-card,
+.allocation-lifecycle-card {
+  position: relative;
+  z-index: 1;
+}
+
 /* Step 0 selected-rule sequence */
 .allocation-sequence-area {
   min-width: 0;
