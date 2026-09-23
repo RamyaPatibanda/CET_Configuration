@@ -1515,3 +1515,128 @@
 .allocation-sequence-selected::-webkit-scrollbar-track {
   background: transparent;
 }
+
+
+/* Step 0 ordered decision rules: keep the selected list inside the
+   dropdown and use the same drag-handle interaction as Rule Configuration. */
+.allocation-rule-selection .allocation-selected-sequence-menu {
+  flex: 0 0 auto;
+  max-height: 100px;
+  margin: 0 0 5px;
+  padding: 2px 0 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-label {
+  padding: 3px 6px 5px;
+  color: #6b7280;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-item {
+  display: grid;
+  grid-template-columns: 20px 20px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  margin: 2px 0;
+  padding: 3px 5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #f8fafc;
+  cursor: grab;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-item:active {
+  cursor: grabbing;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-item.is-dragging {
+  opacity: .45;
+  border-style: dashed;
+}
+
+.allocation-rule-selection .allocation-sequence-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  cursor: grab;
+}
+
+.allocation-rule-selection .allocation-sequence-drag-handle:hover {
+  color: #4f46e5;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-number {
+  width: 19px;
+  height: 19px;
+  border-radius: 5px;
+  font-size: 8px;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule {
+  min-width: 0;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-size: 9px;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule span {
+  display: none;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-remove-rule {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  border-radius: 5px;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-remove-rule:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.allocation-rule-selection .allocation-sequence-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+.allocation-rule-selection .allocation-sequence-menu .allocation-rule-search {
+  flex: 0 0 auto;
+}
+
+.allocation-rule-selection .allocation-sequence-menu .allocation-rule-options {
+  flex: 0 0 175px;
+  min-height: 0;
+  max-height: 175px !important;
+  overflow-y: auto !important;
+}
