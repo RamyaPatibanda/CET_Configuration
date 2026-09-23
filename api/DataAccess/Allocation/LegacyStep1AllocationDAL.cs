@@ -50,7 +50,8 @@ public sealed class LegacyStep1AllocationDAL
                     if (!IsPreferenceEligible(candidate, preference, existing, ruleGroups))
                         continue;
 
-                    var seats = await GetSeatRowsAsync(connection, transaction, preference.ChoiceCode, candidate, cancellationToken);
+                    var configuredTypes = GetConfiguredAllocationTypes(ruleGroups);
+                    var seats = await GetSeatRowsAsync(connection, transaction, preference.ChoiceCode, candidate, configuredTypes, cancellationToken);
 
                     foreach (var seat in seats)
                     {
@@ -67,6 +68,9 @@ public sealed class LegacyStep1AllocationDAL
 
                         var vacancy = seat.GetVacancy(allocationType);
                         if (vacancy <= 0)
+                            continue;
+
+                        if (existing is not null && !IsBettermentAllowed(candidate, preference, existing, ruleGroups))
                             continue;
 
                         if (currentPreference > 0 &&
@@ -235,16 +239,54 @@ public sealed class LegacyStep1AllocationDAL
         return values;
     }
 
+    private static HashSet<string> GetConfiguredAllocationTypes(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> groups)
+    {
+        if (!groups.TryGetValue(AllocationConfiguration.Step1AllocationTypeSequence, out var rules))
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        return rules
+            .Select(rule => rule.AllocatedType)
+            .Where(type => !string.IsNullOrWhiteSpace(type))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool IsBettermentAllowed(
+        AllocationCandidate candidate,
+        CollegePreference preference,
+        ExistingStep1Allocation existing,
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> groups)
+    {
+        if (!groups.TryGetValue(AllocationConfiguration.Betterment, out var rules) || rules.Count == 0)
+            return true;
+
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Gender"] = candidate.Gender,
+            ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
+            ["PreferenceNo"] = preference.PreferenceNo.ToString(),
+            ["CurrentPreferenceNo"] = existing.PreferenceNo.ToString(),
+            ["CurrentSeqId"] = existing.SeqId.ToString(),
+            ["MeritNo"] = candidate.MeritNo.ToString(),
+            ["ChoiceCode"] = preference.ChoiceCode.ToString()
+        };
+
+        return rules.Any(rule =>
+            _ruleEvaluator.Matches(rule, values) &&
+            rule.AllowBetterment != false);
+    }
+
     private async Task<List<SeatRow>> GetSeatRowsAsync(
         SqlConnection connection,
         SqlTransaction transaction,
         long choiceCode,
         AllocationCandidate candidate,
+        IReadOnlySet<string> configuredTypes,
         CancellationToken cancellationToken)
     {
         var rows = new List<SeatRow>();
         const string sql = """
-            SELECT CategoryId, MinorityId, QuotaID, Gen, Fem
+            SELECT *
             FROM dbo.Allocation_SeatDistribution
             WHERE ChoiceCode = @ChoiceCode
               AND (
@@ -267,15 +309,19 @@ public sealed class LegacyStep1AllocationDAL
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
+            var vacancies = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var type in configuredTypes)
+            {
+                var ordinal = reader.GetOrdinal(type);
+                if (!reader.IsDBNull(ordinal))
+                    vacancies[type] = Convert.ToInt32(reader.GetValue(ordinal));
+            }
+
             rows.Add(new SeatRow(
                 Convert.ToInt32(reader["CategoryId"]),
                 reader["MinorityId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["MinorityId"]),
                 Convert.ToInt32(reader["QuotaID"]),
-                new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["Gen"] = Convert.ToInt32(reader["Gen"]),
-                    ["Fem"] = Convert.ToInt32(reader["Fem"])
-                }));
+                vacancies));
         }
 
         return rows;
