@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using api.Models.Allocation;
+using api.DataAccess.Allocation;
 
 namespace api.Services.Allocation;
 
