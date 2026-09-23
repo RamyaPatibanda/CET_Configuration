@@ -212,7 +212,7 @@ function Allocation() {
   const moveSequenceRule = (ruleId, direction) => {
     if (!canEdit) return;
     setRuleGroups((current) => current.map((group) => {
-      if (!["STEP_0_SEAT_DISTRIBUTION", "STEP_0_ALLOCATION_TYPE_SEQUENCE"].includes(group.type)) return group;
+      if (!["STEP_0_SEAT_DISTRIBUTION", "STEP_0_ALLOCATION_TYPE_SEQUENCE", "STEP_1_ALLOCATION_TYPE_SEQUENCE"].includes(group.type)) return group;
       const index = group.ruleIds.indexOf(ruleId);
       const target = index + direction;
       if (index < 0 || target < 0 || target >= group.ruleIds.length) return group;
@@ -403,6 +403,12 @@ function Allocation() {
             <div className="allocation-rule-note">
               <FiCheck size={15} />
               <span>Candidate Eligibility builds the pool. Seat Distribution resolves PH/Def/Orp vacancy only when normal vacancy is zero. Allocation Type &amp; Sequence evaluates the selected rules in order: the first matching rule determines the seat column and its position becomes the SeqId.</span>
+            </div>
+          )}
+          {allocationStep === "STEP_1" && (
+            <div className="allocation-rule-note">
+              <FiCheck size={15} />
+              <span>Step 1 follows merit and preference order. Candidate Qualification controls the candidate pool, Preference Evaluation controls preference traversal, Seat Eligibility controls the seat row, Allocation Type &amp; Sequence selects the configured seat column and sequence, and Betterment controls replacement of an existing allocation.</span>
             </div>
           )}
 
