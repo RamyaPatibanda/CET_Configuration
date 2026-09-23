@@ -112,6 +112,7 @@ function FieldConfiguration() {
   const pagedFields = filteredFields.slice((safePage - 1) * pageSize, safePage * pageSize);
   useEffect(() => { setPage(1); }, [search, pageSize]);
   const nextFieldId = fields.length ? Math.max(...fields.map((field) => field.fieldId ?? 0)) + 1 : 1;
+  const canWrite = authService.hasPermission("FIELDS", "write");
 
   return (
     <div className="field-configuration-page">
