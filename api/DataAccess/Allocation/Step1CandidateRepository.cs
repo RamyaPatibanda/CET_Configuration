@@ -48,8 +48,12 @@ public sealed class Step1CandidateRepository
                 IsPh = Convert.ToString(reader["FinalIsPh"]) ?? "N",
                 IsExServicemen = Convert.ToString(reader["FinalIsExServicemen"]) ?? "N",
                 IsOrphan = Convert.ToString(reader["FinalIsOrphan"]) ?? "N",
-                LinguisticMinorityId = reader["LinguisticMinorityID"] == DBNull.Value ? 0 : Convert.ToInt16(reader["LinguisticMinorityID"]),
-                ReligiousMinorityId = reader["ReligiousMinorityID"] == DBNull.Value ? 0 : Convert.ToInt16(reader["ReligiousMinorityID"]),
+                LinguisticMinorityId = reader["LinguisticMinorityID"] == DBNull.Value
+                    ? (short)0
+                    : Convert.ToInt16(reader["LinguisticMinorityID"]),
+                ReligiousMinorityId = reader["ReligiousMinorityID"] == DBNull.Value
+                    ? (short)0
+                    : Convert.ToInt16(reader["ReligiousMinorityID"]),
                 MeritNo = Convert.ToInt64(reader["MeritNo"]),
                 ExServicemenMeritNo = reader["ExServicemenMeritNo"] == DBNull.Value ? 0 : Convert.ToInt64(reader["ExServicemenMeritNo"]),
                 IsEligibleForOpen = Convert.ToString(reader["IsEligibleForOpen"]) ?? "N"
