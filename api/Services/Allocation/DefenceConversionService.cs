@@ -36,11 +36,10 @@ public sealed class DefenceConversionService
         if (defenceVacancy <= 0)
             return null;
 
-        // Defence conversion must use the same configured Allocation Type
-        // and Sequence as Step 0. Never infer Gen/Fem from candidate gender and
-        // never fall back to the legacy hardcoded sequence.
+        // Defence conversion uses the same configured Allocation Type and
+        // Sequence as Step 0. There is no Gen/Fem-specific restriction here.
         var allocatedType = allocationRule.AllocatedType;
-        if (!IsGenOrFem(allocatedType))
+        if (string.IsNullOrWhiteSpace(allocatedType))
             return null;
 
         var vacancyForConfiguredType = GetVacancy(vacancy, allocatedType);
@@ -103,14 +102,9 @@ public sealed class DefenceConversionService
         return inserted;
     }
 
-    private static bool IsGenOrFem(string value) =>
-        value.Equals("Gen", StringComparison.OrdinalIgnoreCase) ||
-        value.Equals("Fem", StringComparison.OrdinalIgnoreCase);
-
     private static int GetVacancy(VacancyRow vacancy, string allocatedType) =>
         allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase) ? vacancy.Fem :
         allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase) ? vacancy.Gen : 0;
-
 
     private static async Task<int> GetDefenceVacancyAsync(
         SqlConnection connection, SqlTransaction transaction, long choiceCode,
