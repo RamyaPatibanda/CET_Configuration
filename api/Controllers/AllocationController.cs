@@ -97,14 +97,25 @@ public sealed class AllocationController : ControllerBase
                 prepared.RuleGroups!,
                 cancellationToken);
 
-            await _runHistory.SaveDecisionsAsync(run.AllocationRunId, context.Decisions.ToList());
-            await SaveHistoryAsync(run, request, prepared.RuleDetails!, cancellationToken, decisionCount: context.Decisions.Count, candidateCount: context.StageResults.Sum(stage => stage.CandidateCountAfter));
+            var decisions = context.Decisions.ToList();
+            var stages = context.StageResults.ToList();
+            var report = BuildAllocationReport(stages, decisions);
+
+            await _runHistory.SaveDecisionsAsync(run.AllocationRunId, decisions);
+            await SaveHistoryAsync(
+                run,
+                request,
+                prepared.RuleDetails!,
+                cancellationToken,
+                decisionCount: decisions.Count,
+                candidateCount: report.TotalCandidatesProcessed);
 
             return Ok(new AllocationRunResponse
             {
                 Run = context.Run,
-                Decisions = context.Decisions.ToList(),
-                Stages = context.StageResults.ToList()
+                Decisions = decisions,
+                Stages = stages,
+                Report = report
             });
         }
         catch (OperationCanceledException)
@@ -197,6 +208,46 @@ public sealed class AllocationController : ControllerBase
         history.Status = AllocationRunStatus.Archived.ToString();
         await _runHistory.SaveAsync(history);
         return NoContent();
+    }
+
+    private static AllocationRunReport BuildAllocationReport(
+        IReadOnlyList<AllocationStageResult> stages,
+        IReadOnlyList<AllocationDecision> decisions)
+    {
+        var processed = stages.Sum(stage => stage.CandidateCountBefore);
+        var allocatedCandidateIds = decisions
+            .Select(decision => decision.CandidateId)
+            .Distinct()
+            .ToHashSet();
+
+        return new AllocationRunReport
+        {
+            TotalCandidatesProcessed = processed,
+            TotalCandidatesAllocated = allocatedCandidateIds.Count,
+            TotalCandidatesNotAllocated = Math.Max(0, processed - allocatedCandidateIds.Count),
+            PhAllocated = decisions.Count(decision =>
+                string.Equals(decision.VacancyType, "PH", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(decision.OriginalAllocatedType, "PH", StringComparison.OrdinalIgnoreCase)),
+            DefenceAllocated = decisions.Count(decision =>
+                string.Equals(decision.VacancyType, "Def", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(decision.OriginalAllocatedType, "Def", StringComparison.OrdinalIgnoreCase)),
+            OrphanAllocated = decisions.Count(decision =>
+                string.Equals(decision.VacancyType, "Orp", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(decision.OriginalAllocatedType, "Orp", StringComparison.OrdinalIgnoreCase)),
+            GeneralAllocated = decisions.Count(decision =>
+                string.Equals(decision.AllocatedType, "Gen", StringComparison.OrdinalIgnoreCase)),
+            FemaleAllocated = decisions.Count(decision =>
+                string.Equals(decision.AllocatedType, "Fem", StringComparison.OrdinalIgnoreCase)),
+            Stages = stages.Select(stage => new AllocationStageReport
+            {
+                StageCode = stage.StageCode,
+                CandidatesProcessed = stage.CandidateCountBefore,
+                CandidatesAllocated = stage.CandidateCountAfter,
+                CandidatesNotAllocated = Math.Max(0, stage.CandidateCountBefore - stage.CandidateCountAfter),
+                DecisionsCreated = stage.DecisionsCreated,
+                Status = stage.Status
+            }).ToList()
+        };
     }
 
     private async Task<PreparedAllocation> PrepareAsync(
