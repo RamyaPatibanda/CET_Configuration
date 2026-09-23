@@ -575,6 +575,15 @@ prepared:
 
             if (string.Equals(group.Type, AllocationConfiguration.Step1AllocationTypeSequence, StringComparison.OrdinalIgnoreCase))
             {
+                var missingAllocationTypes = mappedRules
+                    .Where(rule => string.IsNullOrWhiteSpace(rule.AllocatedType))
+                    .Select(rule => rule.Code)
+                    .ToList();
+
+                if (missingAllocationTypes.Count > 0)
+                    throw new InvalidOperationException(
+                        $"Step 1 Allocation Type & Sequence rule(s) must define an AllocatedType outcome: {string.Join(", ", missingAllocationTypes)}.");
+
                 for (var index = 0; index < mappedRules.Count; index++)
                 {
                     mappedRules[index].SequenceId = index + 1;
