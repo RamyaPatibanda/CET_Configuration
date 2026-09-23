@@ -108,7 +108,8 @@ public sealed class AllocationController : ControllerBase
                 prepared.RuleDetails!,
                 cancellationToken,
                 decisionCount: decisions.Count,
-                candidateCount: report.TotalCandidatesProcessed);
+                candidateCount: report.TotalCandidatesProcessed,
+                report: report);
 
             return Ok(new AllocationRunResponse
             {
@@ -442,7 +443,8 @@ prepared:
         CancellationToken cancellationToken,
         string errorMessage = "",
         int decisionCount = 0,
-        int candidateCount = 0)
+        int candidateCount = 0,
+        AllocationRunReport? report = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -458,7 +460,7 @@ prepared:
             AllocationStep = run.AllocationStep,
             Status = run.Status.ToString(),
             RuleGroupsJson = JsonSerializer.Serialize<object>(
-                BuildRuleGroupsHistoryPayload(run.AllocationStep, request, rules)),
+                BuildRuleGroupsHistoryPayload(run.AllocationStep, request, rules, report)),
             CreatedAtUtc = run.CreatedAtUtc,
             StartedAtUtc = run.StartedAtUtc == default ? null : run.StartedAtUtc,
             CompletedAtUtc = run.CompletedAtUtc,
@@ -471,7 +473,8 @@ prepared:
     private static object BuildRuleGroupsHistoryPayload(
         string allocationStep,
         AllocationRunRequest request,
-        IReadOnlyDictionary<int, RuleDefinition> rules)
+        IReadOnlyDictionary<int, RuleDefinition> rules,
+        AllocationRunReport? report = null)
     {
         if (string.Equals(allocationStep, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase))
         {
@@ -491,7 +494,8 @@ prepared:
                 {
                     ruleId = id,
                     ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                }).ToList()
+                }).ToList(),
+                report
             };
         }
 
