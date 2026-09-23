@@ -43,8 +43,8 @@ export async function loadRuntimeConfig() {
     applicationName: String(config.applicationName).trim(),
     iisApplicationName: String(config.iisApplicationName || "")
       .trim()
-      .replace(/^\\/+|\\/+$/g, ""),
-    apiBaseUrl: String(config.apiBaseUrl).trim().replace(/\\+$/, ""),
+      .replace(/^\/+|\/+$/g, ""),
+    apiBaseUrl: String(config.apiBaseUrl).trim().replace(/\/+$/, ""),
   };
 
   document.title = runtimeConfig.applicationName;
