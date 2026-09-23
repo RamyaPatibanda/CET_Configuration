@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://localhost:7270").replace(/\/$/, "");
+import { getApiBaseUrl } from "../config/runtimeConfig";
 
 async function request(endpoint, options = {}) {
   const { headers = {}, body, ...rest } = options;
@@ -21,7 +21,7 @@ async function request(endpoint, options = {}) {
 
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...rest,
       headers: requestHeaders,
       body: requestBody,
