@@ -460,7 +460,7 @@ public sealed class LegacyAllocationDAL
                 vacancyType,
                 cancellationToken);
 
-            if (vacancy > 0)
+            if (vacancy == 0)
                 return ("Allocation_SeatDistribution_PH", vacancyType, vacancy);
         }
 
