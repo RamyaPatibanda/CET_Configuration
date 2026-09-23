@@ -147,17 +147,11 @@ public sealed class DefenceConversionService
                 ("@ChoiceCode", SqlDbType.BigInt, allocation.ChoiceCode));
         }
 
-        var seatColumn = allocation.AllocatedType switch
+        if (!string.IsNullOrWhiteSpace(allocation.AllocatedType))
         {
-            "Gen" => "Gen",
-            "Fem" => "Fem",
-            _ => null
-        };
-
-        if (seatColumn is not null)
-        {
+            var seatColumn = SqlSafeIdentifier(allocation.AllocatedType);
             await ExecuteNonQueryAsync(connection, transaction,
-                $"UPDATE dbo.Allocation_SeatDistribution SET [{seatColumn}] = ISNULL([{seatColumn}], 0) + 1 WHERE ChoiceCode = @ChoiceCode AND CategoryID = @CategoryId AND QuotaID = @QuotaId;",
+                $"UPDATE dbo.Allocation_SeatDistribution SET {seatColumn} = ISNULL({seatColumn}, 0) + 1 WHERE ChoiceCode = @ChoiceCode AND CategoryID = @CategoryId AND QuotaID = @QuotaId;",
                 cancellationToken,
                 ("@ChoiceCode", SqlDbType.BigInt, allocation.ChoiceCode),
                 ("@CategoryId", SqlDbType.TinyInt, allocation.AllocatedCategoryId),
@@ -223,6 +217,9 @@ public sealed class DefenceConversionService
         StepId = Convert.ToInt32(reader["StepId"])
     };
 
+    private static string SqlSafeIdentifier(string value) =>
+        $"[{value.Replace("]", "]]")}]";
+
     private static SqlCommand CreateCommand(SqlConnection connection, SqlTransaction transaction, string sql) =>
         new(sql, connection, transaction) { CommandType = CommandType.Text, CommandTimeout = 0 };
 
@@ -237,5 +234,13 @@ public sealed class DefenceConversionService
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public sealed record VacancyRow(int CategoryId, short MinorityId, int QuotaId, int Gen, int Fem);
+    public sealed record VacancyRow(
+        int CategoryId,
+        short MinorityId,
+        int QuotaId,
+        IReadOnlyDictionary<string, int> SeatVacancies)
+    {
+        public int GetVacancy(string allocationType) =>
+            SeatVacancies.TryGetValue(allocationType, out var vacancy) ? vacancy : 0;
+    }
 }
