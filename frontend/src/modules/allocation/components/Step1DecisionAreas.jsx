@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiArrowDown, FiArrowUp, FiCheck, FiChevronDown, FiSearch, FiTrash2 } from "react-icons/fi";
 import DecisionAreaRuleSelect from "./DecisionAreaRuleSelect";
 
@@ -13,6 +14,11 @@ const STEP_1_STAGES = [
 function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup, toggleRule, moveRule, disabled }) {
   const [search, setSearch] = useState("");
   const isOpen = openRuleGroup === area.code;
+  const selectRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({});
+
   const filteredRules = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return rules;
@@ -27,8 +33,67 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
     .map((id) => rules.find((rule) => Number(rule.ruleId) === Number(id)))
     .filter(Boolean);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (
+        selectRef.current?.contains(event.target) ||
+        menuRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setOpenRuleGroup(null);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isOpen, setOpenRuleGroup]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const viewportPadding = 8;
+      const gap = 6;
+      const minMenuHeight = 120;
+      const preferredMenuHeight = 260;
+      const availableBelow = Math.max(0, window.innerHeight - rect.bottom - viewportPadding - gap);
+      const availableAbove = Math.max(0, rect.top - viewportPadding - gap);
+      const openUp = availableBelow < minMenuHeight && availableAbove > availableBelow;
+      const availableSpace = openUp ? availableAbove : availableBelow;
+      const maxHeight = Math.max(
+        minMenuHeight,
+        Math.min(preferredMenuHeight, availableSpace)
+      );
+
+      setMenuStyle({
+        position: "fixed",
+        zIndex: 100000,
+        left: rect.left,
+        width: rect.width,
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + gap }
+          : { top: rect.bottom + gap }),
+        maxHeight,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen, filteredRules.length]);
+
   return (
-    <div className="allocation-decision-area allocation-sequence-area">
+    <div className="allocation-decision-area allocation-sequence-area" ref={selectRef}>
       <div className="allocation-decision-heading">
         <div>
           <h3>{area.name}</h3>
@@ -41,6 +106,7 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
         <button
           type="button"
           disabled={disabled}
+          ref={triggerRef}
           className={"allocation-multiselect-trigger" + (group.ruleIds.length ? " has-selection" : "")}
           onClick={() => {
             if (disabled) return;
@@ -72,19 +138,31 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
           </div>
         )}
 
-        {isOpen && !disabled && (
-          <div className="allocation-multiselect-menu allocation-sequence-menu">
+        {isOpen && !disabled && createPortal(
+          <div
+            ref={menuRef}
+            className="allocation-multiselect-menu allocation-sequence-menu allocation-portal-menu"
+            style={menuStyle}
+          >
             <div className="allocation-rule-search">
               <FiSearch size={14} />
-              <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rules..." />
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search rules..."
+              />
             </div>
             <div className="allocation-rule-options">
               {filteredRules.map((rule) => {
                 const selected = group.ruleIds.includes(Number(rule.ruleId));
                 return (
-                  <button type="button" key={area.code + "-" + rule.ruleId}
+                  <button
+                    type="button"
+                    key={area.code + "-" + rule.ruleId}
                     className={"allocation-multiselect-option" + (selected ? " selected" : "")}
-                    onClick={() => toggleRule(area.code, Number(rule.ruleId))}>
+                    onClick={() => toggleRule(area.code, Number(rule.ruleId))}
+                  >
                     <span className="allocation-rule-check">{selected && <FiCheck size={13} />}</span>
                     <span className="allocation-rule-content">
                       <strong>{rule.ruleName}</strong>
@@ -95,7 +173,8 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
               })}
               {!filteredRules.length && <div className="allocation-rule-no-results">No active rules configured.</div>}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
