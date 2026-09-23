@@ -9,8 +9,9 @@ public sealed class AllocationRunRequest
     // Step-specific rule selections. The Allocation Run never defines conditions; it only selects configured rules.
     public List<int> CandidateEligibilityRuleIds { get; set; } = [];
     public List<int> SeatDistributionRuleIds { get; set; } = [];
-    public List<int> AllocationTypeRuleIds { get; set; } = [];
-    public List<int> SequenceRuleIds { get; set; } = [];
+    // Ordered Step 0 rules. The position in this list is the SeqId and the
+    // matched rule outcome supplies the AllocatedType.
+    public List<int> AllocationTypeSequenceRuleIds { get; set; } = [];
 
     // Retained for backward compatibility with older saved drafts/clients.
     public List<AllocationRuleGroupRequest> RuleGroups { get; set; } = [];
