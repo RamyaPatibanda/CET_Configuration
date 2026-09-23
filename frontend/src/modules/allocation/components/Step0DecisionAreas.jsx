@@ -109,13 +109,10 @@ function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup
   const allocationTypeGroup = ruleGroups.find((item) => item.type === "STEP_0_ALLOCATION_TYPE") || { type: "STEP_0_ALLOCATION_TYPE", ruleIds: [] };
   const sequenceGroup = ruleGroups.find((item) => item.type === "STEP_0_SEQUENCE") || { type: "STEP_0_SEQUENCE", ruleIds: [] };
 
-  const candidateRules = rules.filter((rule) =>
-    String(rule.decisionAreaCode || rule.DecisionAreaCode || "").toUpperCase() === "CANDIDATE_QUALIFICATION"
-  );
-
-  const allNonCandidateRules = rules.filter((rule) =>
-    String(rule.decisionAreaCode || rule.DecisionAreaCode || "").toUpperCase() !== "CANDIDATE_QUALIFICATION"
-  );
+  // Rules are reusable and no longer carry a Decision Area. Allocation stage
+  // selection determines where a rule is used.
+  const candidateRules = rules;
+  const allNonCandidateRules = rules;
 
   const candidateArea = {
     code: "CANDIDATE_QUALIFICATION",
