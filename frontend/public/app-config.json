@@ -1,0 +1,5 @@
+{
+  "applicationName": "CET Configuration",
+  "iisApplicationName": "CETConfiguration",
+  "apiBaseUrl": "https://localhost:7270"
+}
