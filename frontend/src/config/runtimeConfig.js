@@ -1,8 +1,4 @@
-let runtimeConfig = {
-  applicationName: "CET Configuration",
-  iisApplicationName: "",
-  apiBaseUrl: "https://localhost:7270",
-};
+let runtimeConfig = null;
 
 export async function loadRuntimeConfig() {
   const response = await fetch("./app-config.json", {
@@ -10,7 +6,9 @@ export async function loadRuntimeConfig() {
   });
 
   if (!response.ok) {
-    throw new Error(`Unable to load application configuration (HTTP ${response.status}).`);
+    throw new Error(
+      `Unable to load application configuration (HTTP ${response.status}).`
+    );
   }
 
   const config = await response.json();
@@ -30,10 +28,10 @@ export async function loadRuntimeConfig() {
   }
 
   runtimeConfig = {
-    ...runtimeConfig,
-    ...config,
     applicationName: String(config.applicationName).trim(),
-    iisApplicationName: String(config.iisApplicationName || "").trim().replace(/^\/+|\/+$/g, ""),
+    iisApplicationName: String(config.iisApplicationName || "")
+      .trim()
+      .replace(/^\/+|\/+$/g, ""),
     apiBaseUrl: String(config.apiBaseUrl).trim().replace(/\/+$/, ""),
   };
 
@@ -42,19 +40,28 @@ export async function loadRuntimeConfig() {
 }
 
 export function getRuntimeConfig() {
+  if (!runtimeConfig) {
+    throw new Error("Application configuration has not been loaded.");
+  }
+
   return runtimeConfig;
 }
 
 export function getApiBaseUrl() {
-  return runtimeConfig.apiBaseUrl;
+  return getRuntimeConfig().apiBaseUrl;
 }
 
 export function getApplicationName() {
-  return runtimeConfig.applicationName;
+  return getRuntimeConfig().applicationName;
 }
 
 export function getIisApplicationName() {
-  return runtimeConfig.iisApplicationName;
+  return getRuntimeConfig().iisApplicationName;
+}
+
+export function getRouterBasename() {
+  const applicationName = getIisApplicationName();
+  return applicationName ? `/${applicationName}` : undefined;
 }
 
 export default {
@@ -63,4 +70,5 @@ export default {
   getApiBaseUrl,
   getApplicationName,
   getIisApplicationName,
+  getRouterBasename,
 };
