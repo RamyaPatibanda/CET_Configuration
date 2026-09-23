@@ -143,31 +143,6 @@ function DecisionAreaRuleSelect({
           <FiChevronDown size={16} />
         </button>
 
-        {group.ruleIds.length > 0 && (
-          <div className="allocation-selected-rules" aria-label="Selected rules">
-            {selectedRules.map((rule, index) => (
-              <div
-                className="allocation-selected-rule"
-                key={area.code + "-selected-" + rule.ruleId}
-              >
-                {index > 0 && <span className="allocation-rule-or">OR</span>}
-                <span className="allocation-selected-rule-name">
-                  {rule.ruleName}
-                </span>
-                <button
-                  type="button"
-                  className="allocation-remove-rule"
-                  disabled={disabled}
-                  onClick={() => toggleRule(area.code, rule.ruleId)}
-                  aria-label="Remove rule"
-                >
-                  <FiTrash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
         {openRuleGroup === area.code &&
           !disabled &&
           createPortal(
