@@ -126,8 +126,7 @@ public sealed class LegacyAllocationDAL
                                     vacancyRow.CategoryId,
                                     vacancyRow.MinorityId ?? 0,
                                     vacancyRow.QuotaId,
-                                    vacancyRow.Gen,
-                                    vacancyRow.Fem),
+                                    vacancyRow.SeatVacancies),
                                 allocationRule,
                                 cancellationToken);
 
@@ -308,14 +307,8 @@ public sealed class LegacyAllocationDAL
         return null;
     }
 
-    private static int ResolveAllocatedTypeVacancy(VacancyRow vacancyRow, string allocatedType)
-    {
-        return allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase)
-            ? vacancyRow.Fem
-            : allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase)
-                ? vacancyRow.Gen
-                : 0;
-    }
+    private static int ResolveAllocatedTypeVacancy(VacancyRow vacancyRow, string allocatedType) =>
+        vacancyRow.GetVacancy(allocatedType);
 
     private Dictionary<string, string?> BuildStep0RuleValues(
         AllocationCandidate candidate,
@@ -339,8 +332,6 @@ public sealed class LegacyAllocationDAL
             ["IsOrphan"] = candidate.IsOrphan,
             ["IsOMS"] = candidate.IsOms,
             ["IsNRI"] = candidate.IsNri,
-            ["Gen"] = vacancyRow.Gen.ToString(),
-            ["Fem"] = vacancyRow.Fem.ToString(),
             ["Vacancy"] = vacancy.ToString(),
             ["VacCategoryId"] = vacancyRow.CategoryId.ToString(),
             ["VacancyType"] = vacancyType,
@@ -358,18 +349,8 @@ public sealed class LegacyAllocationDAL
         if (!string.IsNullOrWhiteSpace(rule.AllocatedType))
             return rule.AllocatedType;
 
-        // A rule can identify the seat column directly through its condition.
-        // This keeps the allocation engine free of hardcoded rule order.
-        if (rule.Conditions.Any(condition =>
-            condition.Field.Equals("Fem", StringComparison.OrdinalIgnoreCase) &&
-            _ruleEvaluator.MatchesConditions(new[] { condition }, values)))
-            return vacancyRow.Fem > 0 ? "Fem" : string.Empty;
-
-        if (rule.Conditions.Any(condition =>
-            condition.Field.Equals("Gen", StringComparison.OrdinalIgnoreCase) &&
-            _ruleEvaluator.MatchesConditions(new[] { condition }, values)))
-            return vacancyRow.Gen > 0 ? "Gen" : string.Empty;
-
+        // Allocation Type must come from configuration. Do not infer it from
+        // gender or from a hardcoded seat-column name.
         return string.Empty;
     }
 
@@ -438,7 +419,7 @@ public sealed class LegacyAllocationDAL
     private static async Task<List<VacancyRow>> GetVacancyRowsAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, int categoryId, CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT CategoryId, MinorityId, QuotaID, Gen, Fem
+            SELECT *
             FROM dbo.Allocation_SeatDistribution
             WHERE ChoiceCode = @ChoiceCode AND CategoryID IN (1, @CategoryId) AND QuotaID = 1
             ORDER BY CategoryID DESC;
@@ -450,12 +431,27 @@ public sealed class LegacyAllocationDAL
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
+            var seatVacancies = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (var ordinal = 0; ordinal < reader.FieldCount; ordinal++)
+            {
+                var columnName = reader.GetName(ordinal);
+                if (columnName.Equals("CategoryId", StringComparison.OrdinalIgnoreCase) ||
+                    columnName.Equals("MinorityId", StringComparison.OrdinalIgnoreCase) ||
+                    columnName.Equals("QuotaID", StringComparison.OrdinalIgnoreCase) ||
+                    columnName.Equals("ChoiceCode", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!reader.IsDBNull(ordinal))
+                {
+                    try { seatVacancies[columnName] = Convert.ToInt32(reader.GetValue(ordinal)); }
+                    catch (FormatException) { }
+                    catch (InvalidCastException) { }
+                }
+            }
             result.Add(new VacancyRow(
-                reader.GetByte(reader.GetOrdinal("CategoryId")),
+                Convert.ToInt32(reader["CategoryId"]),
                 reader.IsDBNull(reader.GetOrdinal("MinorityId")) ? null : Convert.ToInt16(reader["MinorityId"]),
-                reader.GetByte(reader.GetOrdinal("QuotaID")),
-                reader.IsDBNull(reader.GetOrdinal("Gen")) ? 0 : Convert.ToInt32(reader["Gen"]),
-                reader.IsDBNull(reader.GetOrdinal("Fem")) ? 0 : Convert.ToInt32(reader["Fem"])));
+                Convert.ToInt32(reader["QuotaID"]),
+                seatVacancies));
         }
         return result;
     }
@@ -627,9 +623,9 @@ public sealed class LegacyAllocationDAL
             }
         }
 
-        var seatColumn = allocation.AllocatedType switch { "Gen" => "Gen", "Fem" => "Fem", _ => null };
-        if (seatColumn is not null)
+        if (!string.IsNullOrWhiteSpace(allocation.AllocatedType))
         {
+            var seatColumn = SqlSafeIdentifier(allocation.AllocatedType);
             await ExecuteNonQueryAsync(connection, transaction,
                 $"UPDATE dbo.Allocation_SeatDistribution SET {seatColumn} = ISNULL({seatColumn}, 0) + 1 WHERE ChoiceCode = @ChoiceCode AND CategoryID = @CategoryId AND QuotaID = @QuotaId;",
                 cancellationToken,
@@ -688,7 +684,10 @@ public sealed class LegacyAllocationDAL
 
     private static async Task ConsumeSeatVacancyAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, int categoryId, int quotaId, string allocatedType, CancellationToken cancellationToken)
     {
-        var column = allocatedType switch { "Gen" => "Gen", "Fem" => "Fem", _ => throw new ArgumentOutOfRangeException(nameof(allocatedType)) };
+        if (string.IsNullOrWhiteSpace(allocatedType))
+            throw new ArgumentException("Allocation type is required.", nameof(allocatedType));
+
+        var column = SqlSafeIdentifier(allocatedType);
         await ExecuteNonQueryAsync(connection, transaction,
             $"UPDATE dbo.Allocation_SeatDistribution SET {column} = ISNULL({column}, 0) - 1 WHERE ChoiceCode = @ChoiceCode AND CategoryID = @CategoryId AND QuotaID = @QuotaId;",
             cancellationToken,
@@ -737,7 +736,15 @@ public sealed class LegacyAllocationDAL
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private sealed record VacancyRow(int CategoryId, short? MinorityId, int QuotaId, int Gen, int Fem);
+    private sealed record VacancyRow(
+        int CategoryId,
+        short? MinorityId,
+        int QuotaId,
+        IReadOnlyDictionary<string, int> SeatVacancies)
+    {
+        public int GetVacancy(string allocationType) =>
+            SeatVacancies.TryGetValue(allocationType, out var vacancy) ? vacancy : 0;
+    }
 }
 
 public sealed class LegacyStep0Result
