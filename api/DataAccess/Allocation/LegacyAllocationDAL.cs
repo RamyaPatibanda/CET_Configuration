@@ -271,7 +271,7 @@ public sealed class LegacyAllocationDAL
 
             // AllocationType is the configured outcome of the rule. Use it to
             // select the vacancy before evaluating any condition that references
-            // Vacancy. This avoids deriving vacancy from Math.Max(Gen, Fem).
+            // Vacancy. This keeps vacancy resolution tied to the configured allocation type.
             var allocatedType = !string.IsNullOrWhiteSpace(rule.AllocatedType)
                 ? rule.AllocatedType
                 : ResolveAllocatedType(rule, baseValues, vacancyRow);
