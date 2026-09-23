@@ -386,8 +386,17 @@ public sealed class LegacyStep1AllocationDAL
         command.Parameters.Add("@CategoryId", SqlDbType.TinyInt).Value = seat.CategoryId;
         command.Parameters.Add("@StudentCategoryId", SqlDbType.TinyInt).Value = candidate.EffectiveCategoryId;
         command.Parameters.Add("@OriginalAllocatedType", SqlDbType.VarChar, 20).Value = allocationType;
-        command.Parameters.Add("@AllocatedMinorityId", SqlDbType.SmallInt).Value = 0;
-        command.Parameters.Add("@StudentMinorityId", SqlDbType.SmallInt).Value = 0;
+        var studentMinorityId = seat.MinorityId == candidate.LinguisticMinorityId
+            ? candidate.LinguisticMinorityId
+            : seat.MinorityId == candidate.ReligiousMinorityId
+                ? candidate.ReligiousMinorityId
+                : 0;
+        var allocatedMinorityId = seat.QuotaId == 5 && studentMinorityId == seat.MinorityId
+            ? seat.MinorityId
+            : 0;
+
+        command.Parameters.Add("@AllocatedMinorityId", SqlDbType.SmallInt).Value = allocatedMinorityId;
+        command.Parameters.Add("@StudentMinorityId", SqlDbType.SmallInt).Value = studentMinorityId;
         command.Parameters.Add("@SeqId", SqlDbType.TinyInt).Value = sequenceId;
 
         var id = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
