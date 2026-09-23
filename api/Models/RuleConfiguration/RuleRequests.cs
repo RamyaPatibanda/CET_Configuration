@@ -7,7 +7,6 @@ namespace api.Models.RuleConfiguration
         public string Description { get; set; } = string.Empty;
         public int Priority { get; set; }
         public bool IsActive { get; set; } = true;
-        public string DecisionAreaCode { get; set; } = string.Empty;
         public RuleOutcome Outcome { get; set; } = new();
         public List<RuleConditionRequest> Conditions { get; set; } = new();
         public List<RuleBranchRequest> Branches { get; set; } = new();
