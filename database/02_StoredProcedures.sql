@@ -29,7 +29,41 @@ IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL DROP PROCEDURE dbo.spro
 GO
 CREATE PROCEDURE dbo.sproc_CreateField
     @aFieldId INT, @tTableName NVARCHAR(128), @tFieldName NVARCHAR(200), @tDisplayName NVARCHAR(200), @tFieldType NVARCHAR(50), @bIsRequired BIT, @bIsActive BIT, @nDisplayOrder INT, @aCreatedByUserId INT
-AS BEGIN SET NOCOUNT ON; INSERT INTO dbo.tblFieldConfiguration (aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate,aCreatedByUserId) VALUES (@aFieldId,@tTableName,@tFieldName,@tDisplayName,@tFieldType,@bIsRequired,@bIsActive,@nDisplayOrder,GETDATE(),NULL,@aCreatedByUserId); SELECT @aFieldId AS aFieldId; END;
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.tblFieldConfiguration
+        WHERE tTableName = @tTableName
+          AND tFieldName = @tFieldName
+    )
+    BEGIN
+        THROW 50301, 'Field already exists for the specified table and field name.', 1;
+    END;
+
+    BEGIN TRY
+        INSERT INTO dbo.tblFieldConfiguration
+        (
+            aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,
+            bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate,aCreatedByUserId
+        )
+        VALUES
+        (
+            @aFieldId,@tTableName,@tFieldName,@tDisplayName,@tFieldType,
+            @bIsRequired,@bIsActive,@nDisplayOrder,GETDATE(),NULL,@aCreatedByUserId
+        );
+
+        SELECT @aFieldId AS aFieldId;
+    END TRY
+    BEGIN CATCH
+        IF ERROR_NUMBER() IN (2601, 2627)
+            THROW 50301, 'Field already exists for the specified table and field name.', 1;
+        THROW;
+    END CATCH;
+END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_UpdateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateField;
