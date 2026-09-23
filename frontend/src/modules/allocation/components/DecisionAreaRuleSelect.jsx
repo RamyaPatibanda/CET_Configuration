@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiCheck, FiChevronDown, FiSearch, FiTrash2 } from "react-icons/fi";
 
 function DecisionAreaRuleSelect({
@@ -11,6 +11,20 @@ function DecisionAreaRuleSelect({
   disabled,
 }) {
   const [search, setSearch] = useState("");
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    if (openRuleGroup !== area.code) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (!selectRef.current?.contains(event.target)) {
+        setOpenRuleGroup(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [openRuleGroup, area.code, setOpenRuleGroup]);
 
   const areaRules = useMemo(
     () =>
@@ -47,7 +61,7 @@ function DecisionAreaRuleSelect({
         <span>{group.ruleIds.length} selected</span>
       </div>
 
-      <div className="allocation-multiselect">
+      <div className="allocation-multiselect" ref={selectRef}>
         <button
           type="button"
           disabled={disabled}
