@@ -87,14 +87,14 @@ function UserManagement() {
     setFormError("");
   };
 
-  const setPermission = (moduleCode, permission, checked) => {
+  const setPermission = (moduleCode, checked) => {
     setForm((current) => ({
       ...current,
       permissions: {
         ...current.permissions,
         [moduleCode]: {
           ...(current.permissions[moduleCode] || {}),
-          [permission]: checked,
+          canRead: checked,\n          canWrite: checked,
           ...(permission === "canRead" && !checked ? { canWrite: false } : {}),
           ...(permission === "canWrite" && checked ? { canRead: true } : {}),
         },
@@ -125,7 +125,7 @@ function UserManagement() {
         }));
 
     if (!form.isAdmin && !permissions.some((item) => item.canRead || item.canWrite)) {
-      setFormError("Select at least one Read permission for a non-admin user.");
+      setFormError("Select at least one module permission for a non-admin user.");
       return;
     }
 
@@ -271,9 +271,9 @@ function UserManagement() {
                 <div className="permission-section-heading">
                   <div>
                     <span>MODULE ACCESS</span>
-                    <h3>Read &amp; Write Permissions</h3>
+                    <h3>Module Permissions</h3>
                   </div>
-                  <small>Write automatically includes Read.</small>
+                  <small>Enable access for the modules this user can use.</small>
                 </div>
 
                 <div className="permission-table">
@@ -290,23 +290,16 @@ function UserManagement() {
                           <strong>{item.moduleName}</strong>
                           <small>{item.moduleCode === "FIELDS" ? "Field definitions and source configuration" : item.moduleCode === "RULES" ? "Business rules and conditions" : "Allocation run creation, execution and history"}</small>
                         </div>
-                        <label className="permission-checkbox">
+                        <label className="permission-switch" aria-label={`Toggle access for ${item.moduleName}`}>
                           <input
                             type="checkbox"
-                            checked={Boolean(value.canRead)}
+                            checked={Boolean(value.canRead || value.canWrite)}
                             disabled={form.isAdmin}
-                            onChange={(event) => setPermission(item.moduleCode, "canRead", event.target.checked)}
+                            onChange={(event) => setPermission(item.moduleCode, event.target.checked)}
                           />
-                          <span><FiCheck size={13} /></span>
-                        </label>
-                        <label className="permission-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(value.canWrite)}
-                            disabled={form.isAdmin}
-                            onChange={(event) => setPermission(item.moduleCode, "canWrite", event.target.checked)}
-                          />
-                          <span><FiCheck size={13} /></span>
+                          <span className="permission-switch-track">
+                            <span className="permission-switch-thumb" />
+                          </span>
                         </label>
                       </div>
                     );
