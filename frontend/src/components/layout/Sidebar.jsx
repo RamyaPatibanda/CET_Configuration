@@ -1,5 +1,6 @@
 import { useState } from "react";
 import authService from "../../services/authService";
+import { getApplicationName } from "../../config/runtimeConfig";
 import { NavLink } from "react-router-dom";
 import {
   FiChevronLeft,
@@ -9,6 +10,7 @@ import {
   FiPlayCircle,
   FiSliders,
   FiUser,
+  FiSettings,
 } from "react-icons/fi";
 
 function Sidebar() {
@@ -22,6 +24,7 @@ function Sidebar() {
     ...(authService.hasPermission("RULES") ? [{ path: "/rules", label: "Rule Configuration", icon: FiList }] : []),
     ...(authService.hasPermission("ALLOCATION_RUN") ? [{ path: "/allocation", label: "Allocation Run", icon: FiPlayCircle }] : []),
     ...(isAdmin ? [{ path: "/users", label: "User Management", icon: FiUser }] : []),
+    ...(isAdmin ? [{ path: "/settings", label: "Deployment Settings", icon: FiSettings }] : []),
   ];
 
   return (
