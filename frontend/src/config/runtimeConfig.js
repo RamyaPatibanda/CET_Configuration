@@ -1,15 +1,10 @@
 let runtimeConfig = null;
 
 function getConfigUrl() {
-  // app-config.json is copied to the root of the Vite dist folder.
-  // In production, resolve it from the built module location so IIS
-  // virtual application paths and client-side routes do not affect it.
-  if (import.meta.env.PROD) {
-    return new URL("../app-config.json", import.meta.url).href;
-  }
-
-  // During local Vite development, public files are served from the root.
-  return new URL("/app-config.json", window.location.origin).href;
+  // Resolve from the document URL so the same build works at the IIS
+  // application root as well as on client-side routes such as /login.
+  // Example: /CETConfiguration/login -> /CETConfiguration/app-config.json.
+  return new URL("app-config.json", document.baseURI).href;
 }
 
 export async function loadRuntimeConfig() {
