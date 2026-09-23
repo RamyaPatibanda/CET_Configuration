@@ -146,10 +146,25 @@ function Allocation() {
           setAllocationStep(savedStep?.code || existingRun.allocationStep);
           setRuleGroups(groups);
           setStatus(normalizeStatus(existingRun.status, "Draft"));
-          setResult(null);
+
+          // Completed runs opened from Overview are view-only. The run summary is
+          // persisted in the history payload so the same summary can be displayed
+          // without executing the allocation again.
+          let savedReport = null;
+          if (existingRun.ruleGroupsJson) {
+            try {
+              const historyPayload = JSON.parse(existingRun.ruleGroupsJson);
+              savedReport = historyPayload?.report || null;
+            } catch {
+              savedReport = null;
+            }
+          }
+          setResult(savedReport ? { run: existingRun, report: savedReport, decisions: [], stages: savedReport.stages || [] } : null);
           setMessage(existingRun.status === "Draft"
             ? "Draft loaded in edit mode. Update the configuration and run when ready."
-            : "Allocation run loaded with status " + existingRun.status + ".");
+            : savedReport
+              ? "Allocation run summary loaded. This is a view of the completed run."
+              : "Allocation run loaded with status " + existingRun.status + ".");
           return;
         }
 
