@@ -345,8 +345,8 @@ public sealed class AllocationController : ControllerBase
                 return PreparedAllocation.Fail($"Rule(s) {string.Join(", ", invalidCandidateRules)} are not configured as Candidate Eligibility rules.");
 
             // Step 0 rule selection defines the meaning of each section. A reusable rule
-            // may be selected into Seat Distribution, Allocation Type or Sequence
-            // without coupling the allocation engine to a hardcoded procedure area.
+            // may be selected into Seat Distribution or the combined Allocation Type &
+            // Sequence section without coupling the allocation engine to a hardcoded procedure area.
         }
 
         try
