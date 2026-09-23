@@ -131,7 +131,14 @@ function Allocation() {
                   .filter((ruleId) => ruleItems.some((rule) => rule.ruleId === ruleId)),
               };
             }
-            const savedGroup = savedGroups.find((item) => String(item.type).toUpperCase() === String(group.type).toUpperCase());
+            const savedGroupList = Array.isArray(savedGroups)
+              ? savedGroups
+              : Array.isArray(savedGroups?.groups)
+                ? savedGroups.groups
+                : [];
+            const savedGroup = savedGroupList.find((item) =>
+              String(item.type).toUpperCase() === String(group.type).toUpperCase()
+            );
             return {
               ...group,
               ruleIds: (savedGroup?.rules || [])
