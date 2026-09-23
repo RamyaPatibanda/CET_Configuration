@@ -36,21 +36,15 @@ public sealed class DefenceConversionService
         if (defenceVacancy <= 0)
             return null;
 
-        // The legacy procedure chooses Fem for a female candidate when Fem
-        // vacancy exists; otherwise it chooses Gen. An explicit configured
-        // Allocation Type still takes precedence.
+        // Defence conversion must use the same configured Allocation Type
+        // and Sequence as Step 0. Never infer Gen/Fem from candidate gender and
+        // never fall back to the legacy hardcoded sequence.
         var allocatedType = allocationRule.AllocatedType;
         if (!IsGenOrFem(allocatedType))
-        {
-            allocatedType = candidate.Gender.Equals("F", StringComparison.OrdinalIgnoreCase) &&
-                            vacancy.Fem > 0
-                ? "Fem"
-                : vacancy.Gen > 0
-                    ? "Gen"
-                    : string.Empty;
-        }
+            return null;
 
-        if (!IsGenOrFem(allocatedType) || GetVacancy(vacancy, allocatedType) <= 0)
+        var vacancyForConfiguredType = GetVacancy(vacancy, allocatedType);
+        if (vacancyForConfiguredType <= 0)
             return null;
 
         if (vacancy.CategoryId == 1 &&
@@ -66,9 +60,9 @@ public sealed class DefenceConversionService
             await DeactivateAllocationAsync(connection, transaction, existing.AllocationId, cancellationToken);
         }
 
-        var sequenceId = allocationRule.SequenceId > 0
-            ? allocationRule.SequenceId
-            : ResolveLegacySequenceId(allocatedType, vacancy.CategoryId);
+        var sequenceId = allocationRule.SequenceId;
+        if (sequenceId <= 0)
+            return null;
 
         var inserted = await InsertAllocationAsync(
             connection,
@@ -117,15 +111,6 @@ public sealed class DefenceConversionService
         allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase) ? vacancy.Fem :
         allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase) ? vacancy.Gen : 0;
 
-    private static int ResolveLegacySequenceId(string allocatedType, int categoryId) =>
-        (allocatedType, categoryId) switch
-        {
-            ("Gen", 1) => 1,
-            ("Fem", 1) => 2,
-            ("Gen", _) when categoryId > 1 => 3,
-            ("Fem", _) when categoryId > 1 => 4,
-            _ => 0
-        };
 
     private static async Task<int> GetDefenceVacancyAsync(
         SqlConnection connection, SqlTransaction transaction, long choiceCode,
