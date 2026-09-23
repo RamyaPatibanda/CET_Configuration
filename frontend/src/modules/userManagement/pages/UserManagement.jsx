@@ -94,7 +94,7 @@ function UserManagement() {
         ...current.permissions,
         [moduleCode]: {
           ...(current.permissions[moduleCode] || {}),
-          canRead: checked,\n          canWrite: checked,
+          canRead: checked,         canWrite: checked,
           ...(permission === "canRead" && !checked ? { canWrite: false } : {}),
           ...(permission === "canWrite" && checked ? { canRead: true } : {}),
         },
