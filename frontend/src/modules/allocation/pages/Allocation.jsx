@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiArchive, FiCheck, FiCopy, FiEye, FiPlay, FiRefreshCw, FiSave } from "react-icons/fi";
+import { FiArchive, FiAward, FiCheck, FiCopy, FiEye, FiHeart, FiPlay, FiRefreshCw, FiSave, FiShield, FiUsers } from "react-icons/fi";
 import Step0DecisionAreas, { STEP_0_STAGES } from "../components/Step0DecisionAreas";
 import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAreas";
 import Button from "../../../components/common/Button/Button";
@@ -322,10 +322,10 @@ function Allocation() {
   const decisions = useMemo(() => result?.decisions || [], [result]);
   const DecisionAreas = getDecisionAreaConfig(allocationStep)?.Component;
 
-  const candidateCount = result?.stages?.reduce(
-    (count, stage) => count + (stage.candidateCountAfter || 0),
-    0
-  ) || 0;
+  const report = result?.report || null;
+  const candidateCount = report?.totalCandidatesProcessed ?? 0;
+  const allocatedCount = report?.totalCandidatesAllocated ?? decisions.length;
+  const notAllocatedCount = report?.totalCandidatesNotAllocated ?? Math.max(0, candidateCount - allocatedCount);
 
   return (
     <div className="allocation-page">
@@ -472,47 +472,123 @@ function Allocation() {
 
       {result && (
         <section className="allocation-section allocation-result-section">
-          <div className="allocation-section-heading">
-            <div><span>Saved result</span><h2>Allocation Result</h2></div>
-            <span className="allocation-status">{result.run?.status || "Completed"}</span>
+          <div className="allocation-result-header">
+            <div>
+              <span className="allocation-result-eyebrow">RUN COMPLETED</span>
+              <h2>Allocation Summary</h2>
+              <p>Actual allocation outcomes from this run, grouped by candidate and reservation type.</p>
+            </div>
+            <div className="allocation-result-status">
+              <FiCheck size={15} />
+              {result.run?.status || "Completed"}
+            </div>
           </div>
 
-          <div className="allocation-summary-grid">
-            <div><span>Candidates Processed</span><strong>{candidateCount}</strong></div>
-            <div><span>Decisions Made</span><strong>{decisions.length}</strong></div>
-            <div><span>Not Allocated</span><strong>{Math.max(0, candidateCount - decisions.length)}</strong></div>
+          <div className="allocation-report-kpis">
+            <div className="allocation-report-kpi primary">
+              <div className="allocation-report-kpi-icon"><FiUsers size={17} /></div>
+              <div><span>Candidates Processed</span><strong>{candidateCount.toLocaleString()}</strong></div>
+            </div>
+            <div className="allocation-report-kpi success">
+              <div className="allocation-report-kpi-icon"><FiCheck size={17} /></div>
+              <div><span>Successfully Allocated</span><strong>{allocatedCount.toLocaleString()}</strong></div>
+            </div>
+            <div className="allocation-report-kpi warning">
+              <div className="allocation-report-kpi-icon"><FiEye size={17} /></div>
+              <div><span>Not Allocated</span><strong>{notAllocatedCount.toLocaleString()}</strong></div>
+            </div>
           </div>
 
-          <div className="allocation-stage-results">
-            {(result.stages || []).map((stage) => (
-              <div className="allocation-stage-result" key={stage.stageCode}>
-                <div>
-                  <strong>{stageLabels[stage.stageCode] || stage.stageCode.replaceAll("_", " ")}</strong>
-                  <span>{stage.status}</span>
+          <div className="allocation-report-section-title">
+            <div>
+              <span>Reservation outcome</span>
+              <strong>Special Reservation Allocations</strong>
+            </div>
+            <span>{(report?.phAllocated || 0) + (report?.defenceAllocated || 0) + (report?.orphanAllocated || 0)} total</span>
+          </div>
+
+          <div className="allocation-reservation-grid">
+            <div className="allocation-reservation-card ph">
+              <div className="allocation-reservation-icon"><FiHeart size={18} /></div>
+              <div><span>PH</span><strong>{(report?.phAllocated || 0).toLocaleString()}</strong><small>allocations</small></div>
+            </div>
+            <div className="allocation-reservation-card defence">
+              <div className="allocation-reservation-icon"><FiShield size={18} /></div>
+              <div><span>Defence</span><strong>{(report?.defenceAllocated || 0).toLocaleString()}</strong><small>allocations</small></div>
+            </div>
+            <div className="allocation-reservation-card orphan">
+              <div className="allocation-reservation-icon"><FiAward size={18} /></div>
+              <div><span>Orphan</span><strong>{(report?.orphanAllocated || 0).toLocaleString()}</strong><small>allocations</small></div>
+            </div>
+          </div>
+
+          <div className="allocation-report-section-title">
+            <div>
+              <span>Seat outcome</span>
+              <strong>Allocation Type</strong>
+            </div>
+            <span>{(report?.generalAllocated || 0) + (report?.femaleAllocated || 0)} total</span>
+          </div>
+
+          <div className="allocation-type-strip">
+            <div>
+              <span>General</span>
+              <strong>{(report?.generalAllocated || 0).toLocaleString()}</strong>
+            </div>
+            <div className="allocation-type-divider" />
+            <div>
+              <span>Female</span>
+              <strong>{(report?.femaleAllocated || 0).toLocaleString()}</strong>
+            </div>
+          </div>
+
+          <div className="allocation-report-section-title">
+            <div>
+              <span>Execution breakdown</span>
+              <strong>Stage Summary</strong>
+            </div>
+          </div>
+
+          <div className="allocation-report-stage-list">
+            {(report?.stages || result.stages || []).map((stage) => {
+              const processed = stage.candidatesProcessed ?? stage.candidateCountBefore ?? 0;
+              const allocated = stage.candidatesAllocated ?? stage.candidateCountAfter ?? stage.decisionsCreated ?? 0;
+              const stageNotAllocated = stage.candidatesNotAllocated ?? Math.max(0, processed - allocated);
+              return (
+                <div className="allocation-report-stage" key={stage.stageCode}>
+                  <div className="allocation-report-stage-main">
+                    <span>{stageLabels[stage.stageCode] || stage.stageCode.replaceAll("_", " ")}</span>
+                    <strong>{stage.status || "Completed"}</strong>
+                  </div>
+                  <div className="allocation-report-stage-stat"><small>Processed</small><b>{processed.toLocaleString()}</b></div>
+                  <div className="allocation-report-stage-stat"><small>Allocated</small><b>{allocated.toLocaleString()}</b></div>
+                  <div className="allocation-report-stage-stat"><small>Not allocated</small><b>{stageNotAllocated.toLocaleString()}</b></div>
                 </div>
-                <strong>{stage.decisionsCreated || 0} decisions</strong>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {decisions.length > 0 ? (
-            <div className="allocation-table-wrapper">
-              <table className="allocation-table">
-                <thead><tr><th>Candidate</th><th>Decision Area</th><th>College</th><th>Preference</th><th>Category</th><th>Rule</th></tr></thead>
-                <tbody>
-                  {decisions.map((decision) => (
-                    <tr key={decision.decisionId}>
-                      <td>{decision.candidateId}</td>
-                      <td>{decision.decisionArea?.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) || "—"}</td>
-                      <td>{decision.collegeId || "—"}</td>
-                      <td>{decision.preferenceNo || "—"}</td>
-                      <td>{decision.categoryId}</td>
-                      <td>{decision.ruleCode}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <details className="allocation-decision-details">
+              <summary>View allocation decisions <span>{decisions.length.toLocaleString()}</span></summary>
+              <div className="allocation-table-wrapper">
+                <table className="allocation-table">
+                  <thead><tr><th>Candidate</th><th>Reservation</th><th>Allocation Type</th><th>Preference</th><th>Category</th><th>Rule</th></tr></thead>
+                  <tbody>
+                    {decisions.map((decision) => (
+                      <tr key={decision.decisionId}>
+                        <td>{decision.candidateId}</td>
+                        <td>{decision.vacancyType || decision.originalAllocatedType || "Regular"}</td>
+                        <td>{decision.allocatedType || "—"}</td>
+                        <td>{decision.preferenceNo || "—"}</td>
+                        <td>{decision.categoryId}</td>
+                        <td>{decision.ruleCode || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           ) : (
             <div className="allocation-empty">No decisions were created in this run.</div>
           )}
