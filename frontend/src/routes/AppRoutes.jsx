@@ -6,7 +6,6 @@ import FieldConfiguration from "../modules/fieldConfiguration/pages/FieldConfigu
 import RuleConfiguration from "../modules/ruleConfiguration/pages/RuleConfiguration";
 import Allocation from "../modules/allocation/pages/Allocation";
 import UserManagement from "../modules/userManagement/pages/UserManagement";
-import SystemSettings from "../modules/systemSettings/pages/SystemSettings";
 import allocationService from "../modules/allocation/services/allocationService";
 import authService from "../services/authService";
 
@@ -209,7 +208,6 @@ function AppRoutes({ authenticated }) {
         <Route path="/rules" element={<ModuleRoute moduleCode="RULES"><RuleConfiguration /></ModuleRoute>} />
         <Route path="/allocation" element={<ModuleRoute moduleCode="ALLOCATION_RUN"><Allocation /></ModuleRoute>} />
         <Route path="/users" element={authService.getUser()?.isAdmin ? <UserManagement /> : <Navigate to={authService.getDefaultPath()} replace />} />
-        <Route path="/settings" element={authService.getUser()?.isAdmin ? <SystemSettings /> : <Navigate to={authService.getDefaultPath()} replace />} />
       </Route>
       <Route path="*" element={<Navigate to={authenticated ? "/overview" : "/login"} replace />} />
     </Routes>
