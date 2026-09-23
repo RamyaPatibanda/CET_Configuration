@@ -16,14 +16,17 @@ public sealed class LegacyAllocationDAL
     private readonly string _connectionString;
     private readonly ILogger<LegacyAllocationDAL> _logger;
     private readonly IRuleEvaluator _ruleEvaluator;
+    private readonly DefenceConversionService _defenceConversion;
 
     public LegacyAllocationDAL(
         IConfiguration configuration,
         ILogger<LegacyAllocationDAL> logger,
-        IRuleEvaluator ruleEvaluator)
+        IRuleEvaluator ruleEvaluator,
+        DefenceConversionService defenceConversion)
     {
         _logger = logger;
         _ruleEvaluator = ruleEvaluator;
+        _defenceConversion = defenceConversion;
         _connectionString = new ConnectionUtils().GetConnectionString(
             configuration["ConnectionStrings:CrmDbConnection"]
             ?? throw new InvalidOperationException("CrmDbConnection is not configured."));
@@ -108,6 +111,35 @@ public sealed class LegacyAllocationDAL
 
                         if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
                             continue;
+
+                        // Defence conversion is intentionally isolated in its own
+                        // service. It reproduces the legacy Defence conversion
+                        // behavior without executing Allocation_Seats_Def_Convert.
+                        if (string.Equals(vacancyType, "Def", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var defenceAllocation = await _defenceConversion.TryConvertAsync(
+                                connection,
+                                transaction,
+                                candidate,
+                                preference,
+                                new DefenceConversionService.VacancyRow(
+                                    vacancyRow.CategoryId,
+                                    vacancyRow.MinorityId ?? 0,
+                                    vacancyRow.QuotaId,
+                                    vacancyRow.Gen,
+                                    vacancyRow.Fem),
+                                allocationRule,
+                                cancellationToken);
+
+                            if (defenceAllocation is not null)
+                            {
+                                allocations.Add(defenceAllocation);
+                                allocated = true;
+                                break;
+                            }
+
+                            continue;
+                        }
 
                         if (existing is not null)
                         {
@@ -480,7 +512,7 @@ public sealed class LegacyAllocationDAL
                 vacancyType,
                 cancellationToken);
 
-            if (vacancy == 0)
+            if (vacancy > 0)
                 return ("Allocation_SeatDistribution_PH", vacancyType, vacancy);
         }
 
