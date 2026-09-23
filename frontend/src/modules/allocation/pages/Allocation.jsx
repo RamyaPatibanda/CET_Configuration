@@ -29,7 +29,12 @@ const getDecisionAreaConfig = (stepCode) => DECISION_AREA_COMPONENTS[stepCode] |
 
 const createRuleGroups = (stepCode) =>
   stepCode === "STEP_0"
-    ? [{ type: "CANDIDATE_QUALIFICATION", ruleIds: [] }, { type: "SEQUENCE", ruleIds: [] }]
+    ? [
+        { type: "CANDIDATE_QUALIFICATION", ruleIds: [] },
+        { type: "STEP_0_SEAT_DISTRIBUTION", ruleIds: [] },
+        { type: "STEP_0_ALLOCATION_TYPE", ruleIds: [] },
+        { type: "STEP_0_SEQUENCE", ruleIds: [] },
+      ]
     : (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
 const editableStatuses = new Set(["Draft", "Ready", "Failed", "Cancelled"]);
@@ -108,7 +113,13 @@ function Allocation() {
           const savedStep = stepItems.find((step) => step.code === existingRun.allocationStep);
           const groups = createRuleGroups(existingRun.allocationStep).map((group) => {
             if (existingRun.allocationStep === "STEP_0" && savedGroups && !Array.isArray(savedGroups)) {
-              const key = group.type === "CANDIDATE_QUALIFICATION" ? "candidateEligibilityRules" : "sequenceRules";
+              const historyKeyByGroup = {
+                CANDIDATE_QUALIFICATION: "candidateEligibilityRules",
+                STEP_0_SEAT_DISTRIBUTION: "seatDistributionRules",
+                STEP_0_ALLOCATION_TYPE: "allocationTypeRules",
+                STEP_0_SEQUENCE: "sequenceRules",
+              };
+              const key = historyKeyByGroup[group.type];
               return {
                 ...group,
                 ruleIds: (savedGroups[key] || [])
@@ -182,7 +193,7 @@ function Allocation() {
   const moveSequenceRule = (ruleId, direction) => {
     if (!canEdit) return;
     setRuleGroups((current) => current.map((group) => {
-      if (group.type !== "SEQUENCE") return group;
+      if (!["STEP_0_SEAT_DISTRIBUTION", "STEP_0_ALLOCATION_TYPE", "STEP_0_SEQUENCE"].includes(group.type)) return group;
       const index = group.ruleIds.indexOf(ruleId);
       const target = index + direction;
       if (index < 0 || target < 0 || target >= group.ruleIds.length) return group;
@@ -201,7 +212,9 @@ function Allocation() {
         capRound: Number(capRound),
         allocationStep,
         candidateEligibilityRuleIds: ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds || [],
-        sequenceRuleIds: ruleGroups.find((group) => group.type === "SEQUENCE")?.ruleIds || [],
+        seatDistributionRuleIds: ruleGroups.find((group) => group.type === "STEP_0_SEAT_DISTRIBUTION")?.ruleIds || [],
+        allocationTypeRuleIds: ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE")?.ruleIds || [],
+        sequenceRuleIds: ruleGroups.find((group) => group.type === "STEP_0_SEQUENCE")?.ruleIds || [],
       };
     }
     return {
@@ -218,8 +231,12 @@ function Allocation() {
     if (!selectedStep?.enabled) return "Please select an available allocation step.";
     if (allocationStep === "STEP_0") {
       const candidateCount = ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds.length || 0;
-      const sequenceCount = ruleGroups.find((group) => group.type === "SEQUENCE")?.ruleIds.length || 0;
+      const seatDistributionCount = ruleGroups.find((group) => group.type === "STEP_0_SEAT_DISTRIBUTION")?.ruleIds.length || 0;
+      const allocationTypeCount = ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE")?.ruleIds.length || 0;
+      const sequenceCount = ruleGroups.find((group) => group.type === "STEP_0_SEQUENCE")?.ruleIds.length || 0;
       if (!candidateCount) return "Select at least one candidate eligibility rule.";
+      if (!seatDistributionCount) return "Select at least one seat distribution rule.";
+      if (!allocationTypeCount) return "Select at least one allocation type rule.";
       if (!sequenceCount) return "Select at least one sequence rule.";
       return "";
     }
