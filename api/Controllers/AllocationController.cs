@@ -219,8 +219,7 @@ public sealed class AllocationController : ControllerBase
 
         var candidateRuleIds = request.CandidateEligibilityRuleIds.Distinct().ToList();
         var seatDistributionRuleIds = request.SeatDistributionRuleIds.Distinct().ToList();
-        var allocationTypeRuleIds = request.AllocationTypeRuleIds.Distinct().ToList();
-        var sequenceRuleIds = request.SequenceRuleIds.Distinct().ToList();
+        var allocationTypeSequenceRuleIds = request.AllocationTypeSequenceRuleIds.Distinct().ToList();
         var selectedRuleIds = new List<int>();
         var detailedById = new Dictionary<int, RuleDefinition>();
         IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> builtRuleGroups;
@@ -228,7 +227,7 @@ public sealed class AllocationController : ControllerBase
         if (string.Equals(step.Code, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase))
         {
             if (candidateRuleIds.Count == 0 && seatDistributionRuleIds.Count == 0 &&
-                allocationTypeRuleIds.Count == 0 && sequenceRuleIds.Count == 0 &&
+                allocationTypeSequenceRuleIds.Count == 0 &&
                 request.RuleGroups.Count > 0)
             {
                 candidateRuleIds = request.RuleGroups
@@ -237,11 +236,8 @@ public sealed class AllocationController : ControllerBase
                 seatDistributionRuleIds = request.RuleGroups
                     .FirstOrDefault(group => string.Equals(group.Type, "STEP_0_SEAT_DISTRIBUTION", StringComparison.OrdinalIgnoreCase))?.RuleIds
                     .Distinct().ToList() ?? [];
-                allocationTypeRuleIds = request.RuleGroups
-                    .FirstOrDefault(group => string.Equals(group.Type, "STEP_0_ALLOCATION_TYPE", StringComparison.OrdinalIgnoreCase))?.RuleIds
-                    .Distinct().ToList() ?? [];
-                sequenceRuleIds = request.RuleGroups
-                    .FirstOrDefault(group => string.Equals(group.Type, "STEP_0_SEQUENCE", StringComparison.OrdinalIgnoreCase))?.RuleIds
+                allocationTypeSequenceRuleIds = request.RuleGroups
+                    .FirstOrDefault(group => string.Equals(group.Type, AllocationConfiguration.Step0AllocationTypeSequence, StringComparison.OrdinalIgnoreCase))?.RuleIds
                     .Distinct().ToList() ?? [];
             }
 
@@ -251,16 +247,12 @@ public sealed class AllocationController : ControllerBase
             if (!allowIncompleteDraft && seatDistributionRuleIds.Count == 0)
                 return PreparedAllocation.Fail("Select at least one seat distribution rule.");
 
-            if (!allowIncompleteDraft && allocationTypeRuleIds.Count == 0)
-                return PreparedAllocation.Fail("Select at least one allocation type rule.");
-
-            if (!allowIncompleteDraft && sequenceRuleIds.Count == 0)
-                return PreparedAllocation.Fail("Select at least one sequence rule.");
+            if (!allowIncompleteDraft && allocationTypeSequenceRuleIds.Count == 0)
+                return PreparedAllocation.Fail("Select at least one allocation type & sequence rule.");
 
             selectedRuleIds = candidateRuleIds
                 .Concat(seatDistributionRuleIds)
-                .Concat(allocationTypeRuleIds)
-                .Concat(sequenceRuleIds)
+                .Concat(allocationTypeSequenceRuleIds)
                 .Distinct()
                 .ToList();
         }
@@ -363,8 +355,7 @@ public sealed class AllocationController : ControllerBase
                 step.Code,
                 candidateRuleIds,
                 seatDistributionRuleIds,
-                allocationTypeRuleIds,
-                sequenceRuleIds,
+                allocationTypeSequenceRuleIds,
                 detailedById,
                 cancellationToken);
         }
@@ -381,7 +372,7 @@ prepared:
             CapRound = request.CapRound,
             AllocationStep = step.Code,
             RuleSetVersionId = string.Equals(step.Code, AllocationConfiguration.Step0, StringComparison.OrdinalIgnoreCase)
-                ? BuildRuleSetVersionId(step.Code, candidateRuleIds, seatDistributionRuleIds, allocationTypeRuleIds, sequenceRuleIds)
+                ? BuildRuleSetVersionId(step.Code, candidateRuleIds, seatDistributionRuleIds, allocationTypeSequenceRuleIds)
                 : BuildLegacyRuleSetVersionId(step.Code, request.RuleGroups)
         };
 
@@ -445,12 +436,7 @@ prepared:
                     ruleId = id,
                     ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
                 }).ToList(),
-                allocationTypeRules = request.AllocationTypeRuleIds.Select(id => new
-                {
-                    ruleId = id,
-                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
-                }).ToList(),
-                sequenceRules = request.SequenceRuleIds.Select(id => new
+                allocationTypeSequenceRules = request.AllocationTypeSequenceRuleIds.Select(id => new
                 {
                     ruleId = id,
                     ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
@@ -509,8 +495,7 @@ prepared:
         string stepCode,
         IReadOnlyList<int> candidateRuleIds,
         IReadOnlyList<int> seatDistributionRuleIds,
-        IReadOnlyList<int> allocationTypeRuleIds,
-        IReadOnlyList<int> sequenceRuleIds,
+        IReadOnlyList<int> allocationTypeSequenceRuleIds,
         IReadOnlyDictionary<int, RuleDefinition> rules,
         CancellationToken cancellationToken)
     {
@@ -529,17 +514,13 @@ prepared:
                 .Select(id => ToAllocationRule(rules[id], AllocationConfiguration.Step0SeatDistribution))
                 .ToList();
 
-            var allocationTypeRules = allocationTypeRuleIds
+            var allocationTypeSequenceRules = allocationTypeSequenceRuleIds
                 .Where(rules.ContainsKey)
-                .Select(id => ToAllocationRule(rules[id], AllocationConfiguration.Step0AllocationType))
-                .ToList();
-
-            var sequenceRules = sequenceRuleIds
-                .Where(rules.ContainsKey)
-                .Select(id => ToAllocationRule(rules[id], AllocationConfiguration.Step0Sequence))
+                .Select(id => ToAllocationRule(rules[id], AllocationConfiguration.Step0AllocationTypeSequence))
                 .Select((rule, index) =>
                 {
-                    // Allocation Run order, not Rule Priority, is the SeqId.
+                    // Allocation Run order is the sequence. The matched rule's
+                    // outcome supplies AllocatedType.
                     rule.SequenceId = index + 1;
                     rule.DisplayOrder = index + 1;
                     return rule;
@@ -548,8 +529,7 @@ prepared:
 
             result[AllocationConfiguration.CandidateQualification] = candidateRules;
             result[AllocationConfiguration.Step0SeatDistribution] = seatDistributionRules;
-            result[AllocationConfiguration.Step0AllocationType] = allocationTypeRules;
-            result[AllocationConfiguration.Step0Sequence] = sequenceRules;
+            result[AllocationConfiguration.Step0AllocationTypeSequence] = allocationTypeSequenceRules;
             return result;
         }
 
@@ -585,7 +565,7 @@ prepared:
             Code = rule.RuleName,
             StageCode = decisionArea,
             DisplayOrder = rule.Priority,
-            AllocatedType = string.Equals(decisionArea, AllocationConfiguration.Step0Sequence, StringComparison.OrdinalIgnoreCase) ? string.Empty : outcome.AllocatedType ?? string.Empty,
+            AllocatedType = outcome.AllocatedType ?? string.Empty,
             VacancyType = outcome.VacancyType ?? string.Empty,
             SeatCategory = outcome.SeatCategory ?? string.Empty,
             ReservationType = outcome.ReservationType ?? string.Empty,
@@ -714,9 +694,8 @@ prepared:
         string allocationStep,
         IEnumerable<int> candidateRuleIds,
         IEnumerable<int> seatDistributionRuleIds,
-        IEnumerable<int> allocationTypeRuleIds,
-        IEnumerable<int> sequenceRuleIds) =>
-        $"{allocationStep}:candidate={string.Join(",", candidateRuleIds)}|seatDistribution={string.Join(",", seatDistributionRuleIds)}|allocationType={string.Join(",", allocationTypeRuleIds)}|sequence={string.Join(",", sequenceRuleIds)}";
+        IEnumerable<int> allocationTypeSequenceRuleIds) =>
+        $"{allocationStep}:candidate={string.Join(",", candidateRuleIds)}|seatDistribution={string.Join(",", seatDistributionRuleIds)}|allocationTypeSequence={string.Join(",", allocationTypeSequenceRuleIds)}";
 
     private static string BuildLegacyRuleSetVersionId(
         string allocationStep,
