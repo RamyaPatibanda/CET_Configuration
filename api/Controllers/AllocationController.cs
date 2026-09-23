@@ -329,6 +329,27 @@ public sealed class AllocationController : ControllerBase
             if (ruleGroups.Count == 0 && !allowIncompleteDraft)
                 return PreparedAllocation.Fail("Select at least one configured rule and assign it to a decision area.");
 
+            if (!allowIncompleteDraft && string.Equals(step.Code, AllocationConfiguration.Step1, StringComparison.OrdinalIgnoreCase))
+            {
+                var requiredStep1Areas = new[]
+                {
+                    AllocationConfiguration.CandidateQualification,
+                    AllocationConfiguration.PreferenceEvaluation,
+                    AllocationConfiguration.SeatEligibility,
+                    AllocationConfiguration.Step1AllocationTypeSequence,
+                    AllocationConfiguration.Betterment
+                };
+
+                var missingStep1Areas = requiredStep1Areas
+                    .Where(area => !ruleGroups.Any(group =>
+                        string.Equals(group.Type, area, StringComparison.OrdinalIgnoreCase) &&
+                        group.RuleIds.Count > 0))
+                    .ToList();
+
+                if (missingStep1Areas.Count > 0)
+                    return PreparedAllocation.Fail($"Select at least one rule for: {string.Join(", ", missingStep1Areas)}.");
+            }
+
             if (!allowIncompleteDraft)
             {
                 var invalidGroups = ruleGroups
@@ -505,7 +526,19 @@ prepared:
             };
         }
 
-        return request.RuleGroups;
+        return new
+        {
+            groups = request.RuleGroups.Select(group => new
+            {
+                type = group.Type,
+                rules = group.RuleIds.Select(id => new
+                {
+                    ruleId = id,
+                    ruleName = rules.TryGetValue(id, out var rule) ? rule.RuleName : string.Empty
+                }).ToList()
+            }).ToList(),
+            report
+        };
     }
 
     private IReadOnlyList<IAllocationStage> BuildStages(string allocationStep)
