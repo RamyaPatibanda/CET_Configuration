@@ -400,7 +400,7 @@ function Allocation() {
       </section>
 
       {selectedStep && (
-        <section className="allocation-section">
+        <section className="allocation-section allocation-rule-selection">
           <div className="allocation-section-heading">
             <div><span>{allocationStep === "STEP_0" ? "Step 0 configuration" : "Decision areas for this allocation step"}</span><h2>{allocationStep === "STEP_0" ? "Step 0 Rules" : "Decision Areas"}</h2></div>
             <span className="allocation-count">{selectedRuleCount} selected</span>
