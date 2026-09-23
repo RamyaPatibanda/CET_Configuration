@@ -31,7 +31,7 @@ namespace api.BusinessLogic.RuleConfiguration
 
         public async Task<int> CreateRuleAsync(CreateRuleRequest request)
         {
-            try { Validate(request.RuleId, request.RuleName, request.Priority, request.DecisionAreaCode, request.Outcome, request.Conditions, request.Branches); return await _dataAccess.CreateRuleAsync(request); }
+            try { Validate(request.RuleId, request.RuleName, request.Priority, request.Outcome, request.Conditions, request.Branches); return await _dataAccess.CreateRuleAsync(request); }
             catch (Exception ex) { _logger.LogError(ex, "Error while creating rule {RuleName}.", request.RuleName); throw; }
         }
 
@@ -77,7 +77,6 @@ namespace api.BusinessLogic.RuleConfiguration
             int ruleId,
             string ruleName,
             int priority,
-            string decisionAreaCode,
             RuleOutcome? outcome,
             List<RuleConditionRequest>? conditions,
             List<RuleBranchRequest>? branches)
@@ -89,20 +88,6 @@ namespace api.BusinessLogic.RuleConfiguration
 
             if (priority < 1)
                 throw new ArgumentException("Priority must be greater than zero.", nameof(priority));
-
-            var allowedAreas = new[]
-            {
-                "CANDIDATE_QUALIFICATION",
-                "SPECIAL_RESERVATION_ELIGIBILITY",
-                "PREFERENCE_EVALUATION",
-                "SEAT_ELIGIBILITY",
-                "SEAT_ALLOCATION",
-                "BETTERMENT",
-                "CONVERSION"
-            };
-
-            if (string.IsNullOrWhiteSpace(decisionAreaCode) || !allowedAreas.Contains(decisionAreaCode))
-                throw new ArgumentException("A valid decision area is required.", nameof(decisionAreaCode));
 
             var ruleBranches = branches ?? new List<RuleBranchRequest>();
 
