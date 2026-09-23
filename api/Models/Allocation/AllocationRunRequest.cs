@@ -22,6 +22,7 @@ public sealed class AllocationRunResponse
     public AllocationRun Run { get; set; } = new();
     public IReadOnlyList<AllocationDecision> Decisions { get; set; } = [];
     public IReadOnlyList<AllocationStageResult> Stages { get; set; } = [];
+    public AllocationRunReport? Report { get; set; }
 }
 
 public sealed class AllocationStageResult
