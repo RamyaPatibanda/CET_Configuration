@@ -1340,3 +1340,41 @@
   position: relative;
   z-index: 1;
 }
+
+/* All allocation dropdown menus are rendered in a body portal.
+   Positioning is calculated by the component so menus flip upward when
+   there is not enough viewport space below the trigger. */
+.allocation-multiselect-menu.allocation-portal-menu {
+  position: fixed !important;
+  z-index: 100000 !important;
+  box-sizing: border-box;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  max-height: min(360px, 45vh);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.allocation-portal-menu .allocation-rule-options {
+  max-height: none;
+  overflow-y: auto;
+}
+
+.allocation-portal-menu .allocation-rule-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+}
+
+.allocation-rule-selection,
+.allocation-rule-selection .allocation-stage-list,
+.allocation-rule-selection .allocation-decision-area,
+.allocation-rule-selection .allocation-multiselect {
+  overflow: visible;
+}
+
+/* Native selects remain inside their browser control; custom searchable
+   dropdowns above are the ones that need viewport-aware overlay behavior. */
