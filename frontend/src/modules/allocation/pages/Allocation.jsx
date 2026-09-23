@@ -386,7 +386,7 @@ function Allocation() {
           {allocationStep === "STEP_0" && (
             <div className="allocation-rule-note">
               <FiCheck size={15} />
-              <span>Select configured rules only. Candidate eligibility determines the candidate pool; sequence rules are evaluated in the selected order and the first match becomes the SeqId.</span>
+              <span>Candidate Eligibility builds the pool. Seat Distribution resolves PH/Def/Orp vacancy only when normal vacancy is zero. Allocation Type selects the seat column. Sequence then evaluates the selected rules in order and the first match becomes the SeqId.</span>
             </div>
           )}
 
