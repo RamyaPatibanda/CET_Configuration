@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { FiArrowRight, FiEye, FiEyeOff, FiPower } from "react-icons/fi";
 import authService from "./services/authService";
-import { getApplicationName } from "./config/runtimeConfig";
+import { getApplicationName, getRouterBasename } from "./config/runtimeConfig";
 import Sidebar from "./components/layout/Sidebar";
 import AppRoutes from "./routes/AppRoutes";
 import "./App.css";
@@ -58,7 +58,7 @@ function App() {
   useEffect(() => { document.title = getApplicationName(); }, []);
   const [authenticated, setAuthenticated] = useState(authService.isAuthenticated());
   useEffect(() => { setAuthenticated(authService.isAuthenticated()); }, []);
-  return <BrowserRouter><Routes>{authenticated ? <Route path="*" element={<AuthenticatedWorkspace onLogout={() => setAuthenticated(false)} />} /> : <Route path="*" element={<Login onLogin={() => setAuthenticated(true)} />} />}</Routes></BrowserRouter>;
+  return <BrowserRouter basename={getRouterBasename()}><Routes>{authenticated ? <Route path="*" element={<AuthenticatedWorkspace onLogout={() => setAuthenticated(false)} />} /> : <Route path="*" element={<Login onLogin={() => setAuthenticated(true)} />} />}</Routes></BrowserRouter>;
 }
 
 export default App;
