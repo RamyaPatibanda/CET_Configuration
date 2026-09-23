@@ -64,7 +64,19 @@ function Overview() {
 
   const ruleSummary = (run) => {
     const groups = parseGroups(run);
-    const rules = groups.flatMap((group) => group.rules || []);
+
+    // ruleGroupsJson can be stored as either an array of group objects
+    // or as an object keyed by group name. Normalize both shapes before
+    // flattening the rules.
+    const groupList = Array.isArray(groups)
+      ? groups
+      : Object.values(groups || {});
+
+    const rules = groupList.flatMap((group) => {
+      if (Array.isArray(group)) return group;
+      return Array.isArray(group?.rules) ? group.rules : [];
+    });
+
     return rules.length
       ? rules.map((rule) => rule.ruleName).filter(Boolean).join(", ")
       : "No rules";
