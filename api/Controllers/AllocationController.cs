@@ -21,6 +21,8 @@ public sealed class AllocationController : ControllerBase
     private readonly AllocationRunHistoryDAL _runHistory;
     private readonly LegacyAllocationDAL _legacyAllocation;
     private readonly Step0CandidateRepository _step0CandidateRepository;
+    private readonly Step1CandidateRepository _step1CandidateRepository;
+    private readonly LegacyStep1AllocationDAL _legacyStep1Allocation;
     private readonly UserPermissionService _permissions;
 
     public AllocationController(
@@ -29,6 +31,8 @@ public sealed class AllocationController : ControllerBase
         AllocationRunHistoryDAL runHistory,
         LegacyAllocationDAL legacyAllocation,
         Step0CandidateRepository step0CandidateRepository,
+        Step1CandidateRepository step1CandidateRepository,
+        LegacyStep1AllocationDAL legacyStep1Allocation,
         UserPermissionService permissions)
     {
         _ruleConfiguration = ruleConfiguration;
@@ -36,6 +40,8 @@ public sealed class AllocationController : ControllerBase
         _runHistory = runHistory;
         _legacyAllocation = legacyAllocation;
         _step0CandidateRepository = step0CandidateRepository;
+        _step1CandidateRepository = step1CandidateRepository;
+        _legacyStep1Allocation = legacyStep1Allocation;
         _permissions = permissions;
     }
 
@@ -512,8 +518,7 @@ prepared:
             ],
             AllocationConfiguration.Step1 =>
             [
-                new CandidateQualificationStage(),
-                new Step1AllocationStage(new SeatInventoryService())
+                new Step1AllocationStage(_step1CandidateRepository, _legacyStep1Allocation)
             ],
             _ => throw new InvalidOperationException(
                 $"Allocation step '{allocationStep}' is not implemented.")
@@ -530,13 +535,6 @@ prepared:
         foreach (var group in groups)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var invalidRules = group.RuleIds
-                .Where(ruleId => rules.TryGetValue(ruleId, out var rule) &&
-                    !string.Equals(rule.DecisionAreaCode, group.Type, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (invalidRules.Count > 0)
-                throw new InvalidOperationException($"Rule(s) {string.Join(", ", invalidRules)} are configured for a different decision area.");
-
             result[group.Type] = group.RuleIds
                 .Where(rules.ContainsKey)
                 .Select(ruleId => ToAllocationRule(rules[ruleId], group.Type))
@@ -588,7 +586,16 @@ prepared:
             return result;
         }
 
-        // Keep the existing grouped contract for steps that have not yet been migrated.
+        if (string.Equals(stepCode, AllocationConfiguration.Step1, StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var group in new[] { AllocationConfiguration.CandidateQualification, AllocationConfiguration.PreferenceEvaluation, AllocationConfiguration.SeatEligibility, AllocationConfiguration.Step1AllocationTypeSequence, AllocationConfiguration.Betterment })
+            {
+                if (!result.ContainsKey(group))
+                    result[group] = [];
+            }
+            return result;
+        }
+
         throw new InvalidOperationException($"Allocation step '{stepCode}' must use its step-specific rule selection model.");
     }
 
