@@ -115,28 +115,9 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
             if (next) setSearch("");
           }}
         >
-          <span>{group.ruleIds.length ? "Add another rule" : "Select rules from Rule Configuration"}</span>
+          <span>{group.ruleIds.length ? `${group.ruleIds.length} rule${group.ruleIds.length === 1 ? "" : "s"} selected` : "Select rules from Rule Configuration"}</span>
           <FiChevronDown size={16} />
         </button>
-
-        {selectedRules.length > 0 && (
-          <div className="allocation-sequence-list">
-            {selectedRules.map((rule, index) => (
-              <div className="allocation-sequence-item" key={area.code + "-" + rule.ruleId}>
-                <span className="allocation-sequence-number">{index + 1}</span>
-                <div className="allocation-sequence-rule">
-                  <strong>{rule.ruleName}</strong>
-                  <span>{rule.description || ((rule.conditionCount || 0) + " conditions")}</span>
-                </div>
-                <div className="allocation-sequence-actions">
-                  <button type="button" disabled={disabled || index === 0} onClick={() => moveRule(area.code, rule.ruleId, -1)} title="Move up"><FiArrowUp size={14} /></button>
-                  <button type="button" disabled={disabled || index === selectedRules.length - 1} onClick={() => moveRule(area.code, rule.ruleId, 1)} title="Move down"><FiArrowDown size={14} /></button>
-                  <button type="button" disabled={disabled} onClick={() => toggleRule(area.code, Number(rule.ruleId))} title="Remove"><FiTrash2 size={13} /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {isOpen && !disabled && createPortal(
           <div
@@ -144,6 +125,23 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
             className="allocation-multiselect-menu allocation-sequence-menu allocation-portal-menu"
             style={menuStyle}
           >
+            {selectedRules.length > 0 && (
+              <div className="allocation-sequence-selected" aria-label="Selected rule sequence">
+                {selectedRules.map((rule, index) => (
+                  <div className="allocation-sequence-item" key={area.code + "-selected-" + rule.ruleId}>
+                    <span className="allocation-sequence-number">{index + 1}</span>
+                    <div className="allocation-sequence-rule">
+                      <strong>{rule.ruleName}</strong>
+                    </div>
+                    <div className="allocation-sequence-actions">
+                      <button type="button" disabled={disabled || index === 0} onClick={() => moveRule(area.code, rule.ruleId, -1)} title="Move up"><FiArrowUp size={13} /></button>
+                      <button type="button" disabled={disabled || index === selectedRules.length - 1} onClick={() => moveRule(area.code, rule.ruleId, 1)} title="Move down"><FiArrowDown size={13} /></button>
+                      <button type="button" disabled={disabled} onClick={() => toggleRule(area.code, Number(rule.ruleId))} title="Remove"><FiTrash2 size={12} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="allocation-rule-search">
               <FiSearch size={14} />
               <input
