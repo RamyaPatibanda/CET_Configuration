@@ -32,8 +32,7 @@ const createRuleGroups = (stepCode) =>
     ? [
         { type: "CANDIDATE_QUALIFICATION", ruleIds: [] },
         { type: "STEP_0_SEAT_DISTRIBUTION", ruleIds: [] },
-        { type: "STEP_0_ALLOCATION_TYPE", ruleIds: [] },
-        { type: "STEP_0_SEQUENCE", ruleIds: [] },
+        { type: "STEP_0_ALLOCATION_TYPE_SEQUENCE", ruleIds: [] },
       ]
     : (getDecisionAreaConfig(stepCode)?.stages || []).map((area) => ({ type: area.code, ruleIds: [] }));
 
@@ -116,13 +115,18 @@ function Allocation() {
               const historyKeyByGroup = {
                 CANDIDATE_QUALIFICATION: "candidateEligibilityRules",
                 STEP_0_SEAT_DISTRIBUTION: "seatDistributionRules",
-                STEP_0_ALLOCATION_TYPE: "allocationTypeRules",
-                STEP_0_SEQUENCE: "sequenceRules",
+                STEP_0_ALLOCATION_TYPE_SEQUENCE: "allocationTypeSequenceRules",
               };
               const key = historyKeyByGroup[group.type];
+              const legacyRules = group.type === "STEP_0_ALLOCATION_TYPE_SEQUENCE"
+                ? [
+                    ...(savedGroups.allocationTypeRules || []),
+                    ...(savedGroups.sequenceRules || [])
+                  ]
+                : savedGroups[key];
               return {
                 ...group,
-                ruleIds: (savedGroups[key] || [])
+                ruleIds: (legacyRules || [])
                   .map((rule) => Number(rule.ruleId))
                   .filter((ruleId) => ruleItems.some((rule) => rule.ruleId === ruleId)),
               };
@@ -193,7 +197,7 @@ function Allocation() {
   const moveSequenceRule = (ruleId, direction) => {
     if (!canEdit) return;
     setRuleGroups((current) => current.map((group) => {
-      if (!["STEP_0_SEAT_DISTRIBUTION", "STEP_0_ALLOCATION_TYPE", "STEP_0_SEQUENCE"].includes(group.type)) return group;
+      if (!["STEP_0_SEAT_DISTRIBUTION", "STEP_0_ALLOCATION_TYPE_SEQUENCE"].includes(group.type)) return group;
       const index = group.ruleIds.indexOf(ruleId);
       const target = index + direction;
       if (index < 0 || target < 0 || target >= group.ruleIds.length) return group;
@@ -213,8 +217,7 @@ function Allocation() {
         allocationStep,
         candidateEligibilityRuleIds: ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds || [],
         seatDistributionRuleIds: ruleGroups.find((group) => group.type === "STEP_0_SEAT_DISTRIBUTION")?.ruleIds || [],
-        allocationTypeRuleIds: ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE")?.ruleIds || [],
-        sequenceRuleIds: ruleGroups.find((group) => group.type === "STEP_0_SEQUENCE")?.ruleIds || [],
+        allocationTypeSequenceRuleIds: ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE_SEQUENCE")?.ruleIds || [],
       };
     }
     return {
@@ -232,12 +235,10 @@ function Allocation() {
     if (allocationStep === "STEP_0") {
       const candidateCount = ruleGroups.find((group) => group.type === "CANDIDATE_QUALIFICATION")?.ruleIds.length || 0;
       const seatDistributionCount = ruleGroups.find((group) => group.type === "STEP_0_SEAT_DISTRIBUTION")?.ruleIds.length || 0;
-      const allocationTypeCount = ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE")?.ruleIds.length || 0;
-      const sequenceCount = ruleGroups.find((group) => group.type === "STEP_0_SEQUENCE")?.ruleIds.length || 0;
+      const allocationTypeSequenceCount = ruleGroups.find((group) => group.type === "STEP_0_ALLOCATION_TYPE_SEQUENCE")?.ruleIds.length || 0;
       if (!candidateCount) return "Select at least one candidate eligibility rule.";
       if (!seatDistributionCount) return "Select at least one seat distribution rule.";
-      if (!allocationTypeCount) return "Select at least one allocation type rule.";
-      if (!sequenceCount) return "Select at least one sequence rule.";
+      if (!allocationTypeSequenceCount) return "Select at least one allocation type & sequence rule.";
       return "";
     }
     const configuredAreas = getDecisionAreaConfig(allocationStep)?.stages || [];
@@ -386,7 +387,7 @@ function Allocation() {
           {allocationStep === "STEP_0" && (
             <div className="allocation-rule-note">
               <FiCheck size={15} />
-              <span>Candidate Eligibility builds the pool. Seat Distribution resolves PH/Def/Orp vacancy only when normal vacancy is zero. Allocation Type selects the seat column. Sequence then evaluates the selected rules in order and the first match becomes the SeqId.</span>
+              <span>Candidate Eligibility builds the pool. Seat Distribution resolves PH/Def/Orp vacancy only when normal vacancy is zero. Allocation Type &amp; Sequence evaluates the selected rules in order: the first matching rule determines the seat column and its position becomes the SeqId.</span>
             </div>
           )}
 
