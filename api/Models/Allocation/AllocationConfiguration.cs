@@ -29,8 +29,7 @@ public static class AllocationConfiguration
     public const string Betterment = "BETTERMENT";
     public const string Conversion = "CONVERSION";
     public const string Step0SeatDistribution = "STEP_0_SEAT_DISTRIBUTION";
-    public const string Step0AllocationType = "STEP_0_ALLOCATION_TYPE";
-    public const string Step0Sequence = "STEP_0_SEQUENCE";
+    public const string Step0AllocationTypeSequence = "STEP_0_ALLOCATION_TYPE_SEQUENCE";
 
     public static IReadOnlyList<AllocationStepDefinition> GetSteps() =>
     [
@@ -56,15 +55,9 @@ public static class AllocationConfiguration
                 },
                 new()
                 {
-                    Code = "STEP_0_ALLOCATION_TYPE",
-                    Name = "Allocation Type",
-                    Description = "Determine the seat column used for the allocation."
-                },
-                new()
-                {
-                    Code = "STEP_0_SEQUENCE",
-                    Name = "Sequence",
-                    Description = "Evaluate the selected rules in Allocation Run order and assign SeqId."
+                    Code = Step0AllocationTypeSequence,
+                    Name = "Allocation Type & Sequence",
+                    Description = "Evaluate the selected rules in order. The first matching rule determines the allocation type and its position becomes the SeqId."
                 }
             ]
         },
