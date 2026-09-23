@@ -14,7 +14,6 @@ const EMPTY_RULE = {
   description: "",
   priority: 1,
   isActive: true,
-  decisionAreaCode: "",
   outcome: {
     values: [],
   },
@@ -119,7 +118,6 @@ function RuleForm({
         ? {
             ...EMPTY_RULE,
             ...rule,
-            decisionAreaCode: "",
           }
         : { ...EMPTY_RULE, ruleId: nextRuleId }
     );
