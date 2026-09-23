@@ -74,7 +74,8 @@ public sealed class LegacyAllocationDAL
                     if (!MatchesPreferenceRules(ruleGroups, candidate, preference))
                         continue;
 
-                    var vacancyRows = await GetVacancyRowsAsync(connection, transaction, preference.ChoiceCode, candidate.EffectiveCategoryId, cancellationToken);
+                    var allocationTypes = GetConfiguredAllocationTypes(ruleGroups);
+                    var vacancyRows = await GetVacancyRowsAsync(connection, transaction, preference.ChoiceCode, candidate.EffectiveCategoryId, allocationTypes, cancellationToken);
                     var allocated = false;
 
                     foreach (var vacancyRow in vacancyRows)
@@ -310,6 +311,18 @@ public sealed class LegacyAllocationDAL
     private static int ResolveAllocatedTypeVacancy(VacancyRow vacancyRow, string allocatedType) =>
         vacancyRow.GetVacancy(allocatedType);
 
+    private static HashSet<string> GetConfiguredAllocationTypes(
+        IReadOnlyDictionary<string, IReadOnlyList<AllocationRule>> ruleGroups)
+    {
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0AllocationTypeSequence, out var rules))
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        return rules
+            .Select(rule => rule.AllocatedType)
+            .Where(type => !string.IsNullOrWhiteSpace(type))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
     private Dictionary<string, string?> BuildStep0RuleValues(
         AllocationCandidate candidate,
         VacancyRow vacancyRow,
@@ -317,7 +330,7 @@ public sealed class LegacyAllocationDAL
         string vacancyType,
         string allocatedType)
     {
-        return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Gender"] = candidate.Gender,
             ["CategoryID"] = candidate.EffectiveCategoryId.ToString(),
@@ -339,6 +352,11 @@ public sealed class LegacyAllocationDAL
             ["QuotaID"] = vacancyRow.QuotaId.ToString(),
             ["MinorityId"] = vacancyRow.MinorityId?.ToString()
         };
+
+        foreach (var seatVacancy in vacancyRow.SeatVacancies)
+            values[seatVacancy.Key] = seatVacancy.Value.ToString();
+
+        return values;
     }
 
     private string ResolveAllocatedType(
@@ -416,7 +434,7 @@ public sealed class LegacyAllocationDAL
         return result;
     }
 
-    private static async Task<List<VacancyRow>> GetVacancyRowsAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, int categoryId, CancellationToken cancellationToken)
+    private static async Task<List<VacancyRow>> GetVacancyRowsAsync(SqlConnection connection, SqlTransaction transaction, long choiceCode, int categoryId, IReadOnlySet<string> allocationTypes, CancellationToken cancellationToken)
     {
         const string sql = """
             SELECT *
@@ -435,10 +453,7 @@ public sealed class LegacyAllocationDAL
             for (var ordinal = 0; ordinal < reader.FieldCount; ordinal++)
             {
                 var columnName = reader.GetName(ordinal);
-                if (columnName.Equals("CategoryId", StringComparison.OrdinalIgnoreCase) ||
-                    columnName.Equals("MinorityId", StringComparison.OrdinalIgnoreCase) ||
-                    columnName.Equals("QuotaID", StringComparison.OrdinalIgnoreCase) ||
-                    columnName.Equals("ChoiceCode", StringComparison.OrdinalIgnoreCase))
+                if (!allocationTypes.Contains(columnName))
                     continue;
                 if (!reader.IsDBNull(ordinal))
                 {
