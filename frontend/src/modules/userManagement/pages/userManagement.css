@@ -465,3 +465,62 @@
     flex-direction:column;
   }
 }
+
+
+/* Module permission switch */
+.permission-head {
+  grid-template-columns: minmax(0, 1fr) 92px;
+}
+.permission-head span:last-child {
+  text-align: center;
+}
+.permission-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.permission-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.permission-switch-track {
+  position: relative;
+  width: 42px;
+  height: 23px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  background: #d8dee7;
+  transition: background .18s ease, box-shadow .18s ease;
+}
+.permission-switch-thumb {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(31,41,55,.18);
+  transform: translateX(0);
+  transition: transform .18s ease;
+}
+.permission-switch input:checked + .permission-switch-track {
+  background: #315d8c;
+  box-shadow: 0 3px 10px rgba(49,93,140,.2);
+}
+.permission-switch input:checked + .permission-switch-track .permission-switch-thumb {
+  transform: translateX(19px);
+}
+.permission-switch input:focus-visible + .permission-switch-track {
+  box-shadow: 0 0 0 3px rgba(49,93,140,.14);
+}
+.permission-switch input:disabled + .permission-switch-track {
+  opacity: .45;
+  cursor: not-allowed;
+}
+@media(max-width:700px) {
+  .permission-head {
+    grid-template-columns: minmax(0,1fr) 65px;
+  }
+}
