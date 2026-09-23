@@ -30,6 +30,7 @@ public static class AllocationConfiguration
     public const string Conversion = "CONVERSION";
     public const string Step0SeatDistribution = "STEP_0_SEAT_DISTRIBUTION";
     public const string Step0AllocationTypeSequence = "STEP_0_ALLOCATION_TYPE_SEQUENCE";
+    public const string Step1AllocationTypeSequence = "STEP_1_ALLOCATION_TYPE_SEQUENCE";
 
     public static IReadOnlyList<AllocationStepDefinition> GetSteps() =>
     [
@@ -41,24 +42,9 @@ public static class AllocationConfiguration
             Enabled = true,
             DecisionAreas =
             [
-                new()
-                {
-                    Code = CandidateQualification,
-                    Name = "Candidate Eligibility",
-                    Description = "Determine the candidates that enter the Step 0 processing pool."
-                },
-                new()
-                {
-                    Code = "STEP_0_SEAT_DISTRIBUTION",
-                    Name = "Seat Distribution",
-                    Description = "Determine special reservation vacancy when the normal seat vacancy is zero."
-                },
-                new()
-                {
-                    Code = Step0AllocationTypeSequence,
-                    Name = "Allocation Type & Sequence",
-                    Description = "Evaluate the selected rules in order. The first matching rule determines the allocation type and its position becomes the SeqId."
-                }
+                new() { Code = CandidateQualification, Name = "Candidate Eligibility", Description = "Determine the candidates that enter the Step 0 processing pool." },
+                new() { Code = Step0SeatDistribution, Name = "Seat Distribution", Description = "Determine special reservation vacancy when the normal seat vacancy is zero." },
+                new() { Code = Step0AllocationTypeSequence, Name = "Allocation Type & Sequence", Description = "Evaluate the selected rules in order. The first matching rule determines the allocation type and its position becomes the SeqId." }
             ]
         },
         new()
@@ -71,45 +57,16 @@ public static class AllocationConfiguration
             [
                 new() { Code = CandidateQualification, Name = "Candidate Qualification", Description = "Determine candidates eligible for main allocation." },
                 new() { Code = PreferenceEvaluation, Name = "Preference Evaluation", Description = "Determine eligible preferences and preference traversal rules." },
-                new() { Code = SeatEligibility, Name = "Seat Eligibility", Description = "Determine which seats can be considered for the candidate." },
-                new() { Code = Betterment, Name = "Betterment", Description = "Determine whether an existing allocation can be replaced." }
+                new() { Code = SeatEligibility, Name = "Seat Eligibility", Description = "Determine which seat rows can be considered for the candidate." },
+                new() { Code = Step1AllocationTypeSequence, Name = "Allocation Type & Sequence", Description = "Evaluate allocation-type rules in order. The first matching rule determines the seat column and its position becomes SeqId." },
+                new() { Code = Betterment, Name = "Betterment", Description = "Determine whether an existing allocation can be replaced by a better preference or sequence." }
             ]
         },
-        new()
-        {
-            Code = "STEP_2",
-            Name = "Step 2 - Female Conversion",
-            Description = "Female-seat conversion.",
-            Enabled = false
-        },
-        new()
-        {
-            Code = "STEP_3",
-            Name = "Step 3 - SBC Conversion",
-            Description = "SBC conversion candidate selection and processing.",
-            Enabled = false
-        },
-        new()
-        {
-            Code = "STEP_6",
-            Name = "Step 6 - Category Conversion",
-            Description = "Category-group conversion.",
-            Enabled = false
-        },
-        new()
-        {
-            Code = "STEP_7",
-            Name = "Step 7 - Reservation Relaxation",
-            Description = "Later reservation / relaxation processing.",
-            Enabled = false
-        },
-        new()
-        {
-            Code = "STEP_8",
-            Name = "Step 8 - Institution / Quota Conversion",
-            Description = "Institution and quota conversion.",
-            Enabled = false
-        }
+        new() { Code = "STEP_2", Name = "Step 2 - Female Conversion", Description = "Female-seat conversion.", Enabled = false },
+        new() { Code = "STEP_3", Name = "Step 3 - SBC Conversion", Description = "SBC conversion candidate selection and processing.", Enabled = false },
+        new() { Code = "STEP_6", Name = "Step 6 - Category Conversion", Description = "Category-group conversion.", Enabled = false },
+        new() { Code = "STEP_7", Name = "Step 7 - Reservation Relaxation", Description = "Later reservation / relaxation processing.", Enabled = false },
+        new() { Code = "STEP_8", Name = "Step 8 - Institution / Quota Conversion", Description = "Institution and quota conversion.", Enabled = false }
     ];
 
     public static AllocationStepDefinition? GetStep(string code) =>
