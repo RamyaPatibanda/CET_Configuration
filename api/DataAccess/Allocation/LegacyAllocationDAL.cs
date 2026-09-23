@@ -217,51 +217,29 @@ public sealed class LegacyAllocationDAL
         int vacancy,
         string vacancyType)
     {
-        if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0AllocationType, out var allocationTypeRules) ||
-            allocationTypeRules.Count == 0)
+        if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0AllocationTypeSequence, out var allocationRules) ||
+            allocationRules.Count == 0)
             return null;
 
         var values = BuildStep0RuleValues(candidate, vacancyRow, vacancy, vacancyType, string.Empty);
 
-        // Allocation Type is resolved from the dedicated rule section. The first
-        // matching rule determines which seat column becomes AllocatedType.
-        AllocationRule? allocationTypeRule = null;
-        string allocatedType = string.Empty;
-
-        foreach (var rule in allocationTypeRules)
+        // Allocation Type and Sequence are one ordered decision. The first
+        // matching rule determines AllocatedType from its outcome and its
+        // position in the Allocation Run becomes SeqId.
+        for (var index = 0; index < allocationRules.Count; index++)
         {
+            var rule = allocationRules[index];
             if (!_ruleEvaluator.Matches(rule, values))
                 continue;
 
-            allocatedType = ResolveAllocatedType(rule, values, vacancyRow);
-            if (!string.IsNullOrWhiteSpace(allocatedType))
-            {
-                allocationTypeRule = rule;
-                break;
-            }
-        }
+            var allocatedType = ResolveAllocatedType(rule, values, vacancyRow);
+            if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
+                continue;
 
-        if (allocationTypeRule is null || vacancy <= 0)
-            return null;
+            if (allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase) && vacancyRow.Fem <= 0)
+                continue;
 
-        if (allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase) && vacancyRow.Fem <= 0)
-            return null;
-
-        if (allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase) && vacancyRow.Gen <= 0)
-            return null;
-
-        values["AllocatedType"] = allocatedType;
-
-        if (!ruleGroups.TryGetValue(AllocationConfiguration.Step0Sequence, out var sequenceRules) ||
-            sequenceRules.Count == 0)
-            return null;
-
-        // Sequence is independent of rule priority. The selected Allocation Run
-        // order is the sequence, and the first matching rule supplies SeqId.
-        for (var index = 0; index < sequenceRules.Count; index++)
-        {
-            var rule = sequenceRules[index];
-            if (!_ruleEvaluator.Matches(rule, values))
+            if (allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase) && vacancyRow.Gen <= 0)
                 continue;
 
             return new AllocationRule
