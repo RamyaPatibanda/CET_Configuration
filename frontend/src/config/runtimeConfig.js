@@ -1,7 +1,19 @@
 let runtimeConfig = null;
 
+function getConfigUrl() {
+  // app-config.json is copied to the root of the Vite dist folder.
+  // In production, resolve it from the built module location so IIS
+  // virtual application paths and client-side routes do not affect it.
+  if (import.meta.env.PROD) {
+    return new URL("../app-config.json", import.meta.url).href;
+  }
+
+  // During local Vite development, public files are served from the root.
+  return new URL("/app-config.json", window.location.origin).href;
+}
+
 export async function loadRuntimeConfig() {
-  const response = await fetch("./app-config.json", {
+  const response = await fetch(getConfigUrl(), {
     cache: "no-store",
   });
 
@@ -31,8 +43,8 @@ export async function loadRuntimeConfig() {
     applicationName: String(config.applicationName).trim(),
     iisApplicationName: String(config.iisApplicationName || "")
       .trim()
-      .replace(/^\/+|\/+$/g, ""),
-    apiBaseUrl: String(config.apiBaseUrl).trim().replace(/\/+$/, ""),
+      .replace(/^\\/+|\\/+$/g, ""),
+    apiBaseUrl: String(config.apiBaseUrl).trim().replace(/\\+$/, ""),
   };
 
   document.title = runtimeConfig.applicationName;
