@@ -92,11 +92,9 @@ public sealed class LegacyAllocationDAL
                             continue;
 
                         var allocatedType = allocationRule.AllocatedType;
-                        vacancy = allocatedType.Equals("Fem", StringComparison.OrdinalIgnoreCase)
-                            ? vacancyRow.Fem
-                            : allocatedType.Equals("Gen", StringComparison.OrdinalIgnoreCase)
-                                ? vacancyRow.Gen
-                                : 0;
+                        // Keep the vacancy resolved by Seat Distribution. Allocation Type
+                        // only chooses the Gen/Fem seat column; it must not overwrite a
+                        // special-reservation vacancy already resolved above.
                         if (string.IsNullOrWhiteSpace(allocatedType) || vacancy <= 0)
                             continue;
 
