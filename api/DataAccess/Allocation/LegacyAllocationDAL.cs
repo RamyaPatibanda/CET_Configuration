@@ -237,20 +237,19 @@ public sealed class LegacyAllocationDAL
         {
             var rule = allocationRules[index];
 
-            // First evaluate candidate/category/seat conditions without deriving
-            // vacancy from Gen/Fem.
-            if (!_ruleEvaluator.Matches(rule, baseValues))
-                continue;
+            // AllocationType is the configured outcome of the rule. Use it to
+            // select the vacancy before evaluating any condition that references
+            // Vacancy. This avoids deriving vacancy from Math.Max(Gen, Fem).
+            var allocatedType = !string.IsNullOrWhiteSpace(rule.AllocatedType)
+                ? rule.AllocatedType
+                : ResolveAllocatedType(rule, baseValues, vacancyRow);
 
-            var allocatedType = ResolveAllocatedType(rule, baseValues, vacancyRow);
             if (string.IsNullOrWhiteSpace(allocatedType))
                 continue;
 
-            // Vacancy belongs to the configured allocation type.
             var vacancy = ResolveAllocatedTypeVacancy(vacancyRow, allocatedType);
-
-            // Re-evaluate conditions that may explicitly use Vacancy.
             var values = BuildStep0RuleValues(candidate, vacancyRow, vacancy, vacancyType, allocatedType);
+
             if (!_ruleEvaluator.Matches(rule, values))
                 continue;
 
