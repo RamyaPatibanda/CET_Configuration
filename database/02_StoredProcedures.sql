@@ -515,8 +515,8 @@ BEGIN
         SELECT
             @aRuleId,
             rg.aRuleConditionGroupId,
-            NULLIF(JSON_VALUE(j.value, '$.GroupPath'), N''),
             TRY_CONVERT(INT, JSON_VALUE(j.value, '$.FieldId')),
+            NULLIF(JSON_VALUE(j.value, '$.GroupPath'), N''),
             COALESCE(JSON_VALUE(j.value, '$.ConditionLogicalOperator'), 'AND'),
             JSON_VALUE(j.value, '$.Operator'),
             JSON_VALUE(j.value, '$.Value'),
