@@ -1378,3 +1378,34 @@
 
 /* Native selects remain inside their browser control; custom searchable
    dropdowns above are the ones that need viewport-aware overlay behavior. */
+.allocation-multiselect-menu.allocation-portal-menu {
+  display: flex;
+  flex-direction: column;
+  max-height: min(250px, 45vh) !important;
+}
+
+.allocation-portal-menu .allocation-rule-search {
+  flex: 0 0 auto;
+}
+
+.allocation-portal-menu .allocation-rule-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.allocation-portal-menu .allocation-rule-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.allocation-portal-menu .allocation-rule-options::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.allocation-portal-menu .allocation-rule-options::-webkit-scrollbar-track {
+  background: transparent;
+}
