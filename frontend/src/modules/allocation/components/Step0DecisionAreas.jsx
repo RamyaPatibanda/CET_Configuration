@@ -5,8 +5,7 @@ import DecisionAreaRuleSelect from "./DecisionAreaRuleSelect";
 const STEP_0_STAGES = [
   { code: "CANDIDATE_QUALIFICATION", name: "Candidate Eligibility", description: "Select the rules that determine which candidates enter Step 0." },
   { code: "STEP_0_SEAT_DISTRIBUTION", name: "Seat Distribution", description: "Rules are evaluated in order. When the normal seat vacancy is zero, the first matching reservation rule supplies the special vacancy and VacancyType." },
-  { code: "STEP_0_ALLOCATION_TYPE", name: "Allocation Type", description: "Use the selected conditions with the calculated vacancy to determine the AllocatedType such as Fem or Gen." },
-  { code: "STEP_0_SEQUENCE", name: "Sequence", description: "Rules are evaluated in the selected order. The first matching rule receives the SeqId equal to its selected position." },
+  { code: "STEP_0_ALLOCATION_TYPE_SEQUENCE", name: "Allocation Type & Sequence", description: "Rules are evaluated in the selected order. The first matching rule determines the allocation type and its position becomes the SeqId." },
 ];
 
 function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup, toggleRule, moveRule, disabled }) {
@@ -106,8 +105,7 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
 function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup, toggleRule, moveSequenceRule, disabled }) {
   const candidateGroup = ruleGroups.find((item) => item.type === "CANDIDATE_QUALIFICATION") || { type: "CANDIDATE_QUALIFICATION", ruleIds: [] };
   const seatDistributionGroup = ruleGroups.find((item) => item.type === "STEP_0_SEAT_DISTRIBUTION") || { type: "STEP_0_SEAT_DISTRIBUTION", ruleIds: [] };
-  const allocationTypeGroup = ruleGroups.find((item) => item.type === "STEP_0_ALLOCATION_TYPE") || { type: "STEP_0_ALLOCATION_TYPE", ruleIds: [] };
-  const sequenceGroup = ruleGroups.find((item) => item.type === "STEP_0_SEQUENCE") || { type: "STEP_0_SEQUENCE", ruleIds: [] };
+  const allocationTypeSequenceGroup = ruleGroups.find((item) => item.type === "STEP_0_ALLOCATION_TYPE_SEQUENCE") || { type: "STEP_0_ALLOCATION_TYPE_SEQUENCE", ruleIds: [] };
 
   // Rules are reusable and no longer carry a Decision Area. Allocation stage
   // selection determines where a rule is used.
@@ -146,18 +144,7 @@ function Step0DecisionAreas({ rules, ruleGroups, openRuleGroup, setOpenRuleGroup
       <OrderedRuleSelect
         area={STEP_0_STAGES[2]}
         rules={allNonCandidateRules}
-        group={allocationTypeGroup}
-        openRuleGroup={openRuleGroup}
-        setOpenRuleGroup={setOpenRuleGroup}
-        toggleRule={toggleRule}
-        moveRule={moveSequenceRule}
-        disabled={disabled}
-      />
-
-      <OrderedRuleSelect
-        area={STEP_0_STAGES[3]}
-        rules={allNonCandidateRules}
-        group={sequenceGroup}
+        group={allocationTypeSequenceGroup}
         openRuleGroup={openRuleGroup}
         setOpenRuleGroup={setOpenRuleGroup}
         toggleRule={toggleRule}
