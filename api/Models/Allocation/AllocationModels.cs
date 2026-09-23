@@ -48,6 +48,8 @@ public sealed class AllocationCandidate
     public string IsEligibleForOpen { get; set; } = "N";
     public long MeritNo { get; set; }
     public long ExServicemenMeritNo { get; set; }
+    public short LinguisticMinorityId { get; set; }
+    public short ReligiousMinorityId { get; set; }
     public List<CollegePreference> Preferences { get; set; } = [];
     public ExistingAllotment? ExistingAllotment { get; set; }
     public bool IsInTempPhDef { get; set; }
