@@ -7,7 +7,7 @@ namespace api.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "admin")]
+[Authorize]
 public sealed class UserManagementController : ControllerBase
 {
     private readonly IUserManagementBL _userManagementBL;
@@ -41,6 +41,7 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "admin")]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<UserDefinition>>> GetUsers()
     {
@@ -55,6 +56,7 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "admin")]
     [HttpGet("permission-catalog")]
     public ActionResult<IReadOnlyList<UserPermission>> GetPermissionCatalog()
     {
@@ -70,6 +72,7 @@ public sealed class UserManagementController : ControllerBase
             .ToList());
     }
 
+    [Authorize(Roles = "admin")]
     [HttpGet("{userId:int}/permissions")]
     public async Task<ActionResult<IReadOnlyList<UserPermission>>> GetUserPermissions(int userId)
     {
@@ -82,6 +85,7 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPut("{userId:int}")]
     public async Task<ActionResult> UpdateUser(int userId, [FromBody] UpdateUserRequest request)
     {
@@ -98,6 +102,7 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "admin")]
     [HttpDelete("{userId:int}")]
     public async Task<ActionResult> DeleteUser(int userId)
     {
@@ -114,6 +119,7 @@ public sealed class UserManagementController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPost]
     public async Task<ActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
