@@ -119,7 +119,7 @@ function FieldConfiguration() {
       <div className="field-page-header">
         <div><h1>Field Configuration</h1><p>Define and manage the fields used across your CET rules.</p></div>
         {canWrite && (
-          <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field">
+          <Button onClick={openCreate} className="add-field-button" title="Add Field" aria-label="Add Field" data-tour="add-field">
             <FiPlus size={18} strokeWidth={2.2} />
           </Button>
         )}
