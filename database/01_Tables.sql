@@ -73,7 +73,7 @@ BEGIN
     CREATE TABLE dbo.tblRuleConditionGroup
     (
         aRuleConditionGroupId INT IDENTITY(1,1) NOT NULL,
-        aRuleId               INT NOT NULL,
+        nRuleId               INT NOT NULL,
         nGroupOrder           INT NOT NULL,
         tLogicalOperator      NVARCHAR(10) NOT NULL
             CONSTRAINT DF_tblRuleConditionGroup_tLogicalOperator DEFAULT ('AND'),
@@ -84,8 +84,8 @@ BEGIN
             PRIMARY KEY (aRuleConditionGroupId),
 
         CONSTRAINT FK_tblRuleConditionGroup_tblRule
-            FOREIGN KEY (aRuleId)
-            REFERENCES dbo.tblRule (aRuleId),
+            FOREIGN KEY (nRuleId)
+            REFERENCES dbo.tblRule (nRuleId),
 
         CONSTRAINT CK_tblRuleConditionGroup_tLogicalOperator
             CHECK (tLogicalOperator IN ('AND', 'OR')),
@@ -94,7 +94,7 @@ BEGIN
             CHECK (nGroupOrder > 0),
 
         CONSTRAINT UQ_tblRuleConditionGroup_Rule_Order
-            UNIQUE (aRuleId, nGroupOrder)
+            UNIQUE (nRuleId, nGroupOrder)
     );
 END;
 GO
@@ -104,9 +104,9 @@ BEGIN
     CREATE TABLE dbo.tblRuleCondition
     (
         aRuleConditionId  INT IDENTITY(1,1) NOT NULL,
-        aRuleId           INT NOT NULL,
-        aRuleConditionGroupId INT NULL,
-        aFieldId          INT NOT NULL,
+        nRuleId           INT NOT NULL,
+        nRuleConditionGroupId INT NULL,
+        nFieldId          INT NOT NULL,
         tGroupPath        NVARCHAR(1000) NULL,
         tLogicalOperator  NVARCHAR(10) NOT NULL CONSTRAINT DF_tblRuleCondition_tLogicalOperator DEFAULT ('AND'),
         tOperator         NVARCHAR(50) NOT NULL,
@@ -115,14 +115,14 @@ BEGIN
         dtCreatedDate     DATETIME NOT NULL CONSTRAINT DF_tblRuleCondition_dtCreatedDate DEFAULT (GETDATE()),
 
         CONSTRAINT PK_tblRuleCondition PRIMARY KEY (aRuleConditionId),
-        CONSTRAINT FK_tblRuleCondition_tblRule FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule (aRuleId),
+        CONSTRAINT FK_tblRuleCondition_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule (nRuleId),
         CONSTRAINT FK_tblRuleCondition_tblRuleConditionGroup
-            FOREIGN KEY (aRuleConditionGroupId) REFERENCES dbo.tblRuleConditionGroup (aRuleConditionGroupId),
+            FOREIGN KEY (nRuleConditionGroupId) REFERENCES dbo.tblRuleConditionGroup (nRuleConditionGroupId),
         CONSTRAINT FK_tblRuleCondition_tblFieldConfiguration
-            FOREIGN KEY (aFieldId) REFERENCES dbo.tblFieldConfiguration (aFieldId),
+            FOREIGN KEY (nFieldId) REFERENCES dbo.tblFieldConfiguration (nFieldId),
         CONSTRAINT CK_tblRuleCondition_tLogicalOperator CHECK (tLogicalOperator IN ('AND', 'OR')),
         CONSTRAINT CK_tblRuleCondition_nConditionOrder CHECK (nConditionOrder > 0),
-        CONSTRAINT UQ_tblRuleCondition_Rule_Order UNIQUE (aRuleId, nConditionOrder)
+        CONSTRAINT UQ_tblRuleCondition_Rule_Order UNIQUE (nRuleId, nConditionOrder)
     );
 END;
 GO
@@ -158,11 +158,11 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes
-    WHERE name = N'IX_tblRuleCondition_aRuleId'
+    WHERE name = N'IX_tblRuleCondition_nRuleId'
       AND object_id = OBJECT_ID(N'dbo.tblRuleCondition')
 )
 BEGIN
-    CREATE INDEX IX_tblRuleCondition_aRuleId
+    CREATE INDEX IX_tblRuleCondition_nRuleId
         ON dbo.tblRuleCondition (aRuleId, nConditionOrder);
 END;
 GO
@@ -170,11 +170,11 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes
-    WHERE name = N'IX_tblRuleCondition_aFieldId'
+    WHERE name = N'IX_tblRuleCondition_nFieldId'
       AND object_id = OBJECT_ID(N'dbo.tblRuleCondition')
 )
 BEGIN
-    CREATE INDEX IX_tblRuleCondition_aFieldId
+    CREATE INDEX IX_tblRuleCondition_nFieldId
         ON dbo.tblRuleCondition (aFieldId);
 END;
 GO
@@ -182,11 +182,11 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes
-    WHERE name = N'IX_tblRuleCondition_aRuleConditionGroupId'
+    WHERE name = N'IX_tblRuleCondition_nRuleConditionGroupId'
       AND object_id = OBJECT_ID(N'dbo.tblRuleCondition')
 )
 BEGIN
-    CREATE INDEX IX_tblRuleCondition_aRuleConditionGroupId
+    CREATE INDEX IX_tblRuleCondition_nRuleConditionGroupId
         ON dbo.tblRuleCondition (aRuleConditionGroupId, nConditionOrder);
 END;
 GO
@@ -299,7 +299,7 @@ BEGIN
         aAllocationDecisionId INT IDENTITY(1,1) NOT NULL,
         tStepCode NVARCHAR(50) NOT NULL,
         tDecisionAreaCode NVARCHAR(100) NOT NULL,
-        aRuleId INT NOT NULL,
+        nRuleId INT NOT NULL,
         nDisplayOrder INT NOT NULL,
         tAllocatedType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationDecision_tAllocatedType DEFAULT (N''),
         tVacancyType NVARCHAR(50) NOT NULL CONSTRAINT DF_tblAllocationDecision_tVacancyType DEFAULT (N''),
@@ -308,9 +308,9 @@ BEGIN
         dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblAllocationDecision_dtCreatedDate DEFAULT (GETDATE()),
         dtModifiedDate DATETIME NULL,
         CONSTRAINT PK_tblAllocationDecision PRIMARY KEY (aAllocationDecisionId),
-        CONSTRAINT FK_tblAllocationDecision_tblRule FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule(aRuleId),
+        CONSTRAINT FK_tblAllocationDecision_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(nRuleId),
         CONSTRAINT CK_tblAllocationDecision_nDisplayOrder CHECK (nDisplayOrder > 0),
-        CONSTRAINT UQ_tblAllocationDecision_Rule UNIQUE (tStepCode, tDecisionAreaCode, aRuleId),
+        CONSTRAINT UQ_tblAllocationDecision_Rule UNIQUE (tStepCode, tDecisionAreaCode, nRuleId),
         CONSTRAINT UQ_tblAllocationDecision_Order UNIQUE (tStepCode, tDecisionAreaCode, nDisplayOrder)
     );
 
@@ -339,7 +339,7 @@ BEGIN
     CREATE TABLE dbo.tblAllocationRunDecision
     (
         aDecisionId UNIQUEIDENTIFIER NOT NULL,
-        aAllocationRunId UNIQUEIDENTIFIER NOT NULL,
+        nAllocationRunId UNIQUEIDENTIFIER NOT NULL,
         nCandidateId BIGINT NOT NULL,
         nCollegeId INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nCollegeId DEFAULT (0),
         nPreferenceNo INT NOT NULL CONSTRAINT DF_tblAllocationRunDecision_nPreferenceNo DEFAULT (0),
@@ -352,12 +352,12 @@ BEGIN
         tStatus NVARCHAR(30) NOT NULL,
         dtCreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_tblAllocationRunDecision_dtCreatedAtUtc DEFAULT (GETUTCDATE()),
         CONSTRAINT PK_tblAllocationRunDecision PRIMARY KEY (aDecisionId),
-        CONSTRAINT FK_tblAllocationRunDecision_Run FOREIGN KEY (aAllocationRunId)
-            REFERENCES dbo.tblAllocationRunHistory(aAllocationRunId)
+        CONSTRAINT FK_tblAllocationRunDecision_Run FOREIGN KEY (nAllocationRunId)
+            REFERENCES dbo.tblAllocationRunHistory(nAllocationRunId)
     );
 
     CREATE INDEX IX_tblAllocationRunDecision_Run
-        ON dbo.tblAllocationRunDecision(aAllocationRunId, nCandidateId);
+        ON dbo.tblAllocationRunDecision(nAllocationRunId, nCandidateId);
 END;
 GO
 
@@ -547,7 +547,7 @@ BEGIN
     CREATE TABLE dbo.tblRuleBranch
     (
         aRuleBranchId INT IDENTITY(1,1) NOT NULL,
-        aRuleId INT NOT NULL,
+        nRuleId INT NOT NULL,
         tBranchName NVARCHAR(200) NOT NULL,
         nBranchOrder INT NOT NULL,
         tAllocatedType NVARCHAR(100) NULL,
@@ -561,14 +561,14 @@ BEGIN
 
         CONSTRAINT PK_tblRuleBranch PRIMARY KEY (aRuleBranchId),
         CONSTRAINT FK_tblRuleBranch_tblRule
-            FOREIGN KEY (aRuleId) REFERENCES dbo.tblRule(aRuleId) ON DELETE CASCADE,
+            FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(nRuleId) ON DELETE CASCADE,
         CONSTRAINT CK_tblRuleBranch_nBranchOrder CHECK (nBranchOrder > 0),
         CONSTRAINT CK_tblRuleBranch_nSequence CHECK (nSequence IS NULL OR nSequence > 0),
-        CONSTRAINT UQ_tblRuleBranch_Rule_Order UNIQUE (aRuleId, nBranchOrder)
+        CONSTRAINT UQ_tblRuleBranch_Rule_Order UNIQUE (nRuleId, nBranchOrder)
     );
 
     CREATE INDEX IX_tblRuleBranch_Rule
-        ON dbo.tblRuleBranch(aRuleId, nBranchOrder);
+        ON dbo.tblRuleBranch(nRuleId, nBranchOrder);
 END;
 GO
 
@@ -643,7 +643,7 @@ BEGIN
     CREATE TABLE dbo.tblUserPermission
     (
         aUserPermissionId INT IDENTITY(1,1) NOT NULL,
-        aUserId           INT NOT NULL,
+        nUserId           INT NOT NULL,
         tModuleCode       NVARCHAR(50) NOT NULL,
         bCanRead          BIT NOT NULL CONSTRAINT DF_tblUserPermission_bCanRead DEFAULT (0),
         bCanWrite         BIT NOT NULL CONSTRAINT DF_tblUserPermission_bCanWrite DEFAULT (0),
@@ -652,17 +652,17 @@ BEGIN
 
         CONSTRAINT PK_tblUserPermission PRIMARY KEY (aUserPermissionId),
         CONSTRAINT FK_tblUserPermission_tblUsers
-            FOREIGN KEY (aUserId) REFERENCES dbo.tblUsers(aUserId) ON DELETE CASCADE,
+            FOREIGN KEY (nUserId) REFERENCES dbo.tblUsers(nUserId) ON DELETE CASCADE,
         CONSTRAINT CK_tblUserPermission_tModuleCode
             CHECK (tModuleCode IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')),
         CONSTRAINT CK_tblUserPermission_WriteRequiresRead
             CHECK (bCanWrite = 0 OR bCanRead = 1),
         CONSTRAINT UQ_tblUserPermission_User_Module
-            UNIQUE (aUserId, tModuleCode)
+            UNIQUE (nUserId, tModuleCode)
     );
 
     CREATE INDEX IX_tblUserPermission_User
-        ON dbo.tblUserPermission(aUserId, tModuleCode);
+        ON dbo.tblUserPermission(nUserId, tModuleCode);
 END;
 GO
 
@@ -670,23 +670,23 @@ GO
 /* Audit ownership: every configuration/run action is attributable to a CET user. */
 IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NOT NULL
 BEGIN
-    IF COL_LENGTH(N'dbo.tblFieldConfiguration', N'aCreatedByUserId') IS NULL
-        ALTER TABLE dbo.tblFieldConfiguration ADD aCreatedByUserId INT NULL;
+    IF COL_LENGTH(N'dbo.tblFieldConfiguration', N'nCreatedByUserId') IS NULL
+        ALTER TABLE dbo.tblFieldConfiguration ADD nCreatedByUserId INT NULL;
 
-    IF COL_LENGTH(N'dbo.tblRule', N'aCreatedByUserId') IS NULL
-        ALTER TABLE dbo.tblRule ADD aCreatedByUserId INT NULL;
+    IF COL_LENGTH(N'dbo.tblRule', N'nCreatedByUserId') IS NULL
+        ALTER TABLE dbo.tblRule ADD nCreatedByUserId INT NULL;
 
-    IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'aCreatedByUserId') IS NULL
-        ALTER TABLE dbo.tblAllocationRunHistory ADD aCreatedByUserId INT NULL;
+    IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'nCreatedByUserId') IS NULL
+        ALTER TABLE dbo.tblAllocationRunHistory ADD nCreatedByUserId INT NULL;
 
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblFieldConfiguration_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblFieldConfiguration'))
-        ALTER TABLE dbo.tblFieldConfiguration ADD CONSTRAINT FK_tblFieldConfiguration_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
+        ALTER TABLE dbo.tblFieldConfiguration ADD CONSTRAINT FK_tblFieldConfiguration_CreatedBy FOREIGN KEY (nCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
 
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblRule_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblRule'))
-        ALTER TABLE dbo.tblRule ADD CONSTRAINT FK_tblRule_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
+        ALTER TABLE dbo.tblRule ADD CONSTRAINT FK_tblRule_CreatedBy FOREIGN KEY (nCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
 
     IF OBJECT_ID(N'dbo.tblAllocationRunHistory', N'U') IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_tblAllocationRunHistory_CreatedBy' AND parent_object_id = OBJECT_ID(N'dbo.tblAllocationRunHistory'))
-        ALTER TABLE dbo.tblAllocationRunHistory ADD CONSTRAINT FK_tblAllocationRunHistory_CreatedBy FOREIGN KEY (aCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
+        ALTER TABLE dbo.tblAllocationRunHistory ADD CONSTRAINT FK_tblAllocationRunHistory_CreatedBy FOREIGN KEY (nCreatedByUserId) REFERENCES dbo.tblUsers(aUserId);
 END;
 GO
