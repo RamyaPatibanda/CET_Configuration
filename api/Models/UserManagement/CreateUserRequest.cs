@@ -9,3 +9,13 @@ public sealed class CreateUserRequest
     public bool IsActive { get; set; } = true;
     public List<UserPermissionRequest> Permissions { get; set; } = [];
 }
+
+
+public sealed class UpdateUserRequest
+{
+    public string DisplayName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public bool IsAdmin { get; set; }
+    public bool IsActive { get; set; } = true;
+    public List<UserPermissionRequest> Permissions { get; set; } = [];
+}
