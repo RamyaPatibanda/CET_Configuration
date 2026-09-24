@@ -60,7 +60,6 @@ BEGIN
         nPriority        INT NOT NULL,
         bIsActive        BIT NOT NULL CONSTRAINT DF_tblRule_bIsActive DEFAULT (1),
         nCreatedByUserId INT NULL,
-        tDecisionAreaCode NVARCHAR(100) NOT NULL CONSTRAINT DF_tblRule_tDecisionAreaCode DEFAULT (N''),
         tOutcomeJson     NVARCHAR(MAX) NOT NULL CONSTRAINT DF_tblRule_tOutcomeJson DEFAULT (N'{}'),
         dtCreatedDate    DATETIME NOT NULL CONSTRAINT DF_tblRule_dtCreatedDate DEFAULT (GETDATE()),
         dtModifiedDate   DATETIME NULL,
