@@ -78,7 +78,7 @@ function UserManagement() {
 
   const openCreate = async () => {
     setShowCreate(true);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, password: "talisma1", confirmPassword: "talisma1" });
     setFormError("");
     await loadPermissionCatalog();
   };
@@ -141,7 +141,7 @@ function UserManagement() {
   const closeCreate = () => {
     if (saving) return;
     setShowCreate(false);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, password: "talisma1", confirmPassword: "talisma1" });
     setFormError("");
     setEditingUser(null);
   };
@@ -177,7 +177,7 @@ function UserManagement() {
       ? []
       : permissionCatalog.map((item) => ({
           moduleCode: item.moduleCode,
-          canRead: Boolean(form.permissions[item.moduleCode]?.canRead),
+          canRead: true,
           canWrite: Boolean(form.permissions[item.moduleCode]?.canWrite),
         }));
 
@@ -318,14 +318,7 @@ function UserManagement() {
                   <span>Display Name</span>
                   <input value={form.displayName} onChange={(event) => updateForm("displayName", event.target.value)} />
                 </label>
-                <label>
-                  <span>Password</span>
-                  <input type="password" value={form.password} onChange={(event) => updateForm("password", event.target.value)} autoComplete="new-password" />
-                </label>
-                <label>
-                  <span>Confirm Password</span>
-                  <input type="password" value={form.confirmPassword} onChange={(event) => updateForm("confirmPassword", event.target.value)} autoComplete="new-password" />
-                </label>
+                {!editingUser && <div className="default-password-note">Default password: <strong>talisma1</strong><small>The user can change this password after signing in.</small></div>}
               </div>
 
               <div className="user-form-options">
