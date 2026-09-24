@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheck, FiPlus, FiSearch, FiShield, FiUser, FiX } from "react-icons/fi";
+import { FiEdit2, FiPlus, FiSearch, FiShield, FiTrash2, FiUser, FiX } from "react-icons/fi";
 import userManagementService from "../services/userManagementService";
 import "./userManagement.css";
 
@@ -17,7 +17,7 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [permissionCatalog, setPermissionCatalog] = useState([]);
   const [search, setSearch] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);\n  const [editingUser, setEditingUser] = useState(null);\n  const [deleteUser, setDeleteUser] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,6 +80,60 @@ function UserManagement() {
     await loadPermissionCatalog();
   };
 
+  const openEdit = async (user) => {
+    try {
+      setFormError("");
+      const permissionsResponse = await userManagementService.getUserPermissions(user.userId);
+      const permissionList = Array.isArray(permissionsResponse)
+        ? permissionsResponse
+        : permissionsResponse?.data || [];
+
+      const permissions = Object.fromEntries(
+        permissionCatalog.map((item) => {
+          const saved = permissionList.find((permission) => permission.moduleCode === item.moduleCode);
+          return [item.moduleCode, {
+            canRead: true,
+            canWrite: Boolean(saved?.canWrite),
+          }];
+        })
+      );
+
+      setEditingUser(user);
+      setForm({
+        username: user.username || "",
+        displayName: user.displayName || "",
+        password: "",
+        confirmPassword: "",
+        isAdmin: Boolean(user.isAdmin),
+        isActive: Boolean(user.isActive),
+        permissions,
+      });
+      setShowCreate(true);
+    } catch (err) {
+      setError(err.message || "Unable to load user permissions.");
+    }
+  };
+
+  const closeDeleteWarning = () => {
+    if (saving) return;
+    setDeleteUser(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteUser) return;
+    try {
+      setSaving(true);
+      setError("");
+      await userManagementService.deleteUser(deleteUser.userId);
+      setDeleteUser(null);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message || "Unable to delete user.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const closeCreate = () => {
     if (saving) return;
     setShowCreate(false);
@@ -109,7 +163,7 @@ function UserManagement() {
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
+    if (form.password && form.password !== form.confirmPassword) {
       setFormError("Password and confirm password must match.");
       return;
     }
@@ -125,14 +179,24 @@ function UserManagement() {
 
     try {
       setSaving(true);
-      await userManagementService.createUser({
-        username: form.username.trim(),
-        displayName: form.displayName.trim(),
-        password: form.password,
-        isAdmin: form.isAdmin,
-        isActive: form.isActive,
-        permissions,
-      });
+      if (editingUser) {
+        await userManagementService.updateUser(editingUser.userId, {
+          displayName: form.displayName.trim(),
+          password: form.password || "",
+          isAdmin: form.isAdmin,
+          isActive: form.isActive,
+          permissions,
+        });
+      } else {
+        await userManagementService.createUser({
+          username: form.username.trim(),
+          displayName: form.displayName.trim(),
+          password: form.password,
+          isAdmin: form.isAdmin,
+          isActive: form.isActive,
+          permissions,
+        });
+      }
       closeCreate();
       await loadUsers();
     } catch (err) {
@@ -181,14 +245,14 @@ function UserManagement() {
                 <th>Role</th>
                 <th>Permissions</th>
                 <th>Status</th>
-                <th>Created</th>
+                <th>Created</th>\n                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" className="user-table-message">Loading users…</td></tr>
+                <tr><td colSpan="7" className="user-table-message">Loading users…</td></tr>
               ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan="6" className="user-table-message">No users found.</td></tr>
+                <tr><td colSpan="7" className="user-table-message">No users found.</td></tr>
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user.userId}>
@@ -206,7 +270,7 @@ function UserManagement() {
                       </span>
                     </td>
                     <td><span className={user.isActive ? "user-status active" : "user-status"}>{user.isActive ? "Active" : "Inactive"}</span></td>
-                    <td>{user.createdDate ? new Date(user.createdDate).toLocaleDateString() : "—"}</td>
+                    <td>{user.createdDate ? new Date(user.createdDate).toLocaleDateString() : "—"}</td>\n                    <td>\n                      <div className="user-row-actions">\n                        <button type="button" className="user-row-action edit" title="Edit user" aria-label={`Edit ${user.username}`} onClick={() => openEdit(user)}>\n                          <FiEdit2 size={14} />\n                        </button>\n                        <button type="button" className="user-row-action delete" title="Delete user" aria-label={`Delete ${user.username}`} onClick={() => setDeleteUser(user)}>\n                          <FiTrash2 size={14} />\n                        </button>\n                      </div>\n                    </td>
                   </tr>
                 ))
               )}
@@ -221,7 +285,7 @@ function UserManagement() {
             <div className="user-modal-header">
               <div>
                 <span>ADMINISTRATION</span>
-                <h2 id="create-user-title">Create User</h2>
+                <h2 id="create-user-title">{editingUser ? "Edit User" : "Create User"}</h2>
               </div>
               <button type="button" className="user-modal-close" onClick={closeCreate} disabled={saving} aria-label="Close">
                 <FiX size={18} />
@@ -232,7 +296,7 @@ function UserManagement() {
               <div className="user-form-grid">
                 <label>
                   <span>Username</span>
-                  <input value={form.username} onChange={(event) => updateForm("username", event.target.value)} autoComplete="off" />
+                  <input readOnly={Boolean(editingUser)} value={form.username} onChange={(event) => updateForm("username", event.target.value)} autoComplete="off" />
                 </label>
                 <label>
                   <span>Display Name</span>
@@ -304,7 +368,7 @@ function UserManagement() {
 
               <div className="user-modal-actions">
                 <button type="button" className="user-cancel-button" onClick={closeCreate} disabled={saving}>Cancel</button>
-                <button type="submit" className="user-save-button" disabled={saving}>{saving ? "Creating…" : "Create User"}</button>
+                <button type="submit" className="user-save-button" disabled={saving}>{saving ? (editingUser ? "Saving…" : "Creating…") : (editingUser ? "Save Changes" : "Create User")}</button>
               </div>
             </form>
           </section>
