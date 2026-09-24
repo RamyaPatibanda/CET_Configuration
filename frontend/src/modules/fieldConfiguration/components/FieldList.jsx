@@ -63,6 +63,7 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
               <td><strong>{field.tableName}</strong></td>
               <td>{field.fieldName}</td>
               <td>{field.displayName}</td>
+              <td>{field.createdBy || field.createdByUserId || "—"}</td>
               <td><span className="field-type-chip">{field.fieldType || "—"}</span></td>
               <td>
                 {canWrite ? <Switch
