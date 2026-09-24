@@ -29,6 +29,10 @@ const authService = {
     return response;
   },
 
+  async changeOwnPassword(currentPassword, newPassword) {
+    return httpClient.post(API_ENDPOINTS.AUTH.CHANGE_OWN_PASSWORD, { currentPassword, newPassword });
+  },
+
   logout() {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
