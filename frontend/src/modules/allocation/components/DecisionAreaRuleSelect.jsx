@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FiCheck, FiChevronDown, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 
 function DecisionAreaRuleSelect({
   area,
@@ -85,15 +85,9 @@ function DecisionAreaRuleSelect({
     };
   }, [openRuleGroup, area.code]);
 
-  const areaRules = useMemo(
-    () =>
-      rules.filter(
-        (rule) =>
-          String(rule.decisionAreaCode || "").toUpperCase() ===
-          String(area.code || "").toUpperCase()
-      ),
-    [rules, area.code]
-  );
+  // Rules are reusable. The allocation decision area determines where a rule is used.
+  // Do not filter rules by a decision-area property because rules no longer contain one.
+  const areaRules = useMemo(() => rules, [rules]);
 
   const filteredRules = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -198,7 +192,7 @@ function DecisionAreaRuleSelect({
 
                 {!filteredRules.length && (
                   <div className="allocation-rule-no-results">
-                    No rules configured for this decision area.
+                    No rules configured.
                   </div>
                 )}
               </div>
