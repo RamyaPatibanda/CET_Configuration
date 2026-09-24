@@ -680,6 +680,56 @@ IF COL_LENGTH(N'dbo.tblRuleConditionGroup', N'aRuleId') IS NOT NULL
     EXEC sys.sp_rename N'dbo.tblRuleConditionGroup.aRuleId', N'nRuleId', N'COLUMN';
 GO
 
+IF COL_LENGTH(N'dbo.tblRuleCondition', N'aRuleId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleCondition', N'nRuleId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRuleCondition.aRuleId', N'nRuleId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleCondition', N'aRuleConditionGroupId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleCondition', N'nRuleConditionGroupId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRuleCondition.aRuleConditionGroupId', N'nRuleConditionGroupId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleCondition', N'aFieldId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleCondition', N'nFieldId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRuleCondition.aFieldId', N'nFieldId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblAllocationDecision', N'aRuleId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblAllocationDecision', N'nRuleId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblAllocationDecision.aRuleId', N'nRuleId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblAllocationRunDecision', N'aAllocationRunId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblAllocationRunDecision', N'nAllocationRunId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblAllocationRunDecision.aAllocationRunId', N'nAllocationRunId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblRuleBranch', N'aRuleId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleBranch', N'nRuleId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRuleBranch.aRuleId', N'nRuleId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblUserPermission', N'aUserId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblUserPermission', N'nUserId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblUserPermission.aUserId', N'nUserId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblFieldConfiguration', N'aCreatedByUserId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblFieldConfiguration', N'nCreatedByUserId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblFieldConfiguration.aCreatedByUserId', N'nCreatedByUserId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblRule', N'aCreatedByUserId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRule', N'nCreatedByUserId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRule.aCreatedByUserId', N'nCreatedByUserId', N'COLUMN';
+GO
+
+IF COL_LENGTH(N'dbo.tblAllocationRunHistory', N'aCreatedByUserId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblAllocationRunHistory', N'nCreatedByUserId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblAllocationRunHistory.aCreatedByUserId', N'nCreatedByUserId', N'COLUMN';
+GO
+
 /* Audit ownership: every configuration/run action is attributable to a CET user. */
 IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NOT NULL
 BEGIN
