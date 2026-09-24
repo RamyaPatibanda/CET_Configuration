@@ -73,6 +73,8 @@ public sealed class UserManagementBL : IUserManagementBL
     public async Task UpdateUserAsync(int userId, UpdateUserRequest request)
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
+        if (userId == ProtectedUserAdminId)
+            throw new ArgumentException("The default User Admin cannot be edited.");
         var displayName = request.DisplayName.Trim();
         if (userId <= 0) throw new ArgumentException("Invalid user.");
         if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("Display name is required.");
@@ -104,6 +106,8 @@ public sealed class UserManagementBL : IUserManagementBL
     public Task DeleteUserAsync(int userId)
     {
         if (userId <= 0) throw new ArgumentException("Invalid user.");
+        if (userId == ProtectedUserAdminId)
+            throw new ArgumentException("The default User Admin cannot be deleted.");
         return _dataAccess.DeleteUserAsync(userId);
     }
     public async Task ChangeOwnPasswordAsync(int userId, ChangeOwnPasswordRequest request)
