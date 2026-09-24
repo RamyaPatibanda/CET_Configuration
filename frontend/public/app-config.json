@@ -1,5 +1,5 @@
 {
   "applicationName": "CET Configuration",
   "iisApplicationName": "CETConfiguration",
-  "apiBaseUrl": "https://localhost:7270"
+  "apiBaseUrl": "https://130518web.saas.talismaonline.com/CET_API"
 }
