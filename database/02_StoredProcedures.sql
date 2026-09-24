@@ -826,3 +826,93 @@ BEGIN
     ) AS HasPermission;
 END;
 GO
+
+
+/* User Management - edit and delete */
+IF OBJECT_ID(N'dbo.sproc_UpdateUser', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_UpdateUser;
+GO
+CREATE PROCEDURE dbo.sproc_UpdateUser
+    @aUserId INT,
+    @tDisplayName NVARCHAR(200),
+    @tPassword NVARCHAR(500) = NULL,
+    @bIsAdmin BIT,
+    @bIsActive BIT,
+    @tPermissionsJson NVARCHAR(MAX) = N'[]'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.tblUsers WHERE aUserId = @aUserId)
+            THROW 50204, 'User not found.', 1;
+
+        IF ISJSON(COALESCE(@tPermissionsJson, N'[]')) <> 1
+            THROW 50202, 'User permissions must be valid JSON.', 1;
+
+        UPDATE dbo.tblUsers
+        SET tDisplayName = @tDisplayName,
+            bIsAdmin = @bIsAdmin,
+            bIsActive = @bIsActive,
+            tPassword = CASE WHEN NULLIF(@tPassword, N'') IS NULL THEN tPassword ELSE @tPassword END
+        WHERE aUserId = @aUserId;
+
+        DELETE FROM dbo.tblUserPermission
+        WHERE nUserId = @aUserId;
+
+        IF @bIsAdmin = 0
+        BEGIN
+            INSERT INTO dbo.tblUserPermission
+            (nUserId, tModuleCode, bCanRead, bCanWrite)
+            SELECT
+                @aUserId,
+                UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode')))),
+                CAST(1 AS BIT),
+                CASE WHEN COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+            FROM OPENJSON(@tPermissionsJson) j
+            WHERE UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode'))))
+                  IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')
+              AND (
+                  COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanRead')), 1) = 1
+                  OR COALESCE(TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite')), 0) = 1
+              )
+            GROUP BY
+                UPPER(LTRIM(RTRIM(JSON_VALUE(j.value, '$.ModuleCode')))),
+                TRY_CONVERT(BIT, JSON_VALUE(j.value, '$.CanWrite'));
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_DeleteUser', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_DeleteUser;
+GO
+CREATE PROCEDURE dbo.sproc_DeleteUser
+    @aUserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.tblUsers WHERE aUserId = @aUserId)
+            THROW 50204, 'User not found.', 1;
+
+        DELETE FROM dbo.tblUserPermission WHERE nUserId = @aUserId;
+        DELETE FROM dbo.tblUsers WHERE aUserId = @aUserId;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH;
+END;
+GO
