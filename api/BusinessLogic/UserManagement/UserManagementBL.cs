@@ -106,5 +106,24 @@ public sealed class UserManagementBL : IUserManagementBL
         if (userId <= 0) throw new ArgumentException("Invalid user.");
         return _dataAccess.DeleteUserAsync(userId);
     }
+    public async Task ChangeOwnPasswordAsync(int userId, ChangeOwnPasswordRequest request)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+        if (userId <= 0) throw new ArgumentException("Invalid user.");
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new ArgumentException("Current password and new password are required.");
+        if (request.NewPassword.Length < 6)
+            throw new ArgumentException("New password must contain at least 6 characters.");
+
+        var user = await _dataAccess.GetLoginUserByIdAsync(userId)
+            ?? throw new ArgumentException("User not found.");
+        var currentPassword = _connectionUtils.getDecryptedValue(user.Password);
+        if (!string.Equals(currentPassword, request.CurrentPassword, StringComparison.Ordinal))
+            throw new ArgumentException("Current password is incorrect.");
+
+        var encrypted = _connectionUtils.GetEncryptedValue(request.NewPassword);
+        await _dataAccess.ChangePasswordAsync(userId, encrypted);
+    }
+
 }
 
