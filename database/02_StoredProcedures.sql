@@ -802,7 +802,7 @@ BEGIN
             (
                 SELECT 1
                 FROM dbo.tblUsers
-                WHERE nUserId = @aUserId
+                WHERE aUserId = @aUserId
                   AND bIsActive = 1
                   AND bIsAdmin = 1
             ) THEN 1
