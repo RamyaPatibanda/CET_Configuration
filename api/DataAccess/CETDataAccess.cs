@@ -136,6 +136,35 @@ namespace api.DataAccess
         }
 
 
+        public async Task<LoginUser?> GetLoginUserByIdAsync(int userId)
+        {
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_GetLoginUserById", connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 30 };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync()) return null;
+            return new LoginUser
+            {
+                UserId = reader.GetInt32(reader.GetOrdinal("aUserId")),
+                Username = reader.GetString(reader.GetOrdinal("tUsername")),
+                DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
+                IsAdmin = reader.GetBoolean(reader.GetOrdinal("bIsAdmin")),
+                Password = reader.GetString(reader.GetOrdinal("tPassword")),
+                IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive"))
+            };
+        }
+
+        public async Task ChangePasswordAsync(int userId, string encryptedPassword)
+        {
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_ChangeOwnPassword", connection) { CommandType = CommandType.StoredProcedure, CommandTimeout = 30 };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+            command.Parameters.Add("@tPassword", SqlDbType.NVarChar, 500).Value = encryptedPassword;
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+
         public async Task UpdateUserAsync(
             int userId, string displayName, string? encryptedPassword, bool isAdmin, bool isActive,
             IReadOnlyCollection<api.Models.UserManagement.UserPermissionRequest> permissions)
