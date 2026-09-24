@@ -70,4 +70,42 @@ public sealed class UserManagementBL : IUserManagementBL
             request.IsActive,
             permissions);
     }
+
+    public async Task UpdateUserAsync(int userId, UpdateUserRequest request)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+        var displayName = request.DisplayName.Trim();
+        if (userId <= 0) throw new ArgumentException("Invalid user.");
+        if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("Display name is required.");
+        if (displayName.Length > 200) throw new ArgumentException("Display name cannot exceed 200 characters.");
+
+        var permissions = (request.Permissions ?? [])
+            .GroupBy(permission => permission.ModuleCode?.Trim() ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.Last())
+            .ToList();
+
+        foreach (var permission in permissions)
+        {
+            permission.ModuleCode = permission.ModuleCode.Trim().ToUpperInvariant();
+            if (!UserPermissionModules.Names.ContainsKey(permission.ModuleCode))
+                throw new ArgumentException($"Invalid permission module '{permission.ModuleCode}'.");
+            permission.CanRead = true;
+        }
+
+        if (request.IsAdmin) permissions.Clear();
+
+        var encryptedPassword = string.IsNullOrWhiteSpace(request.Password)
+            ? null
+            : _connectionUtils.GetEncryptedValue(request.Password);
+
+        await _dataAccess.UpdateUserAsync(
+            userId, displayName, encryptedPassword, request.IsAdmin, request.IsActive, permissions);
+    }
+
+    public Task DeleteUserAsync(int userId)
+    {
+        if (userId <= 0) throw new ArgumentException("Invalid user.");
+        return _dataAccess.DeleteUserAsync(userId);
+    }
 }
+
