@@ -85,7 +85,7 @@ BEGIN
 
         CONSTRAINT FK_tblRuleConditionGroup_tblRule
             FOREIGN KEY (nRuleId)
-            REFERENCES dbo.tblRule (nRuleId),
+            REFERENCES dbo.tblRule (aRuleId),
 
         CONSTRAINT CK_tblRuleConditionGroup_tLogicalOperator
             CHECK (tLogicalOperator IN ('AND', 'OR')),
@@ -115,11 +115,11 @@ BEGIN
         dtCreatedDate     DATETIME NOT NULL CONSTRAINT DF_tblRuleCondition_dtCreatedDate DEFAULT (GETDATE()),
 
         CONSTRAINT PK_tblRuleCondition PRIMARY KEY (aRuleConditionId),
-        CONSTRAINT FK_tblRuleCondition_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule (nRuleId),
+        CONSTRAINT FK_tblRuleCondition_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule (aRuleId),
         CONSTRAINT FK_tblRuleCondition_tblRuleConditionGroup
-            FOREIGN KEY (nRuleConditionGroupId) REFERENCES dbo.tblRuleConditionGroup (nRuleConditionGroupId),
+            FOREIGN KEY (nRuleConditionGroupId) REFERENCES dbo.tblRuleConditionGroup (aRuleConditionGroupId),
         CONSTRAINT FK_tblRuleCondition_tblFieldConfiguration
-            FOREIGN KEY (nFieldId) REFERENCES dbo.tblFieldConfiguration (nFieldId),
+            FOREIGN KEY (nFieldId) REFERENCES dbo.tblFieldConfiguration (aFieldId),
         CONSTRAINT CK_tblRuleCondition_tLogicalOperator CHECK (tLogicalOperator IN ('AND', 'OR')),
         CONSTRAINT CK_tblRuleCondition_nConditionOrder CHECK (nConditionOrder > 0),
         CONSTRAINT UQ_tblRuleCondition_Rule_Order UNIQUE (nRuleId, nConditionOrder)
@@ -308,7 +308,7 @@ BEGIN
         dtCreatedDate DATETIME NOT NULL CONSTRAINT DF_tblAllocationDecision_dtCreatedDate DEFAULT (GETDATE()),
         dtModifiedDate DATETIME NULL,
         CONSTRAINT PK_tblAllocationDecision PRIMARY KEY (aAllocationDecisionId),
-        CONSTRAINT FK_tblAllocationDecision_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(nRuleId),
+        CONSTRAINT FK_tblAllocationDecision_tblRule FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(aRuleId),
         CONSTRAINT CK_tblAllocationDecision_nDisplayOrder CHECK (nDisplayOrder > 0),
         CONSTRAINT UQ_tblAllocationDecision_Rule UNIQUE (tStepCode, tDecisionAreaCode, nRuleId),
         CONSTRAINT UQ_tblAllocationDecision_Order UNIQUE (tStepCode, tDecisionAreaCode, nDisplayOrder)
@@ -353,7 +353,7 @@ BEGIN
         dtCreatedAtUtc DATETIME2 NOT NULL CONSTRAINT DF_tblAllocationRunDecision_dtCreatedAtUtc DEFAULT (GETUTCDATE()),
         CONSTRAINT PK_tblAllocationRunDecision PRIMARY KEY (aDecisionId),
         CONSTRAINT FK_tblAllocationRunDecision_Run FOREIGN KEY (nAllocationRunId)
-            REFERENCES dbo.tblAllocationRunHistory(nAllocationRunId)
+            REFERENCES dbo.tblAllocationRunHistory(aAllocationRunId)
     );
 
     CREATE INDEX IX_tblAllocationRunDecision_Run
@@ -561,7 +561,7 @@ BEGIN
 
         CONSTRAINT PK_tblRuleBranch PRIMARY KEY (aRuleBranchId),
         CONSTRAINT FK_tblRuleBranch_tblRule
-            FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(nRuleId) ON DELETE CASCADE,
+            FOREIGN KEY (nRuleId) REFERENCES dbo.tblRule(aRuleId) ON DELETE CASCADE,
         CONSTRAINT CK_tblRuleBranch_nBranchOrder CHECK (nBranchOrder > 0),
         CONSTRAINT CK_tblRuleBranch_nSequence CHECK (nSequence IS NULL OR nSequence > 0),
         CONSTRAINT UQ_tblRuleBranch_Rule_Order UNIQUE (nRuleId, nBranchOrder)
