@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { FiArchive, FiAward, FiCheck, FiCopy, FiEye, FiHeart, FiPlay, FiRefreshCw, FiSave, FiShield, FiUsers } from "react-icons/fi";
 import Step0DecisionAreas, { STEP_0_STAGES } from "../components/Step0DecisionAreas";
 import Step1DecisionAreas, { STEP_1_STAGES } from "../components/Step1DecisionAreas";
@@ -62,6 +62,7 @@ function Allocation() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const editRunId = searchParams.get("runId");
 
   const selectedStep = useMemo(
@@ -186,7 +187,38 @@ function Allocation() {
     };
 
     load();
-  }, [editRunId]);
+  }, [editRunId, location.pathname]);
+
+  // Refresh active Rule Configuration entries whenever the Allocation page
+  // becomes active again. This prevents rules activated in Rule Configuration
+  // from remaining stale when the Allocation Run screen is already mounted.
+  useEffect(() => {
+    if (!location.pathname.toLowerCase().includes("allocation")) return undefined;
+
+    const refreshRules = async () => {
+      try {
+        const response = await ruleConfigurationService.getRules(true);
+        const ruleItems = getItems(response)
+          .filter((rule) => rule.isActive)
+          .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+        setRules(ruleItems);
+      } catch {
+        // Keep the currently loaded rules if a background refresh fails.
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refreshRules();
+    };
+    const handleFocus = () => refreshRules();
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [location.pathname]);
 
   const markEdited = () => {
     if (status === "Ready") setStatus("Draft");
