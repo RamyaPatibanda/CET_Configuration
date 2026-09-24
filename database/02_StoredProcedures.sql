@@ -397,7 +397,6 @@ BEGIN
         r.tDescription,
         r.nPriority,
         r.bIsActive,
-        r.tDecisionAreaCode,
         r.tOutcomeJson,
         COALESCE((
             SELECT
@@ -525,12 +524,12 @@ BEGIN
         INSERT INTO dbo.tblRule
         (
             aRuleId, tRuleName, tDescription, nPriority, bIsActive,
-            tDecisionAreaCode, tOutcomeJson, nCreatedByUserId
+            tOutcomeJson, nCreatedByUserId
         )
         VALUES
         (
             @aRuleId, @tRuleName, @tDescription, @nPriority, @bIsActive,
-            N'', @tOutcomeJson, @aCreatedByUserId
+            @tOutcomeJson, @aCreatedByUserId
         );
 
         INSERT INTO dbo.tblRuleConditionGroup (nRuleId, nGroupOrder, tLogicalOperator)
@@ -603,7 +602,6 @@ BEGIN
             tDescription = @tDescription,
             nPriority = @nPriority,
             bIsActive = @bIsActive,
-            tDecisionAreaCode = N'',
             tOutcomeJson = @tOutcomeJson,
             dtModifiedDate = GETDATE()
         WHERE aRuleId = @aRuleId;
