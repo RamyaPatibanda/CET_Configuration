@@ -175,7 +175,7 @@ function RuleConfiguration() {
           <p>Create reusable rules from the fields configured in Field Configuration.</p>
         </div>
 
-        {canWrite && <Button onClick={openCreate} title="Create Rule" aria-label="Create Rule" className="add-rule-button">
+        {canWrite && <Button onClick={openCreate} title="Create Rule" aria-label="Create Rule" data-tour="add-rule" className="add-rule-button">
           <FiPlus size={18} strokeWidth={2.2} />
         </Button>}
       </div>
