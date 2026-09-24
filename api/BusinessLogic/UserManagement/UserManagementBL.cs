@@ -8,6 +8,7 @@ public sealed class UserManagementBL : IUserManagementBL
 {
     private readonly CETDataAccess _dataAccess;
     private readonly ConnectionUtils _connectionUtils;
+    private readonly int ProtectedUserAdminId = 1;
 
     public UserManagementBL(CETDataAccess dataAccess)
     {
