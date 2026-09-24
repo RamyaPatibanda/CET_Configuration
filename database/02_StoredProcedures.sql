@@ -16,13 +16,13 @@ GO
 IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetFields
-AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.aCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.aCreatedByUserId ORDER BY f.nDisplayOrder, f.aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId ORDER BY f.nDisplayOrder, f.aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetField;
 GO
 CREATE PROCEDURE dbo.sproc_GetField @aFieldId INT
-AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.aCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.aCreatedByUserId WHERE f.aFieldId = @aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId WHERE f.aFieldId = @aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateField;
@@ -48,7 +48,7 @@ BEGIN
         INSERT INTO dbo.tblFieldConfiguration
         (
             aFieldId,tTableName,tFieldName,tDisplayName,tFieldType,
-            bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate,aCreatedByUserId
+            bIsRequired,bIsActive,nDisplayOrder,dtCreatedDate,dtModifiedDate,nCreatedByUserId
         )
         VALUES
         (
@@ -86,7 +86,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT r.aRuleId, r.tRuleName, r.tDescription, r.nPriority, r.bIsActive,
-           (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId=r.aRuleId) AS nConditionCount,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.nRuleId=r.aRuleId) AS nConditionCount,
            r.dtCreatedDate, r.dtModifiedDate
     FROM dbo.tblRule r ORDER BY r.nPriority, r.aRuleId;
 END;
@@ -99,17 +99,17 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT r.aRuleId,r.tRuleName,r.tDescription,r.nPriority,r.bIsActive,
-           (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId=r.aRuleId) AS nConditionCount,
+           (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.nRuleId=r.aRuleId) AS nConditionCount,
            r.dtCreatedDate,r.dtModifiedDate
     FROM dbo.tblRule r WHERE r.aRuleId=@aRuleId;
 
-    SELECT rc.aRuleConditionId,rc.aRuleId,rc.aFieldId,fc.tDisplayName,fc.tFieldName,fc.tFieldType,
+    SELECT rc.aRuleConditionId,rc.nRuleId,rc.nFieldId,fc.tDisplayName,fc.tFieldName,fc.tFieldType,
            rc.tLogicalOperator,rc.tOperator,rc.tValue,rc.nConditionOrder,
            COALESCE(rg.nGroupOrder,1) AS nGroupOrder
     FROM dbo.tblRuleCondition rc
-    INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=rc.aFieldId
-    LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId=rc.aRuleConditionGroupId
-    WHERE rc.aRuleId=@aRuleId
+    INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId=rc.nFieldId
+    LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId=rc.nRuleConditionGroupId
+    WHERE rc.nRuleId=@aRuleId
     ORDER BY COALESCE(rg.nGroupOrder,1),rc.nConditionOrder,rc.aRuleConditionId;
 END;
 GO
@@ -138,10 +138,10 @@ BEGIN
         IF (SELECT COUNT(DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) <> (SELECT MAX(TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) THROW 50017,'Condition group order must be sequential.',1;
 
         INSERT INTO dbo.tblRule(aRuleId,tRuleName,tDescription,nPriority,bIsActive) VALUES(@aRuleId,@tRuleName,@tDescription,@nPriority,@bIsActive);
-        INSERT INTO dbo.tblRuleConditionGroup(aRuleId,nGroupOrder,tLogicalOperator)
+        INSERT INTO dbo.tblRuleConditionGroup(nRuleId,nGroupOrder,tLogicalOperator)
         SELECT @aRuleId,d.GroupOrder,'AND' FROM (SELECT DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
-        INSERT INTO dbo.tblRuleCondition(aRuleId,aRuleConditionGroupId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
-        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.ConditionLogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
+        INSERT INTO dbo.tblRuleCondition(nRuleId,nRuleConditionGroupId,nFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
+        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.ConditionLogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.nRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
         COMMIT; SELECT @aRuleId AS aRuleId;
     END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
@@ -167,10 +167,10 @@ BEGIN
         UPDATE dbo.tblRule SET tRuleName=@tRuleName,tDescription=@tDescription,nPriority=@nPriority,bIsActive=@bIsActive,dtModifiedDate=GETDATE() WHERE aRuleId=@aRuleId;
         DELETE FROM dbo.tblRuleCondition WHERE aRuleId=@aRuleId;
         DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId=@aRuleId;
-        INSERT INTO dbo.tblRuleConditionGroup(aRuleId,nGroupOrder,tLogicalOperator)
+        INSERT INTO dbo.tblRuleConditionGroup(nRuleId,nGroupOrder,tLogicalOperator)
         SELECT @aRuleId,d.GroupOrder,'AND' FROM (SELECT DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
-        INSERT INTO dbo.tblRuleCondition(aRuleId,aRuleConditionGroupId,aFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
-        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.ConditionLogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
+        INSERT INTO dbo.tblRuleCondition(nRuleId,nRuleConditionGroupId,nFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
+        SELECT @aRuleId,rg.aRuleConditionGroupId,TRY_CONVERT(INT,JSON_VALUE(j.value,'$.FieldId')),COALESCE(JSON_VALUE(j.value,'$.ConditionLogicalOperator'),'AND'),JSON_VALUE(j.value,'$.Operator'),JSON_VALUE(j.value,'$.Value'),TRY_CONVERT(INT,JSON_VALUE(j.value,'$.ConditionOrder')) FROM OPENJSON(@tConditionsJson) j INNER JOIN dbo.tblRuleConditionGroup rg ON rg.nRuleId=@aRuleId AND rg.nGroupOrder=TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'));
         COMMIT; SELECT 1 AS Result;
     END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
 END;
@@ -247,20 +247,20 @@ BEGIN
         nCandidateCount = @nCandidateCount,
         nDecisionCount = @nDecisionCount,
         tErrorMessage = @tErrorMessage,
-        aCreatedByUserId = @aCreatedByUserId
-    WHERE aAllocationRunId = @aAllocationRunId;
+        nCreatedByUserId = @aCreatedByUserId
+    WHERE nAllocationRunId = @aAllocationRunId;
 
     IF @@ROWCOUNT = 0
     BEGIN
         INSERT INTO dbo.tblAllocationRunHistory
         (
-            aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
+            nAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
             tStatus, tRuleGroupsJson, dtCreatedAtUtc, dtStartedAtUtc,
-            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, aCreatedByUserId
+            dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, nCreatedByUserId
         )
         VALUES
         (
-            @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
+            @nAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
             @tStatus, @tRuleGroupsJson, @dtCreatedAtUtc, @dtStartedAtUtc,
             @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage, @aCreatedByUserId
         );
@@ -277,10 +277,10 @@ BEGIN
     BEGIN TRANSACTION;
 
     DELETE FROM dbo.tblAllocationRunDecision
-    WHERE aAllocationRunId = @aAllocationRunId;
+    WHERE nAllocationRunId = @aAllocationRunId;
 
     DELETE FROM dbo.tblAllocationRunHistory
-    WHERE aAllocationRunId = @aAllocationRunId;
+    WHERE nAllocationRunId = @aAllocationRunId;
 
     COMMIT;
 END;
@@ -293,7 +293,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT TOP (@nTake)
-        aAllocationRunId,
+        nAllocationRunId,
         tAllocationRunName,
         nCapRound,
         tAllocationStep,
@@ -305,10 +305,10 @@ BEGIN
         nCandidateCount,
         nDecisionCount,
         tErrorMessage,
-        h.aCreatedByUserId,
+        h.nCreatedByUserId,
         COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblAllocationRunHistory h
-    LEFT JOIN dbo.tblUsers u ON u.aUserId=h.aCreatedByUserId
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=h.nCreatedByUserId
     ORDER BY dtCreatedAtUtc DESC;
 END;
 GO
@@ -324,7 +324,7 @@ BEGIN
     INSERT INTO dbo.tblAllocationRunDecision
     (
         aDecisionId,
-        aAllocationRunId,
+        nAllocationRunId,
         nCandidateId,
         nCollegeId,
         nPreferenceNo,
@@ -338,7 +338,7 @@ BEGIN
     )
     SELECT
         TRY_CONVERT(UNIQUEIDENTIFIER, JSON_VALUE(j.value, '$.decisionId')),
-        @aAllocationRunId,
+        @nAllocationRunId,
         TRY_CONVERT(BIGINT, JSON_VALUE(j.value, '$.candidateId')),
         COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.collegeId')), 0),
         COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.preferenceNo')), 0),
@@ -362,7 +362,7 @@ BEGIN
 
     SELECT
         aDecisionId,
-        aAllocationRunId,
+        nAllocationRunId,
         nCandidateId,
         nCollegeId,
         nPreferenceNo,
@@ -375,7 +375,7 @@ BEGIN
         tStatus,
         dtCreatedAtUtc
     FROM dbo.tblAllocationRunDecision
-    WHERE aAllocationRunId = @aAllocationRunId
+    WHERE nAllocationRunId = @aAllocationRunId
     ORDER BY nCandidateId, nPreferenceNo, dtCreatedAtUtc;
 END;
 GO
@@ -402,7 +402,7 @@ BEGIN
         COALESCE((
             SELECT
                 d.aRuleBranchId AS RuleBranchId,
-                d.aRuleId AS RuleId,
+                d.nRuleId AS RuleId,
                 d.tBranchName AS BranchName,
                 d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
@@ -412,19 +412,19 @@ BEGIN
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions,
                 COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}') AS OutcomeJson
             FROM dbo.tblRuleBranch d
-            WHERE d.aRuleId = r.aRuleId
+            WHERE d.nRuleId = r.aRuleId
               AND d.bIsActive = 1
             ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tBranchesJson,
-        (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.aRuleId = r.aRuleId)
-        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rb CROSS APPLY OPENJSON(rb.tConditionsJson) bc WHERE rb.aRuleId = r.aRuleId), 0) AS nConditionCount,
+        (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.nRuleId = r.aRuleId)
+        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rb CROSS APPLY OPENJSON(rb.tConditionsJson) bc WHERE rb.nRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate,
-        r.aCreatedByUserId,
+        r.nCreatedByUserId,
         COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblRule r
-    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.aCreatedByUserId
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.nCreatedByUserId
     ORDER BY r.nPriority, r.aRuleId;
 END;
 GO
@@ -448,7 +448,7 @@ BEGIN
         COALESCE((
             SELECT
                 d.aRuleBranchId AS RuleBranchId,
-                d.aRuleId AS RuleId,
+                d.nRuleId AS RuleId,
                 d.tBranchName AS BranchName,
                 d.nBranchOrder AS BranchOrder,
                 d.bIsActive AS IsActive,
@@ -458,25 +458,25 @@ BEGIN
                 JSON_QUERY(COALESCE(NULLIF(d.tConditionsJson, N''), N'[]')) AS Conditions,
                 JSON_QUERY(COALESCE(NULLIF(d.tOutcomeJson, N''), N'{}')) AS Outcome
             FROM dbo.tblRuleBranch d
-            WHERE d.aRuleId = r.aRuleId
+            WHERE d.nRuleId = r.aRuleId
               AND d.bIsActive = 1
             ORDER BY d.nBranchOrder, d.aRuleBranchId
             FOR JSON PATH
         ), N'[]') AS tBranchesJson,
-        (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.aRuleId = r.aRuleId)
-        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rbCount CROSS APPLY OPENJSON(rbCount.tConditionsJson) bcCount WHERE rbCount.aRuleId = r.aRuleId), 0) AS nConditionCount,
+        (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.nRuleId = r.aRuleId)
+        + COALESCE((SELECT COUNT(1) FROM dbo.tblRuleBranch rbCount CROSS APPLY OPENJSON(rbCount.tConditionsJson) bcCount WHERE rbCount.nRuleId = r.aRuleId), 0) AS nConditionCount,
         r.dtCreatedDate,
         r.dtModifiedDate,
-        r.aCreatedByUserId,
+        r.nCreatedByUserId,
         COALESCE(u.tDisplayName,N'') AS tCreatedBy
     FROM dbo.tblRule r
-    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.aCreatedByUserId
+    LEFT JOIN dbo.tblUsers u ON u.aUserId=r.nCreatedByUserId
     WHERE r.aRuleId = @aRuleId;
 
     SELECT
         rc.aRuleConditionId,
-        rc.aRuleId,
-        rc.aFieldId,
+        rc.nRuleId,
+        rc.nFieldId,
         fc.tDisplayName,
         fc.tFieldName,
         fc.tFieldType,
@@ -487,9 +487,9 @@ BEGIN
         COALESCE(rg.nGroupOrder, 1) AS nGroupOrder,
         COALESCE(rc.tGroupPath, N'') AS tGroupPath
     FROM dbo.tblRuleCondition rc
-    INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId = rc.aFieldId
-    LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId = rc.aRuleConditionGroupId
-    WHERE rc.aRuleId = @aRuleId
+    INNER JOIN dbo.tblFieldConfiguration fc ON fc.aFieldId = rc.nFieldId
+    LEFT JOIN dbo.tblRuleConditionGroup rg ON rg.aRuleConditionGroupId = rc.nRuleConditionGroupId
+    WHERE rc.nRuleId = @aRuleId
     ORDER BY COALESCE(rg.nGroupOrder, 1), rc.nConditionOrder, rc.aRuleConditionId;
 END;
 GO
@@ -524,8 +524,8 @@ BEGIN
 
         INSERT INTO dbo.tblRule
         (
-            aRuleId, tRuleName, tDescription, nPriority, bIsActive,
-            tDecisionAreaCode, tOutcomeJson, aCreatedByUserId
+            nRuleId, tRuleName, tDescription, nPriority, bIsActive,
+            tDecisionAreaCode, tOutcomeJson, nCreatedByUserId
         )
         VALUES
         (
@@ -533,7 +533,7 @@ BEGIN
             N'', @tOutcomeJson, @aCreatedByUserId
         );
 
-        INSERT INTO dbo.tblRuleConditionGroup (aRuleId, nGroupOrder, tLogicalOperator)
+        INSERT INTO dbo.tblRuleConditionGroup (nRuleId, nGroupOrder, tLogicalOperator)
         SELECT @aRuleId, d.GroupOrder, 'AND'
         FROM
         (
@@ -543,7 +543,7 @@ BEGIN
 
         INSERT INTO dbo.tblRuleCondition
         (
-            aRuleId, aRuleConditionGroupId, aFieldId, tGroupPath, tLogicalOperator,
+            nRuleId, nRuleConditionGroupId, nFieldId, tGroupPath, tLogicalOperator,
             tOperator, tValue, nConditionOrder
         )
         SELECT
@@ -557,7 +557,7 @@ BEGIN
             TRY_CONVERT(INT, JSON_VALUE(j.value, '$.ConditionOrder'))
         FROM OPENJSON(@tConditionsJson) j
         INNER JOIN dbo.tblRuleConditionGroup rg
-            ON rg.aRuleId = @aRuleId
+            ON rg.nRuleId = @aRuleId
            AND rg.nGroupOrder = TRY_CONVERT(INT, JSON_VALUE(j.value, '$.GroupOrder'));
 
         COMMIT;
@@ -611,7 +611,7 @@ BEGIN
         DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
         DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId = @aRuleId;
 
-        INSERT INTO dbo.tblRuleConditionGroup (aRuleId, nGroupOrder, tLogicalOperator)
+        INSERT INTO dbo.tblRuleConditionGroup (nRuleId, nGroupOrder, tLogicalOperator)
         SELECT @aRuleId, d.GroupOrder, 'AND'
         FROM
         (
@@ -621,7 +621,7 @@ BEGIN
 
         INSERT INTO dbo.tblRuleCondition
         (
-            aRuleId, aRuleConditionGroupId, aFieldId, tGroupPath, tLogicalOperator,
+            nRuleId, nRuleConditionGroupId, nFieldId, tGroupPath, tLogicalOperator,
             tOperator, tValue, nConditionOrder
         )
         SELECT
@@ -635,7 +635,7 @@ BEGIN
             TRY_CONVERT(INT, JSON_VALUE(j.value, '$.ConditionOrder'))
         FROM OPENJSON(@tConditionsJson) j
         INNER JOIN dbo.tblRuleConditionGroup rg
-            ON rg.aRuleId = @aRuleId
+            ON rg.nRuleId = @aRuleId
            AND rg.nGroupOrder = TRY_CONVERT(INT, JSON_VALUE(j.value, '$.GroupOrder'));
 
         COMMIT;
@@ -669,7 +669,7 @@ BEGIN
         COUNT(p.aUserPermissionId) AS nPermissionCount
     FROM dbo.tblUsers u
     LEFT JOIN dbo.tblUserPermission p
-        ON p.aUserId = u.aUserId
+        ON p.nUserId = u.aUserId
     GROUP BY
         u.aUserId, u.tUsername, u.tDisplayName,
         u.bIsAdmin, u.bIsActive, u.dtCreatedDate
@@ -714,7 +714,7 @@ BEGIN
         BEGIN
             INSERT INTO dbo.tblUserPermission
             (
-                aUserId, tModuleCode, bCanRead, bCanWrite
+                nUserId, tModuleCode, bCanRead, bCanWrite
             )
             SELECT
                 @aUserId,
@@ -743,7 +743,7 @@ BEGIN
             (
                 SELECT 1
                 FROM dbo.tblUserPermission
-                WHERE aUserId = @aUserId
+                WHERE nUserId = @aUserId
                   AND tModuleCode IS NULL
             )
                 THROW 50203, 'Invalid user permission.', 1;
@@ -780,7 +780,7 @@ BEGIN
     ) m
     INNER JOIN dbo.tblUsers u ON u.aUserId = @aUserId
     LEFT JOIN dbo.tblUserPermission p
-        ON p.aUserId = u.aUserId
+        ON p.nUserId = u.aUserId
        AND p.tModuleCode = m.tModuleCode
     ORDER BY CASE m.tModuleCode WHEN 'FIELDS' THEN 1 WHEN 'RULES' THEN 2 ELSE 3 END;
 END;
@@ -802,7 +802,7 @@ BEGIN
             (
                 SELECT 1
                 FROM dbo.tblUsers
-                WHERE aUserId = @aUserId
+                WHERE nUserId = @aUserId
                   AND bIsActive = 1
                   AND bIsAdmin = 1
             ) THEN 1
@@ -810,7 +810,7 @@ BEGIN
             (
                 SELECT 1
                 FROM dbo.tblUsers u
-                INNER JOIN dbo.tblUserPermission p ON p.aUserId = u.aUserId
+                INNER JOIN dbo.tblUserPermission p ON p.nUserId = u.aUserId
                 WHERE u.aUserId = @aUserId
                   AND u.bIsActive = 1
                   AND p.tModuleCode = UPPER(@tModuleCode)
