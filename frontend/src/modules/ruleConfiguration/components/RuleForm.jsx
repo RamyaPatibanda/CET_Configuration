@@ -128,7 +128,7 @@ function RuleForm({
     const loadConfiguration = async () => {
       try {
         setLoadingFields(true);
-        const fieldsResponse = await ruleConfigurationService.getFields();
+        const fieldsResponse = await ruleConfigurationService.getFields(true);
         setFields(getResponseItems(fieldsResponse));
       } catch (loadError) {
         setError(loadError.message || "Unable to load rule configuration options.");
