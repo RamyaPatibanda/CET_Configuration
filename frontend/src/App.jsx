@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { FiArrowRight, FiEye, FiEyeOff, FiPower } from "react-icons/fi";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { FiArrowRight, FiEye, FiEyeOff, FiPlayCircle, FiPower } from "react-icons/fi";
 import authService from "./services/authService";
 import { getApplicationName, getRouterBasename } from "./config/runtimeConfig";
 import Sidebar from "./components/layout/Sidebar";
 import AppRoutes from "./routes/AppRoutes";
+import ApplicationTour from "./modules/applicationTour/components/ApplicationTour";
 import "./App.css";
 
 function Login({ onLogin }) {
@@ -43,13 +44,15 @@ function Login({ onLogin }) {
 
 function AuthenticatedWorkspace({ onLogout }) {
   const navigate = useNavigate();
+  const [tourOpen, setTourOpen] = useState(false);
   const user = authService.getUser();
   const handleLogout = () => { authService.logout(); onLogout(); navigate("/login", { replace: true }); };
 
   return (
     <div className="app-shell"><Sidebar/><section className="app-main">
-      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div></div><div className="header-actions"><div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" onClick={handleLogout}><FiPower size={20}/></button></div></header>
+      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div></div><div className="header-actions" data-tour="header-actions"><div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div><button type="button" className="icon-button application-tour-trigger" title="Application tour" aria-label="Application tour" data-tour="tour-trigger" onClick={() => setTourOpen(true)}><FiPlayCircle size={20}/></button><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" data-tour="logout" onClick={handleLogout}><FiPower size={20}/></button></div></header>
       <main className="app-content"><AppRoutes authenticated /></main>
+      <ApplicationTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </section></div>
   );
 }
