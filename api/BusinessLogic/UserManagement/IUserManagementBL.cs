@@ -9,4 +9,5 @@ public interface IUserManagementBL
     Task<IReadOnlyList<UserPermission>> GetUserPermissionsAsync(int userId);
     Task UpdateUserAsync(int userId, UpdateUserRequest request);
     Task DeleteUserAsync(int userId);
+    Task ChangeOwnPasswordAsync(int userId, ChangeOwnPasswordRequest request);
 }
