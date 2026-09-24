@@ -237,7 +237,7 @@ namespace api.DataAccess.FieldConfiguration
         {
             return new FieldDefinition
             {
-                FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                FieldId = reader.GetInt32(reader.GetOrdinal("nFieldId")),
                 TableName = reader.GetString(reader.GetOrdinal("tTableName")),
                 FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                 DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
@@ -247,7 +247,7 @@ namespace api.DataAccess.FieldConfiguration
                 DisplayOrder = reader.GetInt32(reader.GetOrdinal("nDisplayOrder")),
                 CreatedDate = GetNullableDateTime(reader, "dtCreatedDate"),
                 ModifiedDate = GetNullableDateTime(reader, "dtModifiedDate"),
-                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),
+                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("nCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("nCreatedByUserId")),
                 CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
             };
         }
