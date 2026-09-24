@@ -163,7 +163,7 @@ IF NOT EXISTS
 )
 BEGIN
     CREATE INDEX IX_tblRuleCondition_nRuleId
-        ON dbo.tblRuleCondition (aRuleId, nConditionOrder);
+        ON dbo.tblRuleCondition (nRuleId, nConditionOrder);
 END;
 GO
 
@@ -175,7 +175,7 @@ IF NOT EXISTS
 )
 BEGIN
     CREATE INDEX IX_tblRuleCondition_nFieldId
-        ON dbo.tblRuleCondition (aFieldId);
+        ON dbo.tblRuleCondition (nFieldId);
 END;
 GO
 
@@ -245,22 +245,22 @@ GO
 IF OBJECT_ID(N'dbo.tblRuleConditionGroup', N'U') IS NOT NULL
    AND OBJECT_ID(N'dbo.tblRuleCondition', N'U') IS NOT NULL
 BEGIN
-    INSERT INTO dbo.tblRuleConditionGroup (aRuleId, nGroupOrder, tLogicalOperator)
-    SELECT DISTINCT rc.aRuleId, 1, 'AND'
+    INSERT INTO dbo.tblRuleConditionGroup (nRuleId, nGroupOrder, tLogicalOperator)
+    SELECT DISTINCT rc.nRuleId, 1, 'AND'
     FROM dbo.tblRuleCondition rc
     WHERE rc.aRuleConditionGroupId IS NULL
       AND NOT EXISTS
       (
           SELECT 1
           FROM dbo.tblRuleConditionGroup rg
-          WHERE rg.aRuleId = rc.aRuleId
+          WHERE rg.nRuleId = rc.nRuleId
       );
 
     UPDATE rc
     SET aRuleConditionGroupId = rg.aRuleConditionGroupId
     FROM dbo.tblRuleCondition rc
     INNER JOIN dbo.tblRuleConditionGroup rg
-        ON rg.aRuleId = rc.aRuleId
+        ON rg.nRuleId = rc.nRuleId
        AND rg.nGroupOrder = 1
     WHERE rc.aRuleConditionGroupId IS NULL;
 END;
@@ -587,7 +587,7 @@ IF OBJECT_ID(N'dbo.tblRuleBranch', N'U') IS NOT NULL
 BEGIN
     INSERT INTO dbo.tblRuleBranch
     (
-        aRuleId,
+        nRuleId,
         tBranchName,
         nBranchOrder,
         tAllocatedType,
@@ -616,7 +616,7 @@ BEGIN
     (
         SELECT 1
         FROM dbo.tblRuleBranch b
-        WHERE b.aRuleId = d.aRuleId
+        WHERE b.nRuleId = d.nRuleId
           AND b.nBranchOrder = d.nDecisionOrder
     );
 END;
