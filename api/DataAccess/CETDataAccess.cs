@@ -135,6 +135,41 @@ namespace api.DataAccess
             return permissions;
         }
 
+
+        public async Task UpdateUserAsync(
+            int userId, string displayName, string? encryptedPassword, bool isAdmin, bool isActive,
+            IReadOnlyCollection<api.Models.UserManagement.UserPermissionRequest> permissions)
+        {
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_UpdateUser", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+            command.Parameters.Add("@tDisplayName", SqlDbType.NVarChar, 200).Value = displayName;
+            command.Parameters.Add("@tPassword", SqlDbType.NVarChar, 500).Value = (object?)encryptedPassword ?? DBNull.Value;
+            command.Parameters.Add("@bIsAdmin", SqlDbType.Bit).Value = isAdmin;
+            command.Parameters.Add("@bIsActive", SqlDbType.Bit).Value = isActive;
+            command.Parameters.Add("@tPermissionsJson", SqlDbType.NVarChar, -1).Value =
+                System.Text.Json.JsonSerializer.Serialize(permissions);
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task DeleteUserAsync(int userId)
+        {
+            await using var connection = new SqlConnection(DBConnectionStr);
+            await using var command = new SqlCommand("sproc_DeleteUser", connection)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 30
+            };
+            command.Parameters.Add("@aUserId", SqlDbType.Int).Value = userId;
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+
         public async Task<bool> HasUserPermissionAsync(int userId, string moduleCode, bool write)
         {
             await using var connection = new SqlConnection(DBConnectionStr);
