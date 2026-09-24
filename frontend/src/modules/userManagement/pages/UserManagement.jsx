@@ -17,7 +17,9 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [permissionCatalog, setPermissionCatalog] = useState([]);
   const [search, setSearch] = useState("");
-  const [showCreate, setShowCreate] = useState(false);\n  const [editingUser, setEditingUser] = useState(null);\n  const [deleteUser, setDeleteUser] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [deleteUser, setDeleteUser] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +85,7 @@ function UserManagement() {
   const openEdit = async (user) => {
     try {
       setFormError("");
+      if (permissionCatalog.length === 0) await loadPermissionCatalog();
       const permissionsResponse = await userManagementService.getUserPermissions(user.userId);
       const permissionList = Array.isArray(permissionsResponse)
         ? permissionsResponse
@@ -139,6 +142,7 @@ function UserManagement() {
     setShowCreate(false);
     setForm(emptyForm);
     setFormError("");
+    setEditingUser(null);
   };
 
   const setPermission = (moduleCode, canWrite) => {
@@ -158,8 +162,8 @@ function UserManagement() {
     event.preventDefault();
     setFormError("");
 
-    if (!form.username.trim() || !form.displayName.trim() || !form.password) {
-      setFormError("Username, display name and password are required.");
+    if (!form.username.trim() || !form.displayName.trim() || (!editingUser && !form.password)) {
+      setFormError(editingUser ? "Username and display name are required." : "Username, display name and password are required.");
       return;
     }
 
@@ -245,7 +249,8 @@ function UserManagement() {
                 <th>Role</th>
                 <th>Permissions</th>
                 <th>Status</th>
-                <th>Created</th>\n                <th>Actions</th>
+                <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -270,7 +275,17 @@ function UserManagement() {
                       </span>
                     </td>
                     <td><span className={user.isActive ? "user-status active" : "user-status"}>{user.isActive ? "Active" : "Inactive"}</span></td>
-                    <td>{user.createdDate ? new Date(user.createdDate).toLocaleDateString() : "—"}</td>\n                    <td>\n                      <div className="user-row-actions">\n                        <button type="button" className="user-row-action edit" title="Edit user" aria-label={`Edit ${user.username}`} onClick={() => openEdit(user)}>\n                          <FiEdit2 size={14} />\n                        </button>\n                        <button type="button" className="user-row-action delete" title="Delete user" aria-label={`Delete ${user.username}`} onClick={() => setDeleteUser(user)}>\n                          <FiTrash2 size={14} />\n                        </button>\n                      </div>\n                    </td>
+                    <td>{user.createdDate ? new Date(user.createdDate).toLocaleDateString() : "—"}</td>
+                    <td>
+                      <div className="user-row-actions">
+                        <button type="button" className="user-row-action edit" title="Edit user" aria-label={`Edit ${user.username}`} onClick={() => openEdit(user)}>
+                          <FiEdit2 size={14} />
+                        </button>
+                        <button type="button" className="user-row-action delete" title="Delete user" aria-label={`Delete ${user.username}`} onClick={() => setDeleteUser(user)}>
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -371,6 +386,21 @@ function UserManagement() {
                 <button type="submit" className="user-save-button" disabled={saving}>{saving ? (editingUser ? "Saving…" : "Creating…") : (editingUser ? "Save Changes" : "Create User")}</button>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {deleteUser && (
+        <div className="user-modal-backdrop" role="presentation">
+          <section className="user-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-user-title">
+            <div className="delete-warning-icon"><FiTrash2 size={20} /></div>
+            <h2 id="delete-user-title">Delete User?</h2>
+            <p>Are you sure you want to delete <strong>{deleteUser.displayName || deleteUser.username}</strong>?</p>
+            <small>This action permanently removes the user and their module permissions. This cannot be undone.</small>
+            <div className="user-modal-actions">
+              <button type="button" className="user-cancel-button" onClick={closeDeleteWarning} disabled={saving}>Cancel</button>
+              <button type="button" className="user-delete-confirm-button" onClick={confirmDelete} disabled={saving}>{saving ? "Deleting…" : "Delete User"}</button>
+            </div>
           </section>
         </div>
       )}
