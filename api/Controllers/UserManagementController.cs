@@ -19,6 +19,28 @@ public sealed class UserManagementController : ControllerBase
         _logger = logger;
     }
 
+
+    [Authorize]
+    [HttpPost("me/password")]
+    public async Task<ActionResult> ChangeOwnPassword([FromBody] ChangeOwnPasswordRequest request)
+    {
+        try
+        {
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(claim, out var userId))
+                return Unauthorized(new { message = "User identity could not be determined." });
+
+            await _userManagementBL.ChangeOwnPasswordAsync(userId, request);
+            return Ok(new { message = "Password changed successfully." });
+        }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while changing password.");
+            return StatusCode(500, new { message = "Unable to change password." });
+        }
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<UserDefinition>>> GetUsers()
     {
