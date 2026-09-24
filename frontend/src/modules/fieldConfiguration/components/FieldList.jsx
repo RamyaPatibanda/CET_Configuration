@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiEdit2, FiMenu, FiTrash2 } from "react-icons/fi";
 import Switch from "../../../components/common/Switch/Switch";
 
-function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onToggleRequired, onToggleActive }) {
+function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onToggleActive }) {
   const [draggedId, setDraggedId] = useState(null);
 
   if (loading) return <div className="field-list-message">Loading fields…</div>;
@@ -26,7 +26,7 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
       <div className="field-reorder-hint"><FiMenu size={15} /> Drag the handle to rearrange field order.</div>
       <table className="field-table">
         <thead>
-          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Created By</th><th>Field Type</th><th>Required</th><th>Active</th><th>Actions</th></tr>
+          <tr><th className="field-order-column" aria-label="Reorder" /><th>Table</th><th>Column</th><th>Display Name</th><th>Created By</th><th>Field Type</th><th>Active</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {fields.map((field) => (
@@ -64,14 +64,6 @@ function FieldList({ fields, loading, canWrite, onEdit, onDelete, onReorder, onT
               <td>{field.fieldName}</td>
               <td>{field.displayName}</td>
               <td><span className="field-type-chip">{field.fieldType || "—"}</span></td>
-              <td>
-                {canWrite ? <Switch
-                  name={`required-${field.fieldId}`}
-                  label=""
-                  checked={field.isRequired}
-                  onChange={(event) => onToggleRequired?.(field, event.target.checked)}
-                /> : <span className="field-readonly-value">{field.isRequired ? "Yes" : "No"}</span>}
-              </td>
               <td>
                 {canWrite ? <Switch
                   name={`active-${field.fieldId}`}
