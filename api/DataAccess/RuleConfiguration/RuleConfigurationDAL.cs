@@ -159,7 +159,7 @@ namespace api.DataAccess.RuleConfiguration
                 {
                     fields.Add(new RuleFieldOption
                     {
-                        FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                        FieldId = reader.GetInt32(reader.GetOrdinal("nFieldId")),
                         DisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
                         FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                         FieldType = reader.GetString(reader.GetOrdinal("tFieldType"))
@@ -220,7 +220,7 @@ namespace api.DataAccess.RuleConfiguration
             try
             {
                 await using (var delete = new SqlCommand(
-                    "DELETE FROM dbo.tblRuleBranch WHERE aRuleId = @aRuleId",
+                    "DELETE FROM dbo.tblRuleBranch WHERE nRuleId = @aRuleId",
                     connection, transaction))
                 {
                     delete.Parameters.Add("@aRuleId", SqlDbType.Int).Value = ruleId;
@@ -240,7 +240,7 @@ namespace api.DataAccess.RuleConfiguration
 
                     await using var decision = new SqlCommand(@"
                         INSERT INTO dbo.tblRuleBranch
-                            (aRuleId, tBranchName, nBranchOrder, tAllocatedType, nSequence, bIsActive, bIsElse, tConditionsJson, tOutcomeJson)
+                            (nRuleId, tBranchName, nBranchOrder, tAllocatedType, nSequence, bIsActive, bIsElse, tConditionsJson, tOutcomeJson)
                         VALUES
                             (@aRuleId, @tBranchName, @nBranchOrder, @tAllocatedType, @nSequence, @bIsActive, @bIsElse, @tConditionsJson, @tOutcomeJson);",
                         connection, transaction);
@@ -305,7 +305,7 @@ namespace api.DataAccess.RuleConfiguration
         {
             return new RuleDefinition
             {
-                RuleId = reader.GetInt32(reader.GetOrdinal("aRuleId")),
+                RuleId = reader.GetInt32(reader.GetOrdinal("nRuleId")),
                 RuleName = reader.GetString(reader.GetOrdinal("tRuleName")),
                 Description = reader.IsDBNull(reader.GetOrdinal("tDescription"))
                     ? string.Empty
@@ -318,7 +318,7 @@ namespace api.DataAccess.RuleConfiguration
                 Branches = DeserializeBranches(reader.IsDBNull(reader.GetOrdinal("tBranchesJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tBranchesJson"))),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
                 ModifiedDate = GetDate(reader, "dtModifiedDate"),
-                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("aCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("aCreatedByUserId")),
+                CreatedByUserId = reader.IsDBNull(reader.GetOrdinal("nCreatedByUserId")) ? null : reader.GetInt32(reader.GetOrdinal("nCreatedByUserId")),
                 CreatedBy = reader.IsDBNull(reader.GetOrdinal("tCreatedBy")) ? string.Empty : reader.GetString(reader.GetOrdinal("tCreatedBy"))
             };
         }
@@ -346,8 +346,8 @@ namespace api.DataAccess.RuleConfiguration
             return new RuleCondition
             {
                 RuleConditionId = reader.GetInt32(reader.GetOrdinal("aRuleConditionId")),
-                RuleId = reader.GetInt32(reader.GetOrdinal("aRuleId")),
-                FieldId = reader.GetInt32(reader.GetOrdinal("aFieldId")),
+                RuleId = reader.GetInt32(reader.GetOrdinal("nRuleId")),
+                FieldId = reader.GetInt32(reader.GetOrdinal("nFieldId")),
                 FieldDisplayName = reader.GetString(reader.GetOrdinal("tDisplayName")),
                 FieldName = reader.GetString(reader.GetOrdinal("tFieldName")),
                 FieldType = reader.GetString(reader.GetOrdinal("tFieldType")),
