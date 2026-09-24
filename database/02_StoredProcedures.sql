@@ -916,3 +916,28 @@ BEGIN
     END CATCH;
 END;
 GO
+
+IF OBJECT_ID(N'dbo.sproc_GetLoginUserById', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetLoginUserById;
+GO
+CREATE PROCEDURE dbo.sproc_GetLoginUserById @aUserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT aUserId,tUsername,tDisplayName,bIsAdmin,tPassword,bIsActive
+    FROM dbo.tblUsers
+    WHERE aUserId=@aUserId;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.sproc_ChangeOwnPassword', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_ChangeOwnPassword;
+GO
+CREATE PROCEDURE dbo.sproc_ChangeOwnPassword
+    @aUserId INT,
+    @tPassword NVARCHAR(500)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.tblUsers SET tPassword=@tPassword WHERE aUserId=@aUserId;
+    IF @@ROWCOUNT=0 THROW 50204,'User not found.',1;
+END;
+GO
