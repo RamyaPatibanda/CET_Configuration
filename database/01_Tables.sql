@@ -667,6 +667,19 @@ END;
 GO
 
 
+/* ============================================================
+   Foreign-key column naming migration
+
+   Primary keys remain a... .
+   Foreign-key columns use n... because these relationships are
+   numeric/identifier references. Existing data is preserved.
+   ============================================================ */
+
+IF COL_LENGTH(N'dbo.tblRuleConditionGroup', N'aRuleId') IS NOT NULL
+   AND COL_LENGTH(N'dbo.tblRuleConditionGroup', N'nRuleId') IS NULL
+    EXEC sys.sp_rename N'dbo.tblRuleConditionGroup.aRuleId', N'nRuleId', N'COLUMN';
+GO
+
 /* Audit ownership: every configuration/run action is attributable to a CET user. */
 IF OBJECT_ID(N'dbo.tblUsers', N'U') IS NOT NULL
 BEGIN
@@ -692,18 +705,6 @@ END;
 GO
 
 
-/* ============================================================
-   Foreign-key column naming migration
-
-   Primary keys remain a... .
-   Foreign-key columns use n... because these relationships are
-   numeric/identifier references. Existing data is preserved.
-   ============================================================ */
-
-IF COL_LENGTH(N'dbo.tblRuleConditionGroup', N'aRuleId') IS NOT NULL
-   AND COL_LENGTH(N'dbo.tblRuleConditionGroup', N'nRuleId') IS NULL
-    EXEC sys.sp_rename N'dbo.tblRuleConditionGroup.aRuleId', N'nRuleId', N'COLUMN';
-GO
 
 IF COL_LENGTH(N'dbo.tblRuleCondition', N'aRuleId') IS NOT NULL
    AND COL_LENGTH(N'dbo.tblRuleCondition', N'nRuleId') IS NULL
