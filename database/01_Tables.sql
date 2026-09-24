@@ -652,7 +652,7 @@ BEGIN
 
         CONSTRAINT PK_tblUserPermission PRIMARY KEY (aUserPermissionId),
         CONSTRAINT FK_tblUserPermission_tblUsers
-            FOREIGN KEY (nUserId) REFERENCES dbo.tblUsers(nUserId) ON DELETE CASCADE,
+            FOREIGN KEY (nUserId) REFERENCES dbo.tblUsers(aUserId) ON DELETE CASCADE,
         CONSTRAINT CK_tblUserPermission_tModuleCode
             CHECK (tModuleCode IN ('FIELDS', 'RULES', 'ALLOCATION_RUN')),
         CONSTRAINT CK_tblUserPermission_WriteRequiresRead
