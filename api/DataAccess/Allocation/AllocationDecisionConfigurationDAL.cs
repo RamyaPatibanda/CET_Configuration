@@ -19,7 +19,7 @@ public sealed class AllocationDecisionConfigurationDAL
         string stepCode, string areaCode, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT aAllocationDecisionId, tStepCode, tDecisionAreaCode, aRuleId,
+            SELECT aAllocationDecisionId, tStepCode, tDecisionAreaCode, nRuleId,
                    nDisplayOrder, tAllocatedType, tVacancyType, ISNULL(tResultJson, N'') AS tResultJson, bIsActive
             FROM dbo.tblAllocationDecision
             WHERE tStepCode = @StepCode AND tDecisionAreaCode = @AreaCode AND bIsActive = 1
@@ -42,11 +42,11 @@ public sealed class AllocationDecisionConfigurationDAL
         if (ruleIds.Count == 0) return [];
         var names = ruleIds.Select((_, i) => $"@Rule{i}").ToArray();
         var sql = $"""
-            SELECT aAllocationDecisionId, tStepCode, tDecisionAreaCode, aRuleId,
+            SELECT aAllocationDecisionId, tStepCode, tDecisionAreaCode, nRuleId,
                    nDisplayOrder, tAllocatedType, tVacancyType, ISNULL(tResultJson, N'') AS tResultJson, bIsActive
             FROM dbo.tblAllocationDecision
             WHERE tStepCode = @StepCode AND tDecisionAreaCode = @AreaCode
-              AND bIsActive = 1 AND aRuleId IN ({string.Join(",", names)})
+              AND bIsActive = 1 AND nRuleId IN ({string.Join(",", names)})
             ORDER BY nDisplayOrder;
             """;
         var result = new List<AllocationDecisionConfiguration>();
@@ -82,7 +82,7 @@ public sealed class AllocationDecisionConfigurationDAL
             {
                 var insert = new SqlCommand("""
                     INSERT INTO dbo.tblAllocationDecision
-                    (tStepCode,tDecisionAreaCode,aRuleId,nDisplayOrder,tAllocatedType,tVacancyType,tResultJson,bIsActive)
+                    (tStepCode,tDecisionAreaCode,nRuleId,nDisplayOrder,tAllocatedType,tVacancyType,tResultJson,bIsActive)
                     VALUES (@StepCode,@AreaCode,@RuleId,@DisplayOrder,@AllocatedType,@VacancyType,@ResultJson,1);
                     """, connection, transaction);
                 insert.Parameters.Add("@StepCode", SqlDbType.NVarChar, 50).Value = request.StepCode;
@@ -104,7 +104,7 @@ public sealed class AllocationDecisionConfigurationDAL
         AllocationDecisionId = r.GetInt32(r.GetOrdinal("aAllocationDecisionId")),
         StepCode = r.GetString(r.GetOrdinal("tStepCode")),
         DecisionAreaCode = r.GetString(r.GetOrdinal("tDecisionAreaCode")),
-        RuleId = r.GetInt32(r.GetOrdinal("aRuleId")),
+        RuleId = r.GetInt32(r.GetOrdinal("nRuleId")),
         DisplayOrder = r.GetInt32(r.GetOrdinal("nDisplayOrder")),
         AllocatedType = r.GetString(r.GetOrdinal("tAllocatedType")),
         VacancyType = r.GetString(r.GetOrdinal("tVacancyType")),
