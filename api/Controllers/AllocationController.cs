@@ -414,19 +414,8 @@ public sealed class AllocationController : ControllerBase
         if (!allowIncompleteDraft && detailedById.Count != selectedRuleIds.Count)
             return PreparedAllocation.Fail("One or more selected rules could not be loaded.");
 
-        if (!allowIncompleteDraft)
-        {
-            var invalidCandidateRules = candidateRuleIds
-                .Where(id => detailedById.TryGetValue(id, out var rule) &&
-                    !string.Equals(rule.DecisionAreaCode, AllocationConfiguration.CandidateQualification, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (invalidCandidateRules.Count > 0)
-                return PreparedAllocation.Fail($"Rule(s) {string.Join(", ", invalidCandidateRules)} are not configured as Candidate Eligibility rules.");
-
-            // Step 0 rule selection defines the meaning of each section. A reusable rule
-            // may be selected into Seat Distribution or the combined Allocation Type &
-            // Sequence section without coupling the allocation engine to a hardcoded procedure area.
-        }
+        // Rules are reusable and do not carry a Decision Area. The selected
+        // allocation section determines how each rule is interpreted.
 
         try
         {
