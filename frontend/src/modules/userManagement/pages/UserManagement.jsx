@@ -47,7 +47,7 @@ function UserManagement() {
         permissions: Object.fromEntries(
           catalog.map((item) => [
             item.moduleCode,
-            { canRead: false, canWrite: false },
+            { canRead: true, canWrite: false },
           ])
         ),
       }));
@@ -87,16 +87,14 @@ function UserManagement() {
     setFormError("");
   };
 
-  const setPermission = (moduleCode, checked) => {
+  const setPermission = (moduleCode, canWrite) => {
     setForm((current) => ({
       ...current,
       permissions: {
         ...current.permissions,
         [moduleCode]: {
-          ...(current.permissions[moduleCode] || {}),
-          canRead: checked,         canWrite: checked,
-          ...(permission === "canRead" && !checked ? { canWrite: false } : {}),
-          ...(permission === "canWrite" && checked ? { canRead: true } : {}),
+          canRead: true,
+          canWrite: Boolean(canWrite),
         },
       },
     }));
@@ -124,10 +122,6 @@ function UserManagement() {
           canWrite: Boolean(form.permissions[item.moduleCode]?.canWrite),
         }));
 
-    if (!form.isAdmin && !permissions.some((item) => item.canRead || item.canWrite)) {
-      setFormError("Select at least one module permission for a non-admin user.");
-      return;
-    }
 
     try {
       setSaving(true);
@@ -273,14 +267,13 @@ function UserManagement() {
                     <span>MODULE ACCESS</span>
                     <h3>Module Permissions</h3>
                   </div>
-                  <small>Enable access for the modules this user can use.</small>
+                  <small>All users have read access. Enable the switch only for modules where the user should have write access.</small>
                 </div>
 
                 <div className="permission-table">
                   <div className="permission-row permission-head">
                     <span>Module</span>
-                    <span>Read</span>
-                    <span>Write</span>
+                    <span>Write Access</span>
                   </div>
                   {permissionCatalog.map((item) => {
                     const value = form.permissions[item.moduleCode] || {};
@@ -293,7 +286,7 @@ function UserManagement() {
                         <label className="permission-switch" aria-label={`Toggle access for ${item.moduleName}`}>
                           <input
                             type="checkbox"
-                            checked={Boolean(value.canRead || value.canWrite)}
+                            checked={Boolean(value.canWrite)}
                             disabled={form.isAdmin}
                             onChange={(event) => setPermission(item.moduleCode, event.target.checked)}
                           />
