@@ -848,6 +848,9 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM dbo.tblUsers WHERE aUserId = @aUserId)
             THROW 50204, 'User not found.', 1;
 
+        IF @aUserId = 1
+            THROW 50205, 'The default User Admin cannot be edited.', 1;
+
         IF ISJSON(COALESCE(@tPermissionsJson, N'[]')) <> 1
             THROW 50202, 'User permissions must be valid JSON.', 1;
 
@@ -904,6 +907,9 @@ BEGIN
     BEGIN TRY
         IF NOT EXISTS (SELECT 1 FROM dbo.tblUsers WHERE aUserId = @aUserId)
             THROW 50204, 'User not found.', 1;
+
+        IF @aUserId = 1
+            THROW 50206, 'The default User Admin cannot be deleted.', 1;
 
         DELETE FROM dbo.tblUserPermission WHERE nUserId = @aUserId;
         DELETE FROM dbo.tblUsers WHERE aUserId = @aUserId;
