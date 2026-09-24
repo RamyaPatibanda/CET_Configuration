@@ -351,3 +351,16 @@
   height:100%;
   overflow:hidden
 }
+
+.field-type-chip {
+  display:inline-flex;
+  align-items:center;
+  padding:5px 9px;
+  border:1px solid rgba(85,123,165,.16);
+  border-radius:8px;
+  background:rgba(85,123,165,.08);
+  color:#4d6785;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
