@@ -48,6 +48,50 @@ public sealed class UserManagementController : ControllerBase
             .ToList());
     }
 
+    [HttpGet("{userId:int}/permissions")]
+    public async Task<ActionResult<IReadOnlyList<UserPermission>>> GetUserPermissions(int userId)
+    {
+        try { return Ok(await _userManagementBL.GetUserPermissionsAsync(userId)); }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while loading permissions for user {UserId}.", userId);
+            return StatusCode(500, new { message = "Unable to load user permissions." });
+        }
+    }
+
+    [HttpPut("{userId:int}")]
+    public async Task<ActionResult> UpdateUser(int userId, [FromBody] UpdateUserRequest request)
+    {
+        try
+        {
+            await _userManagementBL.UpdateUserAsync(userId, request);
+            return Ok(new { message = "User updated successfully." });
+        }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while updating user {UserId}.", userId);
+            return StatusCode(500, new { message = "Unable to update user." });
+        }
+    }
+
+    [HttpDelete("{userId:int}")]
+    public async Task<ActionResult> DeleteUser(int userId)
+    {
+        try
+        {
+            await _userManagementBL.DeleteUserAsync(userId);
+            return Ok(new { message = "User deleted successfully." });
+        }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while deleting user {UserId}.", userId);
+            return StatusCode(500, new { message = "Unable to delete user." });
+        }
+    }
+
     [HttpPost]
     public async Task<ActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
