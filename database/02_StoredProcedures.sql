@@ -165,8 +165,8 @@ BEGIN
         IF (SELECT COUNT(DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) <> (SELECT MAX(TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder'))) FROM OPENJSON(@tConditionsJson) j) THROW 50018,'Condition group order must be sequential.',1;
 
         UPDATE dbo.tblRule SET tRuleName=@tRuleName,tDescription=@tDescription,nPriority=@nPriority,bIsActive=@bIsActive,dtModifiedDate=GETDATE() WHERE aRuleId=@aRuleId;
-        DELETE FROM dbo.tblRuleCondition WHERE aRuleId=@aRuleId;
-        DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleCondition WHERE nRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleConditionGroup WHERE nRuleId=@aRuleId;
         INSERT INTO dbo.tblRuleConditionGroup(nRuleId,nGroupOrder,tLogicalOperator)
         SELECT @aRuleId,d.GroupOrder,'AND' FROM (SELECT DISTINCT TRY_CONVERT(INT,JSON_VALUE(j.value,'$.GroupOrder')) GroupOrder FROM OPENJSON(@tConditionsJson) j) d GROUP BY d.GroupOrder;
         INSERT INTO dbo.tblRuleCondition(nRuleId,nRuleConditionGroupId,nFieldId,tLogicalOperator,tOperator,tValue,nConditionOrder)
@@ -208,8 +208,8 @@ BEGIN
     SET NOCOUNT ON; SET XACT_ABORT ON; BEGIN TRANSACTION;
     BEGIN TRY
         IF NOT EXISTS(SELECT 1 FROM dbo.tblRule WHERE aRuleId=@aRuleId) BEGIN ROLLBACK; SELECT 0 AS Result; RETURN; END;
-        DELETE FROM dbo.tblRuleCondition WHERE aRuleId=@aRuleId;
-        DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleCondition WHERE nRuleId=@aRuleId;
+        DELETE FROM dbo.tblRuleConditionGroup WHERE nRuleId=@aRuleId;
         DELETE FROM dbo.tblRule WHERE aRuleId=@aRuleId;
         COMMIT; SELECT 1 AS Result;
     END TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK; THROW; END CATCH;
@@ -248,19 +248,19 @@ BEGIN
         nDecisionCount = @nDecisionCount,
         tErrorMessage = @tErrorMessage,
         nCreatedByUserId = @aCreatedByUserId
-    WHERE nAllocationRunId = @aAllocationRunId;
+    WHERE aAllocationRunId = @aAllocationRunId;
 
     IF @@ROWCOUNT = 0
     BEGIN
         INSERT INTO dbo.tblAllocationRunHistory
         (
-            nAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
+            aAllocationRunId, tAllocationRunName, nCapRound, tAllocationStep,
             tStatus, tRuleGroupsJson, dtCreatedAtUtc, dtStartedAtUtc,
             dtCompletedAtUtc, nCandidateCount, nDecisionCount, tErrorMessage, nCreatedByUserId
         )
         VALUES
         (
-            @nAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
+            @aAllocationRunId, @tAllocationRunName, @nCapRound, @tAllocationStep,
             @tStatus, @tRuleGroupsJson, @dtCreatedAtUtc, @dtStartedAtUtc,
             @dtCompletedAtUtc, @nCandidateCount, @nDecisionCount, @tErrorMessage, @aCreatedByUserId
         );
@@ -280,7 +280,7 @@ BEGIN
     WHERE nAllocationRunId = @aAllocationRunId;
 
     DELETE FROM dbo.tblAllocationRunHistory
-    WHERE nAllocationRunId = @aAllocationRunId;
+    WHERE aAllocationRunId = @aAllocationRunId;
 
     COMMIT;
 END;
@@ -293,7 +293,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT TOP (@nTake)
-        nAllocationRunId,
+        aAllocationRunId,
         tAllocationRunName,
         nCapRound,
         tAllocationStep,
@@ -338,7 +338,7 @@ BEGIN
     )
     SELECT
         TRY_CONVERT(UNIQUEIDENTIFIER, JSON_VALUE(j.value, '$.decisionId')),
-        @nAllocationRunId,
+        @aAllocationRunId,
         TRY_CONVERT(BIGINT, JSON_VALUE(j.value, '$.candidateId')),
         COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.collegeId')), 0),
         COALESCE(TRY_CONVERT(INT, JSON_VALUE(j.value, '$.preferenceNo')), 0),
@@ -524,7 +524,7 @@ BEGIN
 
         INSERT INTO dbo.tblRule
         (
-            nRuleId, tRuleName, tDescription, nPriority, bIsActive,
+            aRuleId, tRuleName, tDescription, nPriority, bIsActive,
             tDecisionAreaCode, tOutcomeJson, nCreatedByUserId
         )
         VALUES
@@ -608,8 +608,8 @@ BEGIN
             dtModifiedDate = GETDATE()
         WHERE aRuleId = @aRuleId;
 
-        DELETE FROM dbo.tblRuleCondition WHERE aRuleId = @aRuleId;
-        DELETE FROM dbo.tblRuleConditionGroup WHERE aRuleId = @aRuleId;
+        DELETE FROM dbo.tblRuleCondition WHERE nRuleId = @aRuleId;
+        DELETE FROM dbo.tblRuleConditionGroup WHERE nRuleId = @aRuleId;
 
         INSERT INTO dbo.tblRuleConditionGroup (nRuleId, nGroupOrder, tLogicalOperator)
         SELECT @aRuleId, d.GroupOrder, 'AND'
