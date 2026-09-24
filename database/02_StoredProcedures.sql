@@ -16,13 +16,13 @@ GO
 IF OBJECT_ID(N'dbo.sproc_GetFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetFields
-AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId ORDER BY f.nDisplayOrder, f.aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId AS nFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId ORDER BY f.nDisplayOrder, f.aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_GetField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetField;
 GO
 CREATE PROCEDURE dbo.sproc_GetField @aFieldId INT
-AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId WHERE f.aFieldId = @aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT f.aFieldId AS nFieldId, f.tTableName, f.tFieldName, f.tDisplayName, f.tFieldType, f.bIsRequired, f.bIsActive, f.nDisplayOrder, f.dtCreatedDate, f.dtModifiedDate, f.nCreatedByUserId, COALESCE(u.tDisplayName,N'') AS tCreatedBy FROM dbo.tblFieldConfiguration f LEFT JOIN dbo.tblUsers u ON u.aUserId=f.nCreatedByUserId WHERE f.aFieldId = @aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_CreateField', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateField;
@@ -85,7 +85,7 @@ CREATE PROCEDURE dbo.sproc_GetRules
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT r.aRuleId, r.tRuleName, r.tDescription, r.nPriority, r.bIsActive,
+    SELECT r.aRuleId AS nRuleId, r.tRuleName, r.tDescription, r.nPriority, r.bIsActive,
            (SELECT COUNT(1) FROM dbo.tblRuleCondition rc WHERE rc.nRuleId=r.aRuleId) AS nConditionCount,
            r.dtCreatedDate, r.dtModifiedDate
     FROM dbo.tblRule r ORDER BY r.nPriority, r.aRuleId;
@@ -98,7 +98,7 @@ CREATE PROCEDURE dbo.sproc_GetRule @aRuleId INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT r.aRuleId,r.tRuleName,r.tDescription,r.nPriority,r.bIsActive,
+    SELECT r.aRuleId AS nRuleId,r.tRuleName,r.tDescription,r.nPriority,r.bIsActive,
            (SELECT COUNT(1) FROM dbo.tblRuleCondition rcCount WHERE rcCount.nRuleId=r.aRuleId) AS nConditionCount,
            r.dtCreatedDate,r.dtModifiedDate
     FROM dbo.tblRule r WHERE r.aRuleId=@aRuleId;
@@ -117,7 +117,7 @@ GO
 IF OBJECT_ID(N'dbo.sproc_GetActiveRuleFields', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_GetActiveRuleFields;
 GO
 CREATE PROCEDURE dbo.sproc_GetActiveRuleFields
-AS BEGIN SET NOCOUNT ON; SELECT aFieldId,tDisplayName,tFieldName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
+AS BEGIN SET NOCOUNT ON; SELECT aFieldId AS nFieldId,tDisplayName,tFieldName,tFieldType FROM dbo.tblFieldConfiguration WHERE bIsActive=1 ORDER BY nDisplayOrder,aFieldId; END;
 GO
 
 IF OBJECT_ID(N'dbo.sproc_CreateRule', N'P') IS NOT NULL DROP PROCEDURE dbo.sproc_CreateRule;
@@ -392,7 +392,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        r.aRuleId,
+        r.aRuleId AS nRuleId,
         r.tRuleName,
         r.tDescription,
         r.nPriority,
@@ -438,7 +438,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        r.aRuleId,
+        r.aRuleId AS nRuleId,
         r.tRuleName,
         r.tDescription,
         r.nPriority,
