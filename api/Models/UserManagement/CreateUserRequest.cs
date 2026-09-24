@@ -19,3 +19,10 @@ public sealed class UpdateUserRequest
     public bool IsActive { get; set; } = true;
     public List<UserPermissionRequest> Permissions { get; set; } = [];
 }
+
+
+public sealed class ChangeOwnPasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
