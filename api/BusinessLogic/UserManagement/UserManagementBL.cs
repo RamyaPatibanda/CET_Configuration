@@ -35,8 +35,7 @@ public sealed class UserManagementBL : IUserManagementBL
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name is required.");
 
-        if (string.IsNullOrWhiteSpace(request.Password))
-            throw new ArgumentException("Password is required.");
+        var password = string.IsNullOrWhiteSpace(request.Password) ? "talisma1" : request.Password;
 
         if (username.Length > 100)
             throw new ArgumentException("Username cannot exceed 100 characters.");
@@ -61,7 +60,7 @@ public sealed class UserManagementBL : IUserManagementBL
         if (request.IsAdmin)
             permissions.Clear();
 
-        var encryptedPassword = _connectionUtils.GetEncryptedValue(request.Password);
+        var encryptedPassword = _connectionUtils.GetEncryptedValue(password);
         return _dataAccess.CreateUserAsync(
             username,
             encryptedPassword,
