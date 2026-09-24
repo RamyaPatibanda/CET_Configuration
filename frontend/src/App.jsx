@@ -45,14 +45,37 @@ function Login({ onLogin }) {
 function AuthenticatedWorkspace({ onLogout }) {
   const navigate = useNavigate();
   const [tourOpen, setTourOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const user = authService.getUser();
   const handleLogout = () => { authService.logout(); onLogout(); navigate("/login", { replace: true }); };
+  const openPassword = () => { setPasswordError(""); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPasswordOpen(true); };
+  const changePassword = async (event) => { event.preventDefault(); setPasswordError(""); if (!currentPassword || !newPassword) return setPasswordError("Current password and new password are required."); if (newPassword.length < 6) return setPasswordError("New password must contain at least 6 characters."); if (newPassword !== confirmPassword) return setPasswordError("New password and confirm password must match."); try { setPasswordSaving(true); await authService.changeOwnPassword(currentPassword, newPassword); setPasswordOpen(false); } catch (error) { setPasswordError(error.message || "Unable to change password."); } finally { setPasswordSaving(false); } };
 
   return (
     <div className="app-shell"><Sidebar/><section className="app-main">
-      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div></div><div className="header-actions" data-tour="header-actions"><div className="user-pill"><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></div><button type="button" className="icon-button application-tour-trigger" title="Application tour" aria-label="Application tour" data-tour="tour-trigger" onClick={() => setTourOpen(true)}><FiPlayCircle size={20}/></button><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" data-tour="logout" onClick={handleLogout}><FiPower size={20}/></button></div></header>
+      <header className="app-header glass-header"><div><div className="header-kicker">CONFIGURATION WORKSPACE</div></div><div className="header-actions" data-tour="header-actions"><button type="button" className="user-pill user-profile-button" title="Change your password" onClick={openPassword}><span className="user-avatar">{(user?.displayName || user?.username || "U").charAt(0).toUpperCase()}</span><span>{user?.displayName || user?.username || "User"}</span></button><button type="button" className="icon-button application-tour-trigger" title="Application tour" aria-label="Application tour" data-tour="tour-trigger" onClick={() => setTourOpen(true)}><FiPlayCircle size={20}/></button><button type="button" className="icon-button logout-icon" title="Logout" aria-label="Logout" data-tour="logout" onClick={handleLogout}><FiPower size={20}/></button></div></header>
       <main className="app-content"><AppRoutes authenticated /></main>
       <ApplicationTour open={tourOpen} onClose={() => setTourOpen(false)} />
+      {passwordOpen && (
+        <div className="password-modal-backdrop" role="presentation">
+          <section className="password-modal" role="dialog" aria-modal="true" aria-labelledby="password-title">
+            <div className="password-modal-header"><div><span>MY ACCOUNT</span><h2 id="password-title">Change Password</h2></div><button type="button" className="icon-button" onClick={() => setPasswordOpen(false)} disabled={passwordSaving}>×</button></div>
+            <form onSubmit={changePassword}>
+              <label>Current Password<input type="password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} autoComplete="current-password" /></label>
+              <label>New Password<input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} autoComplete="new-password" /></label>
+              <label>Confirm New Password<input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} autoComplete="new-password" /></label>
+              {passwordError && <div className="login-error">{passwordError}</div>}
+              <div className="password-modal-actions"><button type="button" className="user-cancel-button" onClick={()=>setPasswordOpen(false)} disabled={passwordSaving}>Cancel</button><button type="submit" className="user-save-button" disabled={passwordSaving}>{passwordSaving ? "Changing…" : "Change Password"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
     </section></div>
   );
 }
