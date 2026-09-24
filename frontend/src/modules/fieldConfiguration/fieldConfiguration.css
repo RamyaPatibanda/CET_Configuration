@@ -292,7 +292,10 @@
 .field-table th:nth-child(5) {
   width:13%
 }
-.field-table th:nth-child(6),.field-table th:nth-child(7) {
+.field-table th:nth-child(6) {
+  width:10%
+}
+.field-table th:nth-child(7) {
   width:8%
 }
 .field-table th:nth-child(8) {
