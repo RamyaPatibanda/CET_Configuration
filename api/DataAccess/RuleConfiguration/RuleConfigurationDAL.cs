@@ -313,7 +313,7 @@ namespace api.DataAccess.RuleConfiguration
                 Priority = reader.GetInt32(reader.GetOrdinal("nPriority")),
                 IsActive = reader.GetBoolean(reader.GetOrdinal("bIsActive")),
                 ConditionCount = reader.GetInt32(reader.GetOrdinal("nConditionCount")),
-                DecisionAreaCode = reader.GetString(reader.GetOrdinal("tDecisionAreaCode")),
+                //DecisionAreaCode = reader.GetString(reader.GetOrdinal("tDecisionAreaCode")),
                 OutcomeJson = reader.IsDBNull(reader.GetOrdinal("tOutcomeJson")) ? "{}" : reader.GetString(reader.GetOrdinal("tOutcomeJson")),
                 Branches = DeserializeBranches(reader.IsDBNull(reader.GetOrdinal("tBranchesJson")) ? "[]" : reader.GetString(reader.GetOrdinal("tBranchesJson"))),
                 CreatedDate = GetDate(reader, "dtCreatedDate"),
