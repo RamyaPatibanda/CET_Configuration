@@ -53,6 +53,7 @@ function UserManagement() {
           ])
         ),
       }));
+      return catalog;
     } catch (err) {
       setFormError(err.message || "Unable to load permission options.");
     }
@@ -85,14 +86,14 @@ function UserManagement() {
   const openEdit = async (user) => {
     try {
       setFormError("");
-      if (permissionCatalog.length === 0) await loadPermissionCatalog();
+      const catalog = permissionCatalog.length ? permissionCatalog : await loadPermissionCatalog();
       const permissionsResponse = await userManagementService.getUserPermissions(user.userId);
       const permissionList = Array.isArray(permissionsResponse)
         ? permissionsResponse
         : permissionsResponse?.data || [];
 
       const permissions = Object.fromEntries(
-        permissionCatalog.map((item) => {
+        catalog.map((item) => {
           const saved = permissionList.find((permission) => permission.moduleCode === item.moduleCode);
           return [item.moduleCode, {
             canRead: true,
