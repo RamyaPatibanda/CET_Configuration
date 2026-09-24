@@ -279,12 +279,21 @@ function UserManagement() {
                     <td>{user.createdDate ? new Date(user.createdDate).toLocaleDateString() : "—"}</td>
                     <td>
                       <div className="user-row-actions">
-                        <button type="button" className="user-row-action edit" title="Edit user" aria-label={`Edit ${user.username}`} onClick={() => openEdit(user)}>
-                          <FiEdit2 size={14} />
-                        </button>
-                        <button type="button" className="user-row-action delete" title="Delete user" aria-label={`Delete ${user.username}`} onClick={() => setDeleteUser(user)}>
-                          <FiTrash2 size={14} />
-                        </button>
+                        {user.userId !== 1 ? (
+                          <>
+                            <button type="button" className="user-row-action edit" title="Edit user" aria-label={`Edit ${user.username}`} onClick={() => openEdit(user)}>
+                              <FiEdit2 size={14} />
+                            </button>
+                            <button type="button" className="user-row-action delete" title="Delete user" aria-label={`Delete ${user.username}`} onClick={() => setDeleteUser(user)}>
+                              <FiTrash2 size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <span className="user-protected-label" title="Default User Admin cannot be edited or deleted">
+                            <FiShield size={14} />
+                            Protected
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
