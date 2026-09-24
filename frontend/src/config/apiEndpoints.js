@@ -1,6 +1,7 @@
 const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/api/auth/login",
+    CHANGE_OWN_PASSWORD: "/api/users/me/password",
   },
   USER_MANAGEMENT: {
     LIST: "/api/users",
