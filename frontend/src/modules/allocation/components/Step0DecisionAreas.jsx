@@ -115,7 +115,20 @@ function OrderedRuleSelect({ area, rules, group, openRuleGroup, setOpenRuleGroup
             if (nextOpen) setSearch("");
           }}
         >
-          <span>{group.ruleIds.length ? `${group.ruleIds.length} rule${group.ruleIds.length === 1 ? "" : "s"} selected` : "Select rules from Rule Configuration"}</span>
+          <span className="allocation-trigger-selection">
+            {selectedRules.length ? (
+              <>
+                {selectedRules.slice(0, 2).map((rule, index) => (
+                  <span className="allocation-trigger-chip" key={rule.ruleId}>
+                    {area.code.includes("ALLOCATION_TYPE_SEQUENCE") ? `${index + 1}. ` : ""}{rule.ruleName}
+                  </span>
+                ))}
+                {selectedRules.length > 2 && <span className="allocation-trigger-more">+{selectedRules.length - 2}</span>}
+              </>
+            ) : (
+              <span className="allocation-trigger-placeholder">Select rules from Rule Configuration</span>
+            )}
+          </span>
           <FiChevronDown size={16} />
         </button>
 
