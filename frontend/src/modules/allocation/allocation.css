@@ -1931,3 +1931,70 @@
   flex: 0 0 auto;
   color: #64748b;
 }
+
+
+/* Fix selected ordered-rule rows: keep handle, sequence, title and remove
+   action on one aligned row instead of allowing the remove button to wrap. */
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-item {
+  display: grid !important;
+  grid-template-columns: 28px 28px minmax(0, 1fr) 28px !important;
+  grid-template-rows: minmax(38px, auto) !important;
+  align-items: center !important;
+  justify-items: stretch;
+  column-gap: 9px;
+  width: 100%;
+  min-height: 54px !important;
+  box-sizing: border-box;
+  margin: 4px 0;
+  padding: 7px 10px;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-drag-handle {
+  grid-column: 1;
+  grid-row: 1;
+  width: 26px;
+  height: 26px;
+  justify-self: center;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-number {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  text-align: left !important;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule strong {
+  text-align: left !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-sequence-rule span {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #7b8798;
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: left !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.allocation-rule-selection .allocation-selected-sequence-menu .allocation-remove-rule {
+  grid-column: 4;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+}
