@@ -129,11 +129,18 @@ function DecisionAreaRuleSelect({
             setOpenRuleGroup(nextOpen);
           }}
         >
-          <span>
-            {group.ruleIds.length
-              ? `${group.ruleIds.length} rule${group.ruleIds.length === 1 ? "" : "s"} selected`
-              : "Select rules from Rule Configuration"}
-          </span>
+          {selectedRules.length ? (
+            <span className="allocation-trigger-selection">
+              {selectedRules.slice(0, 2).map((rule) => (
+                <span className="allocation-trigger-chip" key={rule.ruleId}>{rule.ruleName}</span>
+              ))}
+              {selectedRules.length > 2 && (
+                <span className="allocation-trigger-more">+{selectedRules.length - 2}</span>
+              )}
+            </span>
+          ) : (
+            <span className="allocation-trigger-placeholder">Select rules from Rule Configuration</span>
+          )}
           <FiChevronDown size={16} />
         </button>
 
