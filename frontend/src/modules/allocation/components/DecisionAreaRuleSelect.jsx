@@ -101,7 +101,7 @@ function DecisionAreaRuleSelect({
   }, [areaRules, search]);
 
   const selectedRules = group.ruleIds
-    .map((id) => rules.find((rule) => rule.ruleId === id))
+    .map((id) => rules.find((rule) => Number(rule.ruleId) === Number(id)))
     .filter(Boolean);
 
   return (
@@ -159,7 +159,7 @@ function DecisionAreaRuleSelect({
 
               <div className="allocation-rule-options">
                 {filteredRules.map((rule) => {
-                  const selected = group.ruleIds.includes(rule.ruleId);
+                  const selected = group.ruleIds.some((id) => Number(id) === Number(rule.ruleId));
 
                   return (
                     <button
